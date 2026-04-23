@@ -24,20 +24,20 @@ def ask_debug():
 
 @app.post("/ask")
 def ask(req: AskRequest):
+    r = requests.post(
+        OLLAMA_URL,
+        json={
+            "model": "llama3:8b",
+            "prompt": req.prompt,
+            "stream": False
+        },
+        timeout=120
+    )
+
     try:
-        r = requests.post(
-            OLLAMA_URL,
-            json={
-                "model": "llama3:8b",
-                "prompt": req.prompt,
-                "stream": False
-            },
-            timeout=120
-        )
-
         return r.json()
-
-    except Exception as e:
+    except Exception:
         return {
-            "error": str(e)
+            "error": "Invalid response from Ollama",
+            "raw": r.text
         }
