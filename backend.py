@@ -5,7 +5,7 @@ import os
 
 app = FastAPI()
 
-OLLAMA_URL = os.environ.get("OLLAMA_URL")
+OLLAMA_URL = "https://crafty-vividness-chemist.ngrok-free.dev/api/generate"
 
 class AskRequest(BaseModel):
     prompt: str
