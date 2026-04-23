@@ -29,6 +29,32 @@ def ask(req: AskRequest):
             timeout=120
         )
 
+        # debug brut si problème
+        try:
+            return r.json()
+        except Exception:
+            return {
+                "error": "Invalid JSON from Ollama",
+                "status_code": r.status_code,
+                "raw_response": r.text
+            }
+
+    except Exception as e:
+        return {
+            "error": "Request failed",
+            "details": str(e)
+        }
+    try:
+        r = requests.post(
+            OLLAMA_URL,
+            json={
+                "model": "llama3:8b",
+                "prompt": req.prompt,
+                "stream": False
+            },
+            timeout=120
+        )
+
         return r.json()
 
     except Exception as e:
