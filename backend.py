@@ -3,7 +3,7 @@ import requests
 
 app = FastAPI()
 
-OLLAMA_URL = "http://host.docker.internal:11434/api/generate"
+OLLAMA_URL = "https://crafty-vividness-chemist.ngrok-free.dev/api/generate"
 
 @app.post("/ask")
 def ask(prompt: str):
