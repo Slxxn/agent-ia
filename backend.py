@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import requests
-import os
 
 app = FastAPI()
 
@@ -17,27 +16,23 @@ def root():
     return {"status": "ok", "message": "API running"}
 
 
-@app.get("/ask")
-def ask_debug():
-    return {"message": "Use POST with JSON"}
-
-
 @app.post("/ask")
 def ask(req: AskRequest):
-    r = requests.post(
-        OLLAMA_URL,
-        json={
-            "model": "llama3:8b",
-            "prompt": req.prompt,
-            "stream": False
-        },
-        timeout=120
-    )
-
     try:
+        r = requests.post(
+            OLLAMA_URL,
+            json={
+                "model": "llama3:8b",
+                "prompt": req.prompt,
+                "stream": False
+            },
+            timeout=120
+        )
+
         return r.json()
-    except Exception:
+
+    except Exception as e:
         return {
-            "error": "Invalid response from Ollama",
-            "raw": r.text
+            "error": "Request failed",
+            "details": str(e)
         }
