@@ -1,0 +1,74 @@
+[
+  {
+    "id": "iphone-13-reconditionne",
+    "name": "iPhone 13 reconditionné",
+    "price": 649,
+    "image": "https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&q=80",
+    "category": "smartphone",
+    "description": "iPhone 13 en excellent état, reconditionné par nos soins. Écran OLED 6.1 pouces, appareil photo 12 Mpx, batterie garantie 85% minimum.",
+    "badge": "promo"
+  },
+  {
+    "id": "samsung-galaxy-s21",
+    "name": "Samsung Galaxy S21",
+    "price": 499,
+    "image": "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=600&q=80",
+    "category": "smartphone",
+    "description": "Smartphone Samsung Galaxy S21 5G, écran Dynamic AMOLED 6.2 pouces, triple capteur 64 Mpx, batterie 4000 mAh.",
+    "badge": "best-seller"
+  },
+  {
+    "id": "airpods-pro",
+    "name": "AirPods Pro",
+    "price": 229,
+    "image": "https://images.unsplash.com/photo-1603351154351-5e2d4d7d7b8a?w=600&q=80",
+    "category": "accessoires",
+    "description": "Écouteurs sans fil Apple AirPods Pro avec réduction de bruit active, spatial audio, étui MagSafe.",
+    "badge": "best-seller"
+  },
+  {
+    "id": "casque-jbl-tune-510bt",
+    "name": "Casque JBL Tune 510BT",
+    "price": 59,
+    "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80",
+    "category": "accessoires",
+    "description": "Casque sans fil JBL Tune 510BT, son pur JBL, 40h d'autonomie, pliable et léger.",
+    "badge": null
+  },
+  {
+    "id": "apple-watch-series-7",
+    "name": "Apple Watch Series 7",
+    "price": 399,
+    "image": "https://images.unsplash.com/photo-1546868871-0f9367e9d6a1?w=600&q=80",
+    "category": "accessoires",
+    "description": "Apple Watch Series 7, écran Retina toujours activé, capteur d'oxygène sanguin, GPS + Cellular.",
+    "badge": "promo"
+  },
+  {
+    "id": "chargeur-rapide-usb-c-20w",
+    "name": "Chargeur rapide USB-C 20W",
+    "price": 19,
+    "image": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&q=80",
+    "category": "accessoires",
+    "description": "Chargeur rapide USB-C 20W compatible iPhone, Android, iPad. Recharge jusqu'à 50% en 30 minutes.",
+    "badge": null
+  },
+  {
+    "id": "coque-transparente-iphone",
+    "name": "Coque transparente iPhone",
+    "price": 12,
+    "image": "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&q=80",
+    "category": "accessoires",
+    "description": "Coque transparente flexible anti-jaunissement pour iPhone. Protection contre les chocs et rayures.",
+    "badge": null
+  },
+  {
+    "id": "powerbank-20000mah",
+    "name": "Powerbank 20000mAh",
+    "price": 39,
+    "image": "https://images.unsplash.com/photo-1609592424661-f6c2e6e1a3b7?w=600&q=80",
+    "category": "accessoires",
+    "description": "Batterie externe 20000mAh, double port USB-A + USB-C, charge rapide 18W. Idéal pour voyages.",
+    "badge": "promo"
+  }
+]

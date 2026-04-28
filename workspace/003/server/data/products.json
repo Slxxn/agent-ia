@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "name": "iPhone 15 Pro Max 256Go",
+    "price": 1499,
+    "category": "Smartphones",
+    "image": "https://picsum.photos/400/300?random=1",
+    "description": "Le smartphone le plus puissant jamais conçu. A15 Bionic, écran Super Retina XDR, appareil photo pro."
+  },
+  {
+    "id": 2,
+    "name": "AirPods Pro 2",
+    "price": 279,
+    "category": "Accessoires",
+    "image": "https://picsum.photos/400/300?random=2",
+    "description": "Réduction de bruit active adaptative, audio spatial personnalisé, autonomie de 6 heures."
+  },
+  {
+    "id": 3,
+    "name": "Samsung Galaxy Watch 6",
+    "price": 399,
+    "category": "Gadgets",
+    "image": "https://picsum.photos/400/300?random=3",
+    "description": "Montre connectée avec suivi santé avancé, écran Super AMOLED, interface One UI Watch."
+  },
+  {
+    "id": 4,
+    "name": "Chargeur MagSafe 20W",
+    "price": 49,
+    "category": "Accessoires",
+    "image": "https://picsum.photos/400/300?random=4",
+    "description": "Charge sans fil rapide compatible iPhone 12 et versions ultérieures."
+  },
+  {
+    "id": 5,
+    "name": "MacBook Air M2",
+    "price": 1299,
+    "category": "Smartphones",
+    "image": "https://picsum.photos/400/300?random=5",
+    "description": "Ultraléger, puce M2, écran Liquid Retina, batterie toute la journée."
+  },
+  {
+    "id": 6,
+    "name": "Coque anti-choc transparente",
+    "price": 19,
+    "category": "Accessoires",
+    "image": "https://picsum.photos/400/300?random=6",
+    "description": "Protection renforcée avec bordures surélevées, design fin, compatible MagSafe."
+  },
+  {
+    "id": 7,
+    "name": "Enceinte portable JBL Flip 6",
+    "price": 129,
+    "category": "Gadgets",
+    "image": "https://picsum.photos/400/300?random=7",
+    "description": "Son puissant, étanche IP67, batterie 12h, design robuste."
+  },
+  {
+    "id": 8,
+    "name": "Apple Watch Series 9",
+    "price": 449,
+    "category": "Gadgets",
+    "image": "https://picsum.photos/400/300?random=8",
+    "description": "Puce S9, détection d'oxygène dans le sang, ECG, écran Always-On Retina."
+  }
+]
