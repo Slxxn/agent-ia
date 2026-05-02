@@ -1350,6 +1350,41 @@ Réponds UNIQUEMENT en JSON :
         validator_model = route_model(task_type="validator_check")
         return await self.call_ollama(prompt, system_prompt=system_prompt, temperature=0.2, model_override=validator_model)
 
+    async def structure_brief(self, raw_objective: str) -> str:
+        """Passe le brief brut par Gemini Flash pour le transformer en spec technique claire."""
+        system = """Tu es un architecte front-end senior. Tu reçois une demande client brute et tu la transformes en spec technique précise pour un agent de génération de code.
+
+Règles :
+- Traduis les termes vagues en éléments concrets (ex: "moderne" → glassmorphism + transitions fluides, "professionnel" → palette neutre + typographie sans-serif)
+- Identifie les sections de la page à créer (Hero, Features, Pricing, Contact, etc.)
+- Déduis les composants React nécessaires
+- Précise les couleurs si mentionnées, sinon déduis une palette cohérente
+- Identifie les animations appropriées
+- Mentionne explicitement les intégrations nécessaires (formulaire, paiement, auth, etc.)
+- Reste concis — max 300 mots
+- Réponds en français
+
+Format de réponse :
+## Sections
+[liste des sections]
+
+## Composants clés
+[liste des composants React]
+
+## Style visuel
+[palette, typo, ambiance]
+
+## Fonctionnalités
+[interactions, formulaires, animations]
+
+## Notes techniques
+[points d'attention pour le dev]"""
+
+        prompt = f"Demande client :\n{raw_objective}\n\nGénère la spec technique."
+        model = _gemini_or(DEEPSEEK_MODEL_FLASH)
+        result = await self.call_ollama(prompt, system_prompt=system, temperature=0.2, model_override=model)
+        return result.get("content", raw_objective)
+
     # ─── Connexion / health ────────────────────────────────────────────────
 
     async def check_connection(self) -> Dict[str, Any]:

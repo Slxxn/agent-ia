@@ -200,9 +200,18 @@ class AgentRunner:
             await add_log(project_id, "═══ PHASE 1 : PLANIFICATION ═══", "info")
             await cls._check_controls(project_id)
 
+            # Structuration Gemini du brief brut → spec technique
+            await add_log(project_id, "Structuration du brief en cours…", "debug")
+            structured = await llm.structure_brief(objective)
+            if structured and structured != objective:
+                await add_log(project_id, "Brief structuré par Gemini Flash.", "info")
+                planning_objective = f"{objective}\n\n## Spec technique (générée automatiquement)\n{structured}"
+            else:
+                planning_objective = objective
+
             # Enrichir l'objectif avec le brief si déjà généré via /brief
             saved_brief = await get_brief(project_id)
-            planning_objective = objective
+            planning_objective_base = planning_objective
             if saved_brief:
                 palette = saved_brief.get("palette", {})
                 fonts = saved_brief.get("fonts", {})
@@ -210,7 +219,7 @@ class AgentRunner:
                 narrative = saved_brief.get("project_type", "")
                 integrations = saved_brief.get("integrations_required", [])
                 planning_objective = (
-                    objective
+                    planning_objective_base
                     + f"\n\nDESIGN BRIEF:\n- Palette: {palette.get('name', '')} ({palette.get('mood', '')})"
                     + f"\n- Fonts: {fonts.get('display', '')}/{fonts.get('body', '')}"
                     + f"\n- Narrative: {narrative}"
