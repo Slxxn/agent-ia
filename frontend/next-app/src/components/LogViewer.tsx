@@ -5,164 +5,114 @@ import { Log, streamLogs, getLogs } from "@/lib/api";
 
 interface LogViewerProps {
   projectId: number;
-  isStreaming?: boolean;
 }
 
+const LEVEL_COLOR: Record<string, string> = {
+  info:    "var(--text2)",
+  debug:   "var(--muted)",
+  warning: "var(--warning)",
+  error:   "var(--error)",
+};
+
+const LEVEL_DOT: Record<string, string> = {
+  info:    "var(--accent)",
+  debug:   "var(--muted)",
+  warning: "var(--warning)",
+  error:   "var(--error)",
+};
+
+const LEVEL_LABEL: Record<string, string> = {
+  info: "i", debug: "d", warning: "!", error: "x",
+};
+
 export default function LogViewer({ projectId }: LogViewerProps) {
-  const [logs, setLogs] = useState<Log[]>([]);
+  const [logs,        setLogs]        = useState<Log[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [autoScroll, setAutoScroll] = useState(true);
-
+  const [autoScroll,  setAutoScroll]  = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
-  const userScrolledUpRef = useRef(false);
 
-  // ─── Détection du scroll utilisateur ───
-  // Si l'utilisateur a remonté manuellement, on n'auto-scroll plus
-  // tant qu'il n'est pas redescendu en bas.
   const handleScroll = () => {
     const el = containerRef.current;
     if (!el) return;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    const isAtBottom = distanceFromBottom < 30; // tolérance 30px
-    userScrolledUpRef.current = !isAtBottom;
-    setAutoScroll(isAtBottom);
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    setAutoScroll(atBottom);
   };
 
-  // ─── Charger l'historique puis s'abonner au stream ───
-  // On attend la fin du fetch HTTP pour connaître le dernier ID et passer
-  // since_id au SSE — cela évite tout doublon lors des reconnexions.
   useEffect(() => {
     let cancelled = false;
-    let unsubscribe: (() => void) | null = null;
-
+    let unsub: (() => void) | null = null;
     const init = async () => {
       let maxId = 0;
       try {
         const existing = await getLogs(projectId);
         if (cancelled) return;
-        const ordered = [...existing].reverse(); // chrono croissant
+        const ordered = [...existing].reverse();
         setLogs(ordered);
         maxId = ordered.reduce((m, l) => Math.max(m, l.id ?? 0), 0);
       } catch {}
-
       if (cancelled) return;
       setIsConnected(true);
-      unsubscribe = streamLogs(
-        projectId,
-        (log) => {
-          setLogs((prev) => {
-            if (prev.some((l) => l.id === log.id)) return prev;
-            return [...prev, log];
-          });
-        },
-        () => setIsConnected(false),
-        maxId,
-      );
+      unsub = streamLogs(projectId, (log) => {
+        setLogs((prev) => {
+          if (prev.some((l) => l.id === log.id)) return prev;
+          return [...prev, log];
+        });
+      }, () => setIsConnected(false), maxId);
     };
-
     init();
-
-    return () => {
-      cancelled = true;
-      unsubscribe?.();
-    };
+    return () => { cancelled = true; unsub?.(); };
   }, [projectId]);
 
-  // ─── Auto-scroll INTERNE au panneau (jamais la page) ───
-  // Modifie uniquement scrollTop du conteneur, pas de scrollIntoView.
   useEffect(() => {
     if (!autoScroll) return;
     const el = containerRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [logs, autoScroll]);
 
-  // ─── Helpers visuels ───
-  const getLevelColor = (level: string) => {
-    const colors: Record<string, string> = {
-      info: "log-info",
-      debug: "log-debug",
-      warning: "log-warning",
-      error: "log-error",
-    };
-    return colors[level] || "log-info";
-  };
-
-  const getLevelIcon = (level: string) => {
-    const icons: Record<string, string> = {
-      info: "ℹ️",
-      debug: "🔍",
-      warning: "⚠️",
-      error: "❌",
-    };
-    return icons[level] || "•";
-  };
-
-  const scrollToBottomManually = () => {
-    const el = containerRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
-    setAutoScroll(true);
-    userScrolledUpRef.current = false;
-  };
-
   return (
-    <div className="bg-dark-800 border border-dark-700 rounded-lg overflow-hidden flex flex-col h-96">
-      {/* Header */}
-      <div className="bg-dark-700 px-4 py-3 border-b border-dark-600 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-          <span>📋 Logs</span>
-          {isConnected && (
-            <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          )}
-        </h3>
-        <span className="text-xs text-gray-400">{logs.length} événement(s)</span>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", minHeight: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", borderBottom: "1px solid var(--bd)", flexShrink: 0 }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}>
+          Logs
+          {isConnected && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--success)", display: "inline-block" }} />}
+        </span>
+        <span style={{ fontSize: 10, color: "var(--muted2)" }}>{logs.length} événements</span>
       </div>
 
-      {/* Logs container : auto-scroll INTERNE uniquement */}
-      <div
-        ref={containerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 font-mono text-sm space-y-1 relative"
-      >
+      <div ref={containerRef} onScroll={handleScroll}
+        style={{ flex: 1, overflowY: "auto", padding: "8px 10px", display: "flex", flexDirection: "column", gap: 2, minHeight: 0 }}>
         {logs.length === 0 ? (
-          <div className="text-gray-500 text-center py-8">
-            <p>En attente de logs...</p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, color: "var(--muted2)", fontSize: 12 }}>
+            En attente de logs…
           </div>
-        ) : (
-          logs.map((log, idx) => (
-            <div key={log.id ?? idx} className={`${getLevelColor(log.level)} flex gap-2`}>
-              <span className="flex-shrink-0">{getLevelIcon(log.level)}</span>
-              <span className="text-gray-500">
-                {new Date(log.timestamp).toLocaleTimeString("fr-FR")}
-              </span>
-              <span className="flex-1 break-words">{log.message}</span>
-            </div>
-          ))
-        )}
+        ) : logs.map((log, idx) => (
+          <div key={log.id ?? idx} style={{ display: "flex", gap: 6, alignItems: "flex-start", fontSize: 12, lineHeight: 1.5, color: LEVEL_COLOR[log.level] || "var(--text2)" }}>
+            <span style={{ flexShrink: 0, width: 14, height: 14, borderRadius: 3, background: LEVEL_DOT[log.level] || "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "white", marginTop: 1 }}>
+              {LEVEL_LABEL[log.level] || "i"}
+            </span>
+            <span style={{ flexShrink: 0, color: "var(--muted2)", fontSize: 11, fontVariantNumeric: "tabular-nums", marginTop: 1 }}>
+              {new Date(log.timestamp).toLocaleTimeString("fr-FR")}
+            </span>
+            <span style={{ flex: 1, wordBreak: "break-word", overflowWrap: "anywhere" }}>
+              {log.message}
+            </span>
+          </div>
+        ))}
+      </div>
 
-        {/* Bouton flottant : visible uniquement si l'utilisateur a remonté */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 10px", borderTop: "1px solid var(--bd)", flexShrink: 0 }}>
+        <span style={{ fontSize: 10, color: isConnected ? "var(--success)" : "var(--muted2)" }}>
+          {isConnected ? "Connecté" : "Déconnecté"}
+        </span>
         {!autoScroll && (
-          <button
-            onClick={scrollToBottomManually}
-            className="sticky bottom-2 ml-auto block px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded shadow-lg"
-          >
-            ↓ Revenir en bas
+          <button onClick={() => { const el = containerRef.current; if (el) el.scrollTop = el.scrollHeight; setAutoScroll(true); }}
+            type="button"
+            style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, border: "none", background: "var(--primary)", color: "white", cursor: "pointer", fontFamily: "inherit" }}>
+            Bas
           </button>
         )}
-      </div>
-
-      {/* Footer */}
-      <div className="bg-dark-700 px-4 py-2 border-t border-dark-600 text-xs text-gray-400 flex items-center justify-between">
-        <span>
-          {isConnected ? (
-            <span className="text-green-400">🟢 Connecté</span>
-          ) : (
-            <span className="text-gray-500">⚫ Déconnecté</span>
-          )}
-        </span>
-        <span className="text-gray-500">
-          {autoScroll ? "Suivi auto activé" : "Suivi auto en pause"}
+        <span style={{ fontSize: 10, color: "var(--muted2)" }}>
+          {autoScroll ? "Suivi auto" : "En pause"}
         </span>
       </div>
     </div>
