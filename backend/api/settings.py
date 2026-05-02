@@ -16,13 +16,11 @@ KNOWN_SETTINGS = [
     # ── Gemini Flash (tâches courtes : planification, repair, validation) ──
     {"key": "GEMINI_API_KEY",        "label": "Gemini API Key",             "encrypted": True,  "placeholder": "AIza..."},
     {"key": "LLM_BUDGET_MODE",       "label": "Mode LLM",                   "encrypted": False, "placeholder": "balanced  (economy | balanced | quality)"},
-    # ── Ollama (local) ──────────────────────────────────────────────────────
-    {"key": "OLLAMA_BASE_URL",       "label": "Ollama Base URL",            "encrypted": False, "placeholder": "http://localhost:11434"},
-    {"key": "OLLAMA_MODEL",          "label": "Ollama Model",               "encrypted": False, "placeholder": "qwen2.5-coder:7b"},
     # ── Intégrations ────────────────────────────────────────────────────────
     {"key": "STRIPE_SECRET_KEY",     "label": "Stripe Secret Key",          "encrypted": True,  "placeholder": "sk_live_..."},
     {"key": "STRIPE_PUBLIC_KEY",     "label": "Stripe Publishable Key",     "encrypted": False, "placeholder": "pk_live_..."},
     # ── Déploiement Firebase ────────────────────────────────────────────────
+    {"key": "FIREBASE_API_KEY",      "label": "Firebase API Key",           "encrypted": True,  "placeholder": "AIza..."},
     {"key": "FIREBASE_TOKEN",        "label": "Firebase CI Token",          "encrypted": True,  "placeholder": "1//0g..."},
     {"key": "FIREBASE_PROJECT_ID",   "label": "Firebase Project ID",        "encrypted": False, "placeholder": "mon-projet-abc"},
 ]
