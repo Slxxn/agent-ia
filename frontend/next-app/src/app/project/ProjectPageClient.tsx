@@ -54,6 +54,15 @@ export default function ProjectPageClient() {
   const [deployDone,    setDeployDone]    = useState(false);
   const [visualLoading, setVisualLoading] = useState(false);
   const [visualDone,    setVisualDone]    = useState(false);
+  const [mobilePanel,   setMobilePanel]   = useState<"controls"|"logs">("controls");
+  const [isMobile,      setIsMobile]      = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -177,9 +186,22 @@ export default function ProjectPageClient() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.25 }}
-      style={{ display: "flex", gap: 12, height: "100%", paddingTop: 14, paddingBottom: 10, overflow: "hidden" }}
+      style={{ display: "flex", flexDirection: "column", gap: 10, height: "100%", paddingTop: 14, paddingBottom: 10, overflow: "hidden" }}
     >
-      <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8, overflowY: "auto", paddingRight: 4 }}>
+      {isMobile && (
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          <button onClick={() => setMobilePanel("controls")} type="button"
+            style={{ flex: 1, height: 34, borderRadius: 7, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: mobilePanel === "controls" ? "var(--primary)" : "var(--surface2)", color: mobilePanel === "controls" ? "white" : "var(--muted)" }}>
+            Contrôles
+          </button>
+          <button onClick={() => setMobilePanel("logs")} type="button"
+            style={{ flex: 1, height: 34, borderRadius: 7, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: mobilePanel === "logs" ? "var(--primary)" : "var(--surface2)", color: mobilePanel === "logs" ? "white" : "var(--muted)" }}>
+            Logs
+          </button>
+        </div>
+      )}
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", gap: 12 }}>
+      <div style={{ width: isMobile ? "100%" : 300, flexShrink: 0, display: isMobile && mobilePanel !== "controls" ? "none" : "flex", flexDirection: "column", gap: 8, overflowY: "auto", paddingRight: 4 }}>
         <div>
           <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--muted)", fontSize: 11, textDecoration: "none", marginBottom: 8 }}>
             <ArrowLeft size={11} /> Dashboard
@@ -320,7 +342,7 @@ export default function ProjectPageClient() {
         )}
       </div>
 
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--surface)", border: "1px solid var(--bd)", borderRadius: 12, overflow: "hidden" }}>
+      <div style={{ flex: 1, minWidth: 0, display: isMobile && mobilePanel !== "logs" ? "none" : "flex", flexDirection: "column", background: "var(--surface)", border: "1px solid var(--bd)", borderRadius: 12, overflow: "hidden" }}>
         <div style={{ display: "flex", borderBottom: "1px solid var(--bd)", background: "var(--surface2)", padding: "4px 8px", gap: 2, flexShrink: 0 }}>
           {TABS.map(({ key, label, icon }) => (
             <button key={key} onClick={() => setActiveTab(key)}
@@ -434,6 +456,7 @@ export default function ProjectPageClient() {
         </div>
       </div>
 
+      </div>
       <Modal
         open={deleteModal}
         title="Supprimer le projet"
