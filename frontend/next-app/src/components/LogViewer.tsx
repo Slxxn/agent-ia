@@ -28,39 +28,43 @@ export default function LogViewer({ projectId }: LogViewerProps) {
     setAutoScroll(isAtBottom);
   };
 
-  // ─── Charger l'historique + s'abonner au stream ───
+  // ─── Charger l'historique puis s'abonner au stream ───
+  // On attend la fin du fetch HTTP pour connaître le dernier ID et passer
+  // since_id au SSE — cela évite tout doublon lors des reconnexions.
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe: (() => void) | null = null;
 
-    getLogs(projectId)
-      .then((existing) => {
+    const init = async () => {
+      let maxId = 0;
+      try {
+        const existing = await getLogs(projectId);
         if (cancelled) return;
         const ordered = [...existing].reverse(); // chrono croissant
         setLogs(ordered);
-      })
-      .catch(() => {
-        // pas grave
-      });
+        maxId = ordered.reduce((m, l) => Math.max(m, l.id ?? 0), 0);
+      } catch {}
 
-    setIsConnected(true);
-    const unsubscribe = streamLogs(
-      projectId,
-      (log) => {
-        setLogs((prev) => {
-          if (prev.some((l) => l.id === log.id)) return prev;
-          return [...prev, log];
-        });
-      },
-      () => {
-        setIsConnected(false);
-      }
-    );
+      if (cancelled) return;
+      setIsConnected(true);
+      unsubscribe = streamLogs(
+        projectId,
+        (log) => {
+          setLogs((prev) => {
+            if (prev.some((l) => l.id === log.id)) return prev;
+            return [...prev, log];
+          });
+        },
+        () => setIsConnected(false),
+        maxId,
+      );
+    };
+
+    init();
 
     return () => {
       cancelled = true;
-      if (typeof unsubscribe === "function") {
-        unsubscribe();
-      }
+      unsubscribe?.();
     };
   }, [projectId]);
 

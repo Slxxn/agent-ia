@@ -1,14 +1,31 @@
 const API_BASE = "/api";
 
+// Les EventSource SSE se connectent directement au backend pour éviter le
+// buffering du proxy Next.js. Le hostname est détecté dynamiquement pour
+// fonctionner aussi bien en local que depuis un autre appareil sur le réseau.
+const getSSEBase = (): string => {
+  if (typeof window === "undefined") return "http://localhost:8000/api";
+  const override = process.env.NEXT_PUBLIC_API_URL;
+  if (override) return `${override}/api`;
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") {
+    return `http://${host}:8000/api`;
+  }
+  // Production: SSE goes to api subdomain over HTTPS
+  return `https://api.${host}/api`;
+};
+
 export interface Project {
   id: number;
   name: string;
   description: string;
+  objective: string;
   status: "idle" | "running" | "paused" | "error" | "done";
   progress: number;
   created_at: string;
   updated_at: string;
   workspace_path: string;
+  deploy_url?: string;
 }
 
 export interface Task {
@@ -104,6 +121,20 @@ export async function resumeProject(id: number): Promise<void> {
   if (!res.ok) throw new Error("Erreur lors de la reprise du projet");
 }
 
+export async function validateVisual(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/projects/${id}/validate-visual`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Erreur lors du lancement de la validation visuelle");
+}
+
+export async function deployProject(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/projects/${id}/deploy`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Erreur lors du déploiement");
+}
+
 // ─── Tâches ──────────────────────────────────────────────────────────────
 
 export async function getProjectTasks(projectId: number): Promise<Task[]> {
@@ -124,40 +155,48 @@ export async function getLogs(projectId: number): Promise<Log[]> {
 export function streamLogs(
   projectId: number,
   onLog: (log: Log) => void,
-  onEnd: (status: string) => void
+  onEnd: (status: string) => void,
+  sinceId: number = 0
 ): () => void {
   let stopped = false;
-  const eventSource = new EventSource(`${API_BASE}/projects/${projectId}/logs/stream`);
+  let lastId = sinceId;
+  let eventSource: EventSource | null = null;
 
-  eventSource.onmessage = (event) => {
-    try {
-      const log = JSON.parse(event.data);
-      onLog(log);
-    } catch (e) {
-      console.error("Erreur parsing log:", e);
-    }
+  const connect = () => {
+    if (stopped) return;
+    eventSource = new EventSource(
+      `${getSSEBase()}/projects/${projectId}/logs/stream?since_id=${lastId}`
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const log = JSON.parse(event.data) as Log;
+        onLog(log);
+        if (log.id && log.id > lastId) lastId = log.id;
+      } catch {}
+    };
+
+    // Gardé pour compatibilité si le backend envoie un jour "end"
+    eventSource.addEventListener("end", (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        onEnd(data.status || "done");
+      } catch {
+        onEnd("done");
+      }
+      stopped = true;
+      eventSource?.close();
+    });
+
+    // Reconnexion automatique avec le dernier ID connu pour éviter les doublons
+    eventSource.onerror = () => {
+      eventSource?.close();
+      if (!stopped) setTimeout(connect, 2000);
+    };
   };
 
-  eventSource.addEventListener("end", (event: MessageEvent) => {
-    try {
-      const data = JSON.parse(event.data);
-      onEnd(data.status || "done");
-    } catch (e) {
-      onEnd("done");
-    }
-    // Fermer proprement sans jamais se reconnecter
-    stopped = true;
-    eventSource.close();
-  });
-
-  eventSource.onerror = () => {
-    // Ne pas se reconnecter : évite de recharger tous les anciens logs en boucle
-    if (!stopped) {
-      eventSource.close();
-    }
-  };
-
-  return () => { stopped = true; eventSource.close(); };
+  connect();
+  return () => { stopped = true; eventSource?.close(); };
 }
 
 // ─── SSE pour la liste des projets ───────────────────────────────────────
@@ -170,7 +209,7 @@ export function streamProjects(
 
   const connect = () => {
     if (stopped) return;
-    eventSource = new EventSource(`${API_BASE}/projects/stream`);
+    eventSource = new EventSource(`${getSSEBase()}/projects/stream`);
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data) as Project[];
@@ -200,7 +239,7 @@ export function streamProject(
 
   const connect = () => {
     if (stopped) return;
-    eventSource = new EventSource(`${API_BASE}/projects/${projectId}/stream`);
+    eventSource = new EventSource(`${getSSEBase()}/projects/${projectId}/stream`);
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data) as Project;
@@ -286,5 +325,38 @@ export async function deleteEnvVar(
   });
   if (!res.ok) throw new Error(`Erreur lors de la suppression de la variable '${key}'`);
   return res.json();
+}
+
+// ─── Réglages globaux ─────────────────────────────────────────────────────────
+
+export interface Setting {
+  key: string;
+  label: string;
+  value: string;
+  encrypted: boolean;
+  placeholder: string;
+  set: boolean;
+}
+
+export async function getSettings(): Promise<Setting[]> {
+  const res = await fetch(`${API_BASE}/settings`);
+  if (!res.ok) throw new Error("Erreur lors de la récupération des réglages");
+  return res.json();
+}
+
+export async function saveSetting(key: string, value: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/settings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key, value }),
+  });
+  if (!res.ok) throw new Error(`Erreur lors de la sauvegarde de '${key}'`);
+}
+
+export async function deleteSetting(key: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/settings/${encodeURIComponent(key)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`Erreur lors de la suppression de '${key}'`);
 }
 

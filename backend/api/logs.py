@@ -26,24 +26,30 @@ async def get_project_logs(project_id: int, limit: int = 100, offset: int = 0):
 
 
 @router.get("/{project_id}/logs/stream")
-async def stream_project_logs(project_id: int, request: Request):
-    """Streamer les logs d'un projet en SSE."""
+async def stream_project_logs(project_id: int, request: Request, since_id: int = 0):
+    """Streamer les logs d'un projet en SSE.
+
+    since_id : si > 0, n'envoie que les logs postérieurs à cet ID (évite les doublons
+    lors d'une reconnexion). Si == 0, envoie d'abord l'historique complet.
+    """
     project = await project_manager.get(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Projet non trouvé.")
 
     async def event_generator():
-        last_id = 0
+        last_id = since_id
 
-        # Envoyer les logs existants d'abord
-        existing_logs = await get_logs(project_id, limit=200)
-        existing_logs.reverse()  # ordre chronologique
-        for log in existing_logs:
-            log_data = json.dumps(log, ensure_ascii=False)
-            yield f"data: {log_data}\n\n"
-            last_id = max(last_id, log.get("id", 0))
+        # Historique uniquement pour la première connexion (since_id == 0)
+        if since_id == 0:
+            existing_logs = await get_logs(project_id, limit=200)
+            existing_logs.reverse()  # ordre chronologique
+            for log in existing_logs:
+                log_data = json.dumps(log, ensure_ascii=False)
+                yield f"data: {log_data}\n\n"
+                last_id = max(last_id, log.get("id", 0))
 
-        # Puis streamer les nouveaux logs
+        # Stream continu — reste ouvert même quand le projet est terminé
+        # pour que les messages du copilot apparaissent sans reconnexion.
         while True:
             if await request.is_disconnected():
                 break
@@ -53,20 +59,6 @@ async def stream_project_logs(project_id: int, request: Request):
                 log_data = json.dumps(log, ensure_ascii=False)
                 yield f"data: {log_data}\n\n"
                 last_id = max(last_id, log.get("id", 0))
-
-            project = await project_manager.get(project_id)
-            if project and project.get("status") in ("done", "error"):
-                if not new_logs:
-                    # On attend un peu pour être sûr qu'aucun log tardif n'arrive
-                    await asyncio.sleep(2.0)
-                    new_logs_final = await get_logs_after(project_id, last_id)
-                    if not new_logs_final:
-                        end_event = json.dumps(
-                            {"type": "end", "status": project.get("status"), "message": "Streaming terminé."},
-                            ensure_ascii=False,
-                        )
-                        yield f"event: end\ndata: {end_event}\n\n"
-                        break
 
             await asyncio.sleep(0.5)
 

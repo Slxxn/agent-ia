@@ -3,12 +3,17 @@ Agent Executor — Exécute les tâches une par une en utilisant les tools.
 Gère les retries, la validation et le logging.
 """
 
+import os
 import re
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable, TYPE_CHECKING
 from backend.tools.filesystem import FilesystemTool
 from backend.tools.terminal import TerminalTool
-from backend.tools.llm import LLMTool
-from backend.db.database import add_log
+from backend.tools.llm import LLMTool, get_model_for_complexity, route_model
+from backend.agent.task_classifier import classify_task, COMPLEXITY_LABELS
+from backend.db.database import add_log, add_tokens_used
+
+if TYPE_CHECKING:
+    from backend.agent.project_brain import ProjectBrain
 from backend.prompts.templates import (
     STATIC_PROJECT_PROMPT,
     REACT_NODE_SQLITE_PROJECT_PROMPT,
@@ -45,6 +50,21 @@ TRUNCATION_MARKERS = [
     re.compile(r'à compléter', re.IGNORECASE),
     re.compile(r'voir plus haut', re.IGNORECASE),
 ]
+
+# ─── Fichiers système qui ne doivent jamais être traités comme fantômes ─────
+GHOST_FILE_WHITELIST = {
+    'vite-env.d.ts', 'vite.config.ts', 'vite.config.js',
+    'tsconfig.json', 'tsconfig.node.json', 'tsconfig.app.json',
+    'postcss.config.js', 'postcss.config.cjs',
+    'tailwind.config.ts', 'tailwind.config.js',
+    'eslint.config.js', '.eslintrc.js', '.eslintrc.json',
+    'prettier.config.js', '.prettierrc',
+}
+
+# Contenu par défaut pour les fichiers système connus si fantômes
+GHOST_FILE_DEFAULTS = {
+    'vite-env.d.ts': '/// <reference types="vite/client" />\n',
+}
 
 # ─── Patterns de détection de fichiers fantômes ─────────────────────────
 # Un fichier "fantôme" n'a que des commentaires, pas de vrai code.
@@ -178,25 +198,132 @@ def _inject_hook_aliases(content: str, path: str) -> str:
     return content
 
 
+def _infer_task_type(description: str, complexity: str) -> str:
+    """
+    Déduit le task_type sémantique à partir de la description de tâche.
+    Utilisé par route_model() pour choisir le bon modèle LLM.
+    """
+    d = description.lower()
+    if any(k in d for k in ("npm install", "npm i ", "package.json", "tsconfig", "vite.config", "postcss")):
+        return "scaffold"
+    if any(k in d for k in ("globals.css", "design system", "tokens", "tailwind.config")):
+        return "config"
+    if any(k in d for k in ("hero", "about", "landing", "vitrine", "accueil", "service", "problem", "solution", "témoignage", "testimonial", "cta final")):
+        return "section_emotional"
+    if any(k in d for k in ("pricing", "formulaire", "panier", "cart", "checkout", "paiement", "stripe")):
+        return "section_complex"
+    if any(k in d for k in ("readme", "installation")):
+        return "scaffold"
+    if any(k in d for k in ("repair", "réparer", "fix", "corriger")):
+        return "repair"
+    if complexity == "creative":
+        return "section_emotional"
+    if complexity == "simple":
+        return "scaffold"
+    return "component_ui"
+
+
+class SyntaxValidator:
+    """Lightweight structural validator — runs after each file write, no subprocess needed."""
+
+    @staticmethod
+    def validate(path: str, content: str) -> list[str]:
+        """Returns list of issue descriptions, empty if clean."""
+        issues: list[str] = []
+        ext = path.rsplit(".", 1)[-1].lower() if "." in path else ""
+
+        if ext not in ("tsx", "jsx", "ts", "js"):
+            return issues
+
+        lines = content.split("\n")
+        n = len(lines)
+
+        # Suspiciously short component file
+        if ext in ("tsx", "jsx") and n < 15:
+            fname = os.path.basename(path)
+            if fname.lower() not in ("vite-env.d.ts", "index.tsx", "main.tsx"):
+                issues.append(f"fichier trop court ({n} lignes) — possible troncature")
+
+        # Unbalanced braces (allow ±3 for string literals)
+        opens  = content.count("{")
+        closes = content.count("}")
+        if opens > closes + 3:
+            issues.append(f"accolade non fermée ({opens} ouvertures vs {closes} fermetures)")
+
+        # Unclosed JSX tag at end of file
+        last = "\n".join(lines[-6:])
+        open_jsx  = len(re.findall(r'<[A-Z][a-zA-Z]+[\s/>]', last))
+        close_jsx = len(re.findall(r'</[A-Z][a-zA-Z]+>', last))
+        if open_jsx > close_jsx + 1:
+            issues.append("balise JSX majuscule non fermée en fin de fichier")
+
+        # Missing export (components and pages should export something)
+        if ext in ("tsx", "jsx") and "export" not in content:
+            issues.append("aucun export détecté dans le fichier")
+
+        # JSX in .ts file (not .tsx)
+        if ext == "ts" and not path.endswith(".d.ts"):
+            if re.search(r'<[A-Z][a-zA-Z]+[\s/>]', content):
+                issues.append("JSX détecté dans fichier .ts (devrait être .tsx)")
+
+        return issues
+
+
 class AgentExecutor:
     """Exécuteur de tâches de l'agent."""
 
-    def __init__(self, filesystem: FilesystemTool, terminal: TerminalTool, llm: LLMTool):
-        self.filesystem = filesystem
-        self.terminal = terminal
-        self.llm = llm
+    def __init__(
+        self,
+        filesystem: FilesystemTool,
+        terminal: TerminalTool,
+        llm: LLMTool,
+        brain: Optional["ProjectBrain"] = None,
+    ):
+        self.filesystem      = filesystem
+        self.terminal        = terminal
+        self.llm             = llm
+        self.brain           = brain
+        self._current_phase  = 0   # mis à jour par runner.py
+        self._current_brief: dict | None = None  # brief projet injecté par runner.py
+        self._syntax_issues: dict[str, list[str]] = {}  # populated by per-file validation
 
     async def execute_task(
         self,
         project_id: int,
         task_description: str,
         steps: List[str],
-        context: str = ""
+        context: str = "",
+        on_progress: Optional[Callable[[float], Any]] = None,
     ) -> Dict[str, Any]:
         """Exécuter une tâche complète."""
         await add_log(project_id, f"Exécution de la tâche : {task_description}", "info")
 
-        result = await self.llm.generate_code(task_description, context)
+        # Enrichir le contexte avec l'état actuel du Project Brain
+        if self.brain:
+            brain_ctx = self.brain.get_context()
+            if brain_ctx:
+                context = f"## PROJET (Project Brain):\n{brain_ctx}\n\n{context}"
+
+        complexity = classify_task(task_description)
+        # Déduire le task_type pour le router LLM depuis la complexité et les mots-clés
+        ttype = _infer_task_type(task_description, complexity)
+        phase = getattr(self, "_current_phase", 0)
+        model_name = route_model(task_type=ttype, phase=phase)
+        await add_log(project_id, f"🧠 [{COMPLEXITY_LABELS[complexity]}] → {model_name} (phase {phase})", "debug")
+
+        brief = getattr(self, "_current_brief", None)
+        result = await self.llm.generate_code(
+            task_description, context,
+            model_override=model_name,
+            task_type=ttype,
+            phase=phase,
+            brief=brief,
+        )
+
+        # Tracker les tokens consommés
+        tokens = (result.get("prompt_tokens", 0) or 0) + (result.get("completion_tokens", 0) or 0)
+        if tokens > 0:
+            await add_tokens_used(project_id, tokens)
 
         if not result.get("success"):
             error_msg = result.get("error", "Erreur LLM inconnue")
@@ -233,6 +360,9 @@ class AgentExecutor:
 
             action_result = await self._execute_action(project_id, action)
             results.append(action_result)
+
+            if on_progress:
+                await on_progress((i + 1) / len(actions))
 
             if not action_result.get("success", False):
                 await add_log(
@@ -400,7 +530,17 @@ class AgentExecutor:
         if ext == 'Dockerfile':
             return 'Dockerfile'
         if ext:
-            return f"main{ext}"
+            # Ne retourner "main.*" que si le contenu ressemble à un vrai point d'entrée.
+            # Évite que tous les blocs sans nom de fichier écrasent le même main.tsx.
+            is_entry_point = (
+                'ReactDOM' in body or
+                'createRoot' in body or
+                ('createApp' in body and 'mount' in body) or  # Vue
+                ext in ('.py', '.go', '.rs') and 'main' in body[:200].lower()
+            )
+            if is_entry_point:
+                return f"main{ext}"
+            return None
         return None
 
     # ─── Exécution ──────────────────────────────────────────────────────
@@ -423,7 +563,16 @@ class AgentExecutor:
             return {"success": False, "error": err}
 
         # ── Détection fichier fantôme ──────────────────────────────────
-        if _is_ghost_file(content):
+        filename = os.path.basename(path.replace('\\', '/'))
+        is_system_file = filename in GHOST_FILE_WHITELIST or filename.endswith('.d.ts')
+
+        if is_system_file and _is_ghost_file(content):
+            default = GHOST_FILE_DEFAULTS.get(filename)
+            if default:
+                content = default
+                await add_log(project_id, f"Fichier système '{path}' restauré avec son contenu par défaut.", "info")
+            # else: system file with unusual content — write as-is, don't block
+        elif not is_system_file and _is_ghost_file(content):
             await add_log(
                 project_id,
                 f"Fichier fantôme détecté pour '{path}' (commentaire vide). Régénération forcée.",
@@ -442,15 +591,22 @@ class AgentExecutor:
                 return {"success": False, "error": f"Fichier fantôme non régénérable : {path}"}
 
         # ── Correction JSX dans fichier .ts ───────────────────────────
+        # Only auto-convert PascalCase component files, never utils/types/lib/hooks/store/config
         ext = path.rsplit('.', 1)[-1].lower() if '.' in path else ''
-        if ext == 'ts' and _contains_jsx(content):
-            await add_log(
-                project_id,
-                f"JSX détecté dans '{path}' (extension .ts). Conversion en .tsx automatique.",
-                "warning",
-            )
-            path = path[:-3] + '.tsx'
-            action['path'] = path
+        if ext == 'ts' and not filename.endswith('.d.ts') and _contains_jsx(content):
+            path_lower = path.lower().replace('\\', '/')
+            non_component_dirs = ('/lib/', '/utils', '/types', '/constants', '/helpers', '/config', '/store', '/hook', '/api/', '/services/')
+            in_non_component = any(d in path_lower for d in non_component_dirs)
+            name_part = filename.rsplit('.', 1)[0]
+            is_pascal = name_part and name_part[0].isupper()
+            if not in_non_component and is_pascal:
+                await add_log(
+                    project_id,
+                    f"JSX détecté dans '{path}' (extension .ts). Conversion en .tsx automatique.",
+                    "warning",
+                )
+                path = path[:-3] + '.tsx'
+                action['path'] = path
 
         # ── Injection d'alias de hooks ─────────────────────────────────
         content = _inject_hook_aliases(content, path)
@@ -474,9 +630,32 @@ class AgentExecutor:
                     "warning",
                 )
 
+        # ── Validation des imports locaux via Project Brain ────────────────
+        if self.brain:
+            import_issues = self.brain.validate_imports(path, content)
+            for issue in import_issues:
+                # debug level : le fichier sera peut-être créé dans une action suivante
+                await add_log(project_id, f"🧠 Brain: {issue}", "debug")
+
         result = self.filesystem.create_file(path, content)
         if result.get("success"):
             await add_log(project_id, f"Fichier créé : {result.get('path', path)}", "info")
+            # ── Per-file syntax validation ────────────────────────────────
+            syntax_issues = SyntaxValidator.validate(path, content)
+            if syntax_issues:
+                self._syntax_issues[path] = syntax_issues
+                issues_str = " | ".join(syntax_issues)
+                await add_log(project_id, f"⚠️ Validation syntaxique '{os.path.basename(path)}' : {issues_str} — tentative de réparation", "warning")
+                repaired = await self._repair_file(project_id, path, content, syntax_issues)
+                if repaired is not None:
+                    fix_result = self.filesystem.create_file(path, repaired)
+                    if fix_result.get("success"):
+                        content = repaired
+                        del self._syntax_issues[path]
+                        await add_log(project_id, f"✅ Fichier '{os.path.basename(path)}' réparé et réécrit.", "info")
+            # ── Mise à jour du Project Brain ──────────────────────────────
+            if self.brain:
+                self.brain.update_file(path, content)
         else:
             await add_log(project_id, f"Erreur création fichier {path} : {result.get('error')}", "error")
         return result
@@ -575,11 +754,24 @@ class AgentExecutor:
             if n_style_open > n_style_close:
                 issues.append("</style> manquant")
 
-        if ext in ('js', 'mjs', 'ts', 'css'):
-            if content.count('{') > content.count('}'):
-                issues.append("accolade '}' manquante")
-            if content.count('(') > content.count(')'):
+        if ext in ('js', 'mjs', 'ts', 'tsx', 'jsx', 'css'):
+            opens  = content.count('{')
+            closes = content.count('}')
+            if opens > closes + 2:
+                issues.append(f"accolade non fermée ({opens} ouvertures vs {closes} fermetures)")
+            if content.count('(') > content.count(')') + 2:
                 issues.append("parenthèse ')' manquante")
+
+        # JSX tag balance check for .tsx/.jsx
+        if ext in ('tsx', 'jsx'):
+            # Count opening vs closing tags for block-level elements likely to be unclosed on truncation
+            block_tags = ['div', 'section', 'main', 'article', 'header', 'footer', 'table', 'tbody', 'thead', 'tr', 'ul', 'ol', 'nav', 'aside', 'form']
+            for tag in block_tags:
+                n_open  = len(re.findall(rf'<{tag}[\s>/]', content))
+                n_close = content.count(f'</{tag}>')
+                if n_open > n_close + 3:
+                    issues.append(f"balise <{tag}> non fermée ({n_open} ouvertures vs {n_close} fermetures)")
+                    break  # one issue is enough to trigger repair
 
         return issues
 
@@ -593,14 +785,26 @@ class AgentExecutor:
         """Demander au LLM de réparer un fichier tronqué/incomplet."""
         for attempt in range(MAX_REPAIR_ATTEMPTS):
             issues_text = ", ".join(issues)
+            ext = path.rsplit('.', 1)[-1].lower() if '.' in path else ''
+            # For truncated TSX/JSX files, show the tail to help the LLM continue
+            tail_hint = ""
+            if ext in ('tsx', 'jsx') and len(broken_content) > 800:
+                tail_lines = broken_content.rstrip().split('\n')[-30:]
+                tail_hint = (
+                    f"\n\nDernières lignes du fichier (là où la troncature s'est produite) :\n"
+                    f"```\n{'  '.join(tail_lines)}\n```\n"
+                    f"Continue à partir de là et ferme toutes les balises JSX et accolades ouvertes."
+                )
             repair_prompt = (
                 f"Le fichier '{path}' que tu as généré est INCOMPLET ou TRONQUÉ. "
                 f"Problèmes détectés : {issues_text}.\n\n"
                 f"Voici le contenu actuel (potentiellement tronqué) :\n\n"
-                f"```\n{broken_content}\n```\n\n"
+                f"```\n{broken_content}\n```\n"
+                f"{tail_hint}\n"
                 f"Renvoie la VERSION COMPLÈTE et CORRIGÉE de ce fichier. "
-                f"Aucun '...', aucun placeholder, toutes les balises fermées, "
-                f"tout le code écrit en entier. Utilise le format :\n\n"
+                f"Toutes les balises JSX doivent être fermées (<div>...</div>), "
+                f"toutes les accolades équilibrées, aucun placeholder. "
+                f"Utilise le format :\n\n"
                 f"```filename:{path}\n"
                 f"contenu complet ici\n"
                 f"```"
@@ -622,6 +826,19 @@ class AgentExecutor:
 
     async def _execute_command_action(self, project_id: int, action: Dict[str, Any]) -> Dict[str, Any]:
         command = action.get("command", "")
+
+        # Strip "cd <path> && " prefix — le terminal tourne déjà dans workspace_path
+        command = re.sub(r'^cd\s+\S+\s*&&\s*', '', command).strip()
+
+        # Bloquer les heredocs shell (<<) — incompatibles avec cmd.exe Windows
+        if re.search(r'<<\s*[\'"]?\w', command):
+            await add_log(
+                project_id,
+                f"Commande heredoc ignorée (incompatible Windows) : {command[:120]}",
+                "warning",
+            )
+            return {"success": True, "stdout": "", "stderr": "", "exit_code": 0}
+
         await add_log(project_id, f"Exécution commande : {command}", "debug")
         result = await self.terminal.run_command(command)
 
@@ -632,8 +849,10 @@ class AgentExecutor:
                 await add_log(project_id, f"Sortie : {log_output}", "debug")
         else:
             stderr = result.get("stderr", "").strip()
-            error_output = stderr[:500] or "(aucune sortie d'erreur)"
-            await add_log(project_id, f"Erreur commande : {error_output}", "error")
+            stdout = result.get("stdout", "").strip()
+            # npm écrit souvent les erreurs sur stdout plutôt que stderr
+            error_output = stderr or stdout or "(aucune sortie d'erreur)"
+            await add_log(project_id, f"Erreur commande : {error_output[:500]}", "error")
         return result
 
     # ─── README ─────────────────────────────────────────────────────────
@@ -646,47 +865,134 @@ class AgentExecutor:
 
         tree = self.filesystem.get_tree()
 
-        deployment_guidance = ""
-        if project_type == "Statique":
-            deployment_guidance = STATIC_PROJECT_PROMPT
-        elif project_type == "ReactNodeSQLite":
-            deployment_guidance = REACT_NODE_SQLITE_PROJECT_PROMPT
-        elif project_type == "ReactSupabase":
-            deployment_guidance = REACT_SUPABASE_PROJECT_PROMPT
+        # Détection automatique du type de projet depuis l'arborescence
+        has_vite    = "vite.config" in tree
+        has_server  = "server/" in tree or "server\\" in tree
+        has_express = has_server and ("express" in tree or "index.js" in tree)
+        has_static  = "index.html" in tree and not has_vite
+        has_stripe  = "stripe" in objective.lower() or "stripe" in tree.lower()
+        has_paypal  = "paypal" in objective.lower() or "paypal" in tree.lower()
+        has_payment = has_stripe or has_paypal or "paiement" in objective.lower() or "e-commerce" in objective.lower()
 
-        payment_guidance = ""
-        if "paiement" in objective.lower() or "e-commerce" in objective.lower():
-            payment_guidance = (
-                "\n\n### Intégration des paiements\n"
-                "Le projet inclut l'intégration de Stripe et/ou PayPal. "
-                "Veuillez vous référer aux sections suivantes pour la configuration :\n"
-                f"\n{STRIPE_INTEGRATION_PROMPT}"
-                f"\n{PAYPAL_INTEGRATION_PROMPT}"
-            )
+        # Détecter le port du serveur front
+        import os as _os
+        vite_config_path = _os.path.join(self.filesystem.workspace_path, "vite.config.ts")
+        frontend_port = "5173"
+        if _os.path.exists(vite_config_path):
+            try:
+                with open(vite_config_path) as f:
+                    cfg = f.read()
+                    import re as _re
+                    m = _re.search(r'port:\s*(\d+)', cfg)
+                    if m:
+                        frontend_port = m.group(1)
+            except Exception:
+                pass
 
-        prompt = f"""Génère un fichier README.md complet en français pour le projet suivant :
+        # Détecter le port du backend Express
+        server_port = "3001"
+        server_index = _os.path.join(self.filesystem.workspace_path, "server", "index.js")
+        if _os.path.exists(server_index):
+            try:
+                with open(server_index) as f:
+                    sc = f.read()
+                    m2 = _re.search(r'PORT\s*[=|]\s*[^\d]*(\d{4,5})', sc)
+                    if m2:
+                        server_port = m2.group(1)
+            except Exception:
+                pass
 
-Nom du projet : {project_name}
-Objectif : {objective}
+        # Construire le bloc "Lancer le projet" adapté
+        if has_vite and has_express:
+            run_instructions = f"""### Frontend (React/Vite)
+```bash
+cd <dossier-projet>
+npm install
+npm run dev
+# → http://localhost:{frontend_port}
+```
 
-Structure des fichiers :
+### Backend (Node.js/Express)
+```bash
+cd server
+npm install
+node index.js
+# → http://localhost:{server_port}
+```"""
+        elif has_vite:
+            run_instructions = f"""```bash
+npm install
+npm run dev
+# → http://localhost:{frontend_port}
+```"""
+        elif has_static:
+            run_instructions = """Ouvrez simplement `index.html` dans votre navigateur.
+Ou lancez un serveur local :
+```bash
+npx serve .
+```"""
+        else:
+            run_instructions = """```bash
+npm install
+npm start
+```"""
+
+        payment_section = ""
+        if has_payment:
+            payment_section = "\n## Paiements\n"
+            if has_stripe:
+                payment_section += STRIPE_INTEGRATION_PROMPT + "\n"
+            if has_paypal:
+                payment_section += PAYPAL_INTEGRATION_PROMPT + "\n"
+
+        # Injecter les infos du brief si disponible
+        brief_context = ""
+        brand_name = project_name
+        if self._current_brief:
+            palette = self._current_brief.get("palette", {})
+            fonts   = self._current_brief.get("fonts", {})
+            brand   = self._current_brief.get("brand_details", {})
+            metier  = self._current_brief.get("metier", "")
+            integrations = self._current_brief.get("integrations_required", [])
+            warnings = self._current_brief.get("integration_warnings", [])
+            if brand.get("name"):
+                brand_name = brand["name"]
+            brief_context = f"""
+**Brief créatif :**
+- Palette : {palette.get('name', '')} ({palette.get('mood', '')})
+- Typographie : {fonts.get('display', '')} / {fonts.get('body', '')}
+- Métier : {metier}
+- Phrase signature : {brand.get('signature_phrase', '')}
+- Intégrations : {', '.join(integrations) if integrations else 'aucune'}"""
+            if warnings:
+                brief_context += "\n- ⚠️ " + "\n- ⚠️ ".join(warnings)
+
+        prompt = f"""Génère un README.md complet et professionnel en français pour ce projet.
+
+**Nom :** {brand_name}
+**Objectif :** {objective}{brief_context}
+**Arborescence :**
 {tree}
 
-Le README doit contenir :
-1. Titre et description
-2. Prérequis
-3. Installation
-4. Utilisation
-5. Structure du projet
-6. Instructions de déploiement et d'hébergement (très important)
-7. Configuration des paiements (si applicable)
-8. Licence
+**Commandes de lancement (utilise-les EXACTEMENT dans la section Installation) :**
+{run_instructions}
 
-Instructions spécifiques pour ce type de projet :
-{deployment_guidance}
-{payment_guidance}
+Le README doit contenir ces sections dans cet ordre :
+1. # {brand_name} — titre + courte description percutante inspirée du brief
+2. ## Présentation — concept, cible, proposition de valeur (3-4 phrases)
+3. ## Fonctionnalités — liste bullet des features principales
+4. ## Stack technique — tableau : React 18, Vite, TypeScript, Tailwind CSS, Framer Motion, etc.
+5. ## Prérequis — Node.js 18+, npm
+6. ## Installation & Lancement — les commandes EXACTES ci-dessus
+7. ## Structure du projet — arborescence commentée (key files seulement)
+8. ## Variables d'environnement — si des fichiers .env.example existent{payment_section}
+9. ## Déploiement — Vercel (front) + Railway/Render (back si applicable)
+10. ## Licence — MIT
 
-Génère UNIQUEMENT le contenu Markdown du README, sans bloc de code englobant."""
+IMPORTANT :
+- N'invente PAS de commandes. Utilise uniquement celles fournies ci-dessus.
+- Copie le ton de la phrase signature dans la description si elle est fournie.
+- Génère UNIQUEMENT le Markdown, sans bloc de code englobant."""
 
         result = await self.llm.generate_code(prompt)
 
@@ -701,21 +1007,27 @@ Génère UNIQUEMENT le contenu Markdown du README, sans bloc de code englobant."
                 await add_log(project_id, "README.md généré avec succès.", "info")
             return file_result
 
-        fallback_readme = f"""# {project_name}
+        # Fallback cohérent si le LLM échoue
+        signature = ""
+        if self._current_brief:
+            brand = self._current_brief.get("brand_details", {})
+            sig = brand.get("signature_phrase", "")
+            if sig:
+                signature = f"\n> *{sig}*\n"
 
-## Description
-
+        fallback_readme = f"""# {brand_name}
+{signature}
 {objective}
+
+## Installation & Lancement
+
+{run_instructions}
 
 ## Structure du projet
 
 ```
 {tree}
 ```
-
-## Installation
-
-Consultez les fichiers du projet pour les instructions d'installation.
 
 ## Licence
 

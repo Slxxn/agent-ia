@@ -45,6 +45,10 @@ class ProjectManager:
             await add_log(project_id, f"Statut changé vers '{status}'.", "info")
         return project
 
+    async def update(self, project_id: int, **kwargs) -> Optional[Dict[str, Any]]:
+        """Mettre à jour des champs arbitraires d'un projet."""
+        return await update_project(project_id, **kwargs)
+
     async def update_progress(self, project_id: int, progress: float) -> Optional[Dict[str, Any]]:
         """Mettre à jour la progression d'un projet."""
         return await update_project(project_id, progress=min(100.0, max(0.0, progress)))

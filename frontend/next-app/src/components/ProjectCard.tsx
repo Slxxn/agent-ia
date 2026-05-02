@@ -1,100 +1,322 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { ArrowRight, Trash2, MoreHorizontal, ExternalLink } from "lucide-react";
 import { Project } from "@/lib/api";
+import StatusBadge from "@/components/ui/StatusBadge";
+import Modal from "@/components/ui/Modal";
 
 interface ProjectCardProps {
   project: Project;
   onDelete?: (id: number) => void;
+  index?: number;
 }
 
-export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
-  const statusColors: Record<string, string> = {
-    idle: "status-idle",
-    running: "status-running",
-    paused: "status-paused",
-    done: "status-done",
-    error: "status-error",
-  };
-
-  const statusLabels: Record<string, string> = {
-    idle: "Inactif",
-    running: "En cours",
-    paused: "En pause",
-    done: "Terminé",
-    error: "Erreur",
-  };
-
-  const progressColor =
-    project.status === "error"
-      ? "from-red-500 to-red-600"
-      : project.status === "done"
-      ? "from-green-500 to-green-600"
-      : "from-blue-500 to-blue-600";
-
-  const handleDelete = () => {
-    if (
-      onDelete &&
-      confirm(`Supprimer le projet "${project.name}" ? Cette action est irréversible.`)
-    ) {
-      onDelete(project.id);
-    }
-  };
+function ProgressBar({ progress, status }: { progress: number; status: string }) {
+  const color =
+    status === "error"  ? "var(--error)"
+    : status === "done"   ? "var(--success)"
+    : status === "paused" ? "var(--warning)"
+    : "var(--running)";
 
   return (
-    <div className="bg-dark-800 border border-dark-700 rounded-lg p-5 hover:border-blue-500 transition-colors flex flex-col gap-3">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <Link href={`/projects/${project.id}`}>
-          <h3 className="text-base font-semibold text-white hover:text-blue-400 cursor-pointer leading-tight">
-            {project.name}
-          </h3>
-        </Link>
-        <span className={`status-badge ${statusColors[project.status]} ml-2 shrink-0`}>
-          {statusLabels[project.status]}
+    <div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 7,
+        }}
+      >
+        <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 500 }}>
+          Progression
+        </span>
+        <span style={{ fontSize: 12, fontWeight: 600, color, letterSpacing: "-0.01em" }}>
+          {Math.round(progress)}%
         </span>
       </div>
-
-      {project.description && (
-        <p className="text-gray-400 text-sm line-clamp-2">{project.description}</p>
-      )}
-
-      {/* Barre de progression */}
-      <div>
-        <div className="flex justify-between items-center mb-1.5">
-          <span className="text-xs text-gray-500">Progression</span>
-          <span className="text-xs font-semibold text-blue-400">
-            {Math.round(project.progress)}%
-          </span>
-        </div>
-        <div className="w-full bg-dark-700 rounded-full h-2 overflow-hidden">
-          <div
-            className={`bg-gradient-to-r ${progressColor} h-full transition-all duration-500`}
-            style={{ width: `${project.progress}%` }}
-          />
+      <div
+        style={{
+          width: "100%",
+          height: 4,
+          background: "var(--surface3)",
+          borderRadius: 99,
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${progress}%`,
+            background: color,
+            borderRadius: 99,
+            transition: "width 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {status === "running" && (
+            <span className="progress-shimmer" style={{ position: "absolute", inset: 0 }} />
+          )}
         </div>
       </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
-        <span>Créé le {new Date(project.created_at).toLocaleDateString("fr-FR")}</span>
-        <Link
-          href={`/projects/${project.id}`}
-          className="text-blue-400 hover:text-blue-300 font-medium"
-        >
-          Voir →
-        </Link>
-      </div>
-
-      {/* Bouton Supprimer — visible sur tous les statuts SAUF "running" */}
-      {onDelete && project.status !== "running" && (
-        <button
-          onClick={handleDelete}
-          className="w-full px-3 py-1.5 text-xs font-medium text-red-400 border border-red-900/40 hover:bg-red-900/20 rounded-lg transition-colors"
-        >
-          🗑 Supprimer
-        </button>
-      )}
     </div>
+  );
+}
+
+export default function ProjectCard({ project, onDelete, index = 0 }: ProjectCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
+  const handleDeleteConfirm = () => {
+    setDeleteModalOpen(false);
+    onDelete?.(project.id);
+  };
+
+  const canDelete = project.status !== "running";
+
+  const createdAt = new Date(project.created_at);
+  const diffDays = Math.floor((Date.now() - createdAt.getTime()) / 86400000);
+  const dateLabel =
+    diffDays === 0 ? "Aujourd'hui"
+    : diffDays === 1 ? "Hier"
+    : diffDays < 7 ? `Il y a ${diffDays} j`
+    : createdAt.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
+        whileHover={{ y: -2, transition: { duration: 0.2 } }}
+        style={{
+          background: "var(--surface)",
+          border: "1px solid var(--bd)",
+          borderRadius: 12,
+          padding: "18px 20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+          position: "relative",
+        }}
+        className="group"
+      >
+        {/* ── Top: status badge + overflow menu ── */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+          <StatusBadge status={project.status as any} />
+
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 7,
+                border: "1px solid transparent",
+                background: "transparent",
+                color: "var(--muted)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                const btn = e.currentTarget;
+                btn.style.background = "var(--surface3)";
+                btn.style.borderColor = "var(--bd-bright)";
+                btn.style.color = "var(--text)";
+              }}
+              onMouseLeave={(e) => {
+                const btn = e.currentTarget;
+                btn.style.background = "transparent";
+                btn.style.borderColor = "transparent";
+                btn.style.color = "var(--muted)";
+              }}
+            >
+              <MoreHorizontal size={14} />
+            </button>
+
+            {menuOpen && (
+              <>
+                <div
+                  style={{ position: "fixed", inset: 0, zIndex: 10 }}
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "calc(100% + 4px)",
+                    background: "var(--surface2)",
+                    border: "1px solid var(--bd-bright)",
+                    borderRadius: 9,
+                    padding: "4px",
+                    minWidth: 140,
+                    zIndex: 20,
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+                  }}
+                >
+                  <Link href={`/project?id=${project.id}`} style={{ textDecoration: "none" }} onClick={() => setMenuOpen(false)}>
+                    <div
+                      style={{
+                        display: "flex", alignItems: "center", gap: 8,
+                        padding: "7px 10px", borderRadius: 6,
+                        color: "var(--text2)", fontSize: 13, cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--surface3)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                    >
+                      <ArrowRight size={13} />
+                      Ouvrir
+                    </div>
+                  </Link>
+                  {canDelete && (
+                    <div
+                      onClick={() => { setMenuOpen(false); setDeleteModalOpen(true); }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 8,
+                        padding: "7px 10px", borderRadius: 6,
+                        color: "var(--error)", fontSize: 13, cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--error-bg)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                    >
+                      <Trash2 size={13} />
+                      Supprimer
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── Name + description ── */}
+        <div>
+          <Link href={`/project?id=${project.id}`} style={{ textDecoration: "none" }}>
+            <h3
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: "var(--text)",
+                letterSpacing: "-0.01em",
+                lineHeight: 1.35,
+                marginBottom: project.description ? 4 : 0,
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={(e) => { (e.target as HTMLElement).style.color = "var(--accent)"; }}
+              onMouseLeave={(e) => { (e.target as HTMLElement).style.color = "var(--text)"; }}
+            >
+              {project.name}
+            </h3>
+          </Link>
+          {project.description && (
+            <p
+              style={{
+                fontSize: 12,
+                color: "var(--muted)",
+                lineHeight: 1.55,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {project.description}
+            </p>
+          )}
+        </div>
+
+        {/* ── Progress bar ── */}
+        <ProgressBar progress={project.progress} status={project.status} />
+
+        {/* ── Deploy URL ── */}
+        {project.deploy_url && (
+          <a
+            href={project.deploy_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 11,
+              fontWeight: 500,
+              color: "var(--success)",
+              textDecoration: "none",
+              background: "var(--success-bg)",
+              border: "1px solid var(--success-border)",
+              borderRadius: 6,
+              padding: "4px 8px",
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
+              maxWidth: "100%",
+            }}
+          >
+            <ExternalLink size={10} style={{ flexShrink: 0 }} />
+            {project.deploy_url.replace("https://", "")}
+          </a>
+        )}
+
+        {/* ── Footer ── */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingTop: 6,
+            borderTop: "1px solid var(--bd)",
+          }}
+        >
+          <span style={{ fontSize: 11, color: "var(--muted2)" }}>{dateLabel}</span>
+          <Link
+            href={`/project?id=${project.id}`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 12,
+              fontWeight: 500,
+              color: "var(--accent)",
+              textDecoration: "none",
+              padding: "4px 8px",
+              borderRadius: 6,
+              border: "1px solid transparent",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.background = "var(--primary-muted)";
+              el.style.borderColor = "var(--primary-border)";
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.background = "transparent";
+              el.style.borderColor = "transparent";
+            }}
+          >
+            Voir <ArrowRight size={11} />
+          </Link>
+        </div>
+      </motion.div>
+
+      <Modal
+        open={deleteModalOpen}
+        title="Supprimer le projet"
+        description={`Voulez-vous vraiment supprimer "${project.name}" ? Cette action est irréversible et supprimera tous les fichiers générés.`}
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteModalOpen(false)}
+      />
+    </>
   );
 }

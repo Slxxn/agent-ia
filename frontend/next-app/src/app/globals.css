@@ -2,118 +2,158 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
+/* ── Design Tokens ── */
+:root {
+  --bg:       #08080C;
+  --surface:  #0E0E15;
+  --surface2: #13131C;
+  --surface3: #1A1A26;
+
+  --bd:        #1E1E30;
+  --bd-bright: #282840;
+
+  --primary:        #6366F1;
+  --primary-hover:  #4F46E5;
+  --primary-muted:  rgba(99, 102, 241, 0.10);
+  --primary-border: rgba(99, 102, 241, 0.22);
+  --primary-glow:   rgba(99, 102, 241, 0.16);
+
+  --accent:  #818CF8;
+  --accent2: #38BDF8;
+
+  --text:   #F2F2F6;
+  --text2:  #BCBCCC;
+  --muted:  #78788C;
+  --muted2: #4C4C62;
+
+  --success:        #22C55E;
+  --success-bg:     rgba(34, 197, 94, 0.08);
+  --success-border: rgba(34, 197, 94, 0.20);
+
+  --error:        #EF4444;
+  --error-bg:     rgba(239, 68, 68, 0.08);
+  --error-border: rgba(239, 68, 68, 0.20);
+
+  --warning:        #F59E0B;
+  --warning-bg:     rgba(245, 158, 11, 0.08);
+  --warning-border: rgba(245, 158, 11, 0.20);
+
+  --running:        #3B82F6;
+  --running-bg:     rgba(59, 130, 246, 0.08);
+  --running-border: rgba(59, 130, 246, 0.20);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
-  background-color: #0f172a;
-  color: #f1f5f9;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bd-bright); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted2); }
 
-::-webkit-scrollbar-track {
-  background: #1e293b;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #475569;
+/* ── Focus ring ── */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-.animate-slide-in {
-  animation: slideIn 0.3s ease-in-out;
-}
-
-/* Status badges */
-.status-badge {
-  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
-}
-
-.status-idle {
-  @apply bg-gray-700 text-gray-100;
-}
-
-.status-running {
-  @apply bg-blue-900 text-blue-100;
-}
-
-.status-paused {
-  @apply bg-yellow-900 text-yellow-100;
-}
-
-.status-done {
-  @apply bg-green-900 text-green-100;
-}
-
-.status-error {
-  @apply bg-red-900 text-red-100;
-}
-
-/* Log levels */
-.log-info {
-  @apply text-gray-300;
-}
-
-.log-debug {
-  @apply text-gray-400;
-}
-
-.log-warning {
-  @apply text-yellow-300;
-}
-
-.log-error {
-  @apply text-red-300;
-}
-
+/* ── Skeleton shimmer ── */
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  from { background-position: -600px 0; }
+  to   { background-position:  600px 0; }
 }
 
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface2) 0%,
+    var(--surface3) 50%,
+    var(--surface2) 100%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 6px;
+}
+
+/* ── Progress bar shimmer ── */
+@keyframes progress-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.progress-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.25) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-shimmer 1.6s linear infinite;
+}
+
+/* ── Dot pulse ── */
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.25); }
+}
+
+.dot-pulse { animation: dot-pulse 1.8s ease-in-out infinite; }
+
+/* ── Fade in ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+
+/* ── Settings nav link ── */
+.settings-link {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  text-decoration: none;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.settings-link:hover {
+  color: var(--text2);
+  background: var(--surface3);
+  border-color: var(--bd-bright);
+}
+
+/* ── Log level colours ── */
+.log-info    { color: var(--text2); }
+.log-debug   { color: var(--muted); }
+.log-warning { color: var(--warning); }
+.log-error   { color: var(--error); }
+
+/* ── Status badge base (legacy compat) ── */
+.status-badge {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+.status-idle    { background: var(--surface3); color: var(--muted); border: 1px solid var(--bd-bright); }
+.status-running { background: var(--running-bg); color: var(--running); border: 1px solid var(--running-border); }
+.status-paused  { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
+.status-done    { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+.status-error   { background: var(--error-bg);   color: var(--error);   border: 1px solid var(--error-border); }

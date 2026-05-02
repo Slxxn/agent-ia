@@ -8,7 +8,7 @@ from typing import Optional, List
 from backend.core.project_manager import project_manager
 from backend.core.task_manager import task_manager
 from backend.agent.runner import AgentRunner
-from backend.db.database import get_tasks_by_project
+from backend.db.database import get_tasks_by_project, get_brief, get_tokens_used
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -22,15 +22,22 @@ class ProjectCreate(BaseModel):
 class ProjectStart(BaseModel):
     objective: str
 
+class ProjectBriefRequest(BaseModel):
+    objective: str
+    settings: dict = {}
+
 class ProjectResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = ""
+    objective: Optional[str] = ""
     status: str
     progress: float
     created_at: str
     updated_at: str
     workspace_path: str
+    tokens_used: Optional[int] = 0
+    deploy_url: Optional[str] = ""
 
 class TaskResponse(BaseModel):
     id: int
@@ -79,12 +86,46 @@ async def delete_project(project_id: int):
     return {"message": "Projet supprimé."}
 
 
+@router.post("/{project_id}/brief")
+async def build_project_brief(project_id: int, data: ProjectBriefRequest):
+    """Générer le brief créatif (palette, fonts, narrative) sans démarrer l'exécution."""
+    project = await project_manager.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé.")
+
+    from backend.tools.llm import LLMTool
+    from backend.agent.planner import AgentPlanner
+
+    llm = LLMTool()
+    planner = AgentPlanner(llm)
+    result = await planner.build_plan(data.objective, settings=data.settings, project_id=project_id)
+
+    await project_manager.update(project_id, objective=data.objective)
+    return result
+
+
+@router.get("/{project_id}/brief")
+async def get_project_brief(project_id: int):
+    """Récupérer le brief créatif sauvegardé d'un projet."""
+    project = await project_manager.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé.")
+
+    brief = await get_brief(project_id)
+    if not brief:
+        raise HTTPException(status_code=404, detail="Brief non trouvé.")
+    return brief
+
+
 @router.post("/{project_id}/start")
 async def start_project(project_id: int, data: ProjectStart):
     """Démarrer l'exécution d'un projet."""
     project = await project_manager.get(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Projet non trouvé.")
+
+    # Sauvegarder l'objectif en base
+    await project_manager.update(project_id, objective=data.objective)
 
     result = await AgentRunner.start_project(project_id, data.objective)
     if not result.get("success"):
@@ -127,6 +168,29 @@ async def resume_project(project_id: int):
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error"))
     return result
+
+
+@router.post("/{project_id}/deploy")
+async def deploy_project(project_id: int):
+    """Déclencher le déploiement Firebase d'un projet existant."""
+    project = await project_manager.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé.")
+
+    workspace_path = await project_manager.get_workspace_path(project_id)
+    if not workspace_path:
+        raise HTTPException(status_code=400, detail="Workspace introuvable.")
+
+    import asyncio
+    async def _run_deploy():
+        from backend.db.database import add_log, update_project
+        await add_log(project_id, "🚀 Déploiement manuel déclenché...", "info")
+        url = await AgentRunner._deploy_firebase(project_id, workspace_path)
+        if url:
+            await update_project(project_id, deploy_url=url)
+
+    asyncio.create_task(_run_deploy())
+    return {"success": True, "message": "Déploiement démarré en arrière-plan."}
 
 
 @router.get("/{project_id}/tasks", response_model=List[TaskResponse])
@@ -175,3 +239,41 @@ async def read_project_file(project_id: int, file_path: str):
         raise HTTPException(status_code=404, detail=result.get("error", "Fichier non trouvé."))
 
     return result
+
+
+@router.post("/{project_id}/validate-visual")
+async def validate_visual(project_id: int):
+    """Lancer la validation visuelle manuellement sur un projet terminé."""
+    import asyncio
+    from backend.tools.filesystem import FilesystemTool
+    from backend.tools.terminal import TerminalTool
+    from backend.tools.llm import LLMTool
+    from backend.agent.executor import AgentExecutor
+    from backend.agent.visual_validator import VisualValidator
+    from backend.agent.project_brain import ProjectBrain
+    from backend.db.database import add_log
+
+    project = await project_manager.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé.")
+
+    workspace_path = await project_manager.get_workspace_path(project_id)
+    if not workspace_path:
+        raise HTTPException(status_code=404, detail="Workspace non trouvé.")
+
+    async def _run():
+        await add_log(project_id, "🎨 Validation visuelle lancée manuellement…", "info")
+        try:
+            fs  = FilesystemTool(workspace_path)
+            t   = TerminalTool(workspace_path)
+            llm = LLMTool()
+            brain   = ProjectBrain(project_id, workspace_path)
+            executor = AgentExecutor(fs, t, llm, brain=brain)
+            validator = VisualValidator(executor=executor)
+            await validator.run_validation_loop(project_id, workspace_path)
+            await add_log(project_id, "✅ Validation visuelle terminée.", "info")
+        except Exception as e:
+            await add_log(project_id, f"❌ Erreur validation visuelle : {e}", "error")
+
+    asyncio.create_task(_run())
+    return {"success": True, "message": "Validation visuelle démarrée."}

@@ -17,6 +17,7 @@ from backend.api.projects import router as projects_router
 from backend.api.logs import router as logs_router
 from backend.api.env import router as env_router
 from backend.api.chat import router as chat_router
+from backend.api.settings import router as settings_router
 from backend.tools.llm import LLMTool
 
 
@@ -27,6 +28,16 @@ async def lifespan(app: FastAPI):
     print("🚀 Initialisation de la base de données...")
     await init_db()
     print("✅ Base de données initialisée.")
+
+    # Remettre à "idle" les projets bloqués en "running"/"paused" après un crash/redémarrage
+    from backend.db.database import get_db
+    _db = await get_db()
+    try:
+        await _db.execute("UPDATE projects SET status = 'idle' WHERE status IN ('running', 'paused')")
+        await _db.commit()
+    finally:
+        await _db.close()
+    print("✅ Projets orphelins remis à idle.")
 
     # Vérifier la connexion au backend LLM
     llm = LLMTool()
@@ -70,6 +81,7 @@ app.add_middleware(
 app.include_router(logs_router, prefix="/api")
 app.include_router(env_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
+app.include_router(settings_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")
 
 

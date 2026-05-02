@@ -30,11 +30,14 @@ async def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 description TEXT DEFAULT '',
+                objective TEXT DEFAULT '',
                 status TEXT DEFAULT 'idle' CHECK(status IN ('idle','running','paused','error','done')),
                 progress REAL DEFAULT 0.0,
                 created_at TEXT DEFAULT (datetime('now')),
                 updated_at TEXT DEFAULT (datetime('now')),
-                workspace_path TEXT DEFAULT ''
+                workspace_path TEXT DEFAULT '',
+                tokens_used INTEGER DEFAULT 0,
+                brief TEXT DEFAULT ''
             );
 
             CREATE TABLE IF NOT EXISTS tasks (
@@ -60,11 +63,31 @@ async def init_db():
                 FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT DEFAULT '',
+                encrypted INTEGER DEFAULT 0,
+                updated_at TEXT DEFAULT (datetime('now'))
+            );
+
             CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
             CREATE INDEX IF NOT EXISTS idx_logs_project ON logs(project_id);
             CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(project_id, timestamp);
         """)
         await db.commit()
+
+        # Migrations — colonnes ajoutées progressivement
+        for migration in [
+            "ALTER TABLE projects ADD COLUMN objective TEXT DEFAULT ''",
+            "ALTER TABLE projects ADD COLUMN tokens_used INTEGER DEFAULT 0",
+            "ALTER TABLE projects ADD COLUMN brief TEXT DEFAULT ''",
+            "ALTER TABLE projects ADD COLUMN deploy_url TEXT DEFAULT ''",
+        ]:
+            try:
+                await db.execute(migration)
+                await db.commit()
+            except Exception:
+                pass  # colonne déjà présente
     finally:
         await db.close()
 
@@ -120,7 +143,7 @@ async def update_project(project_id: int, **kwargs) -> Optional[Dict[str, Any]]:
     """Mettre à jour un projet."""
     db = await get_db()
     try:
-        allowed = {"name", "description", "status", "progress", "workspace_path"}
+        allowed = {"name", "description", "objective", "status", "progress", "workspace_path", "tokens_used", "brief", "deploy_url"}
         fields = {k: v for k, v in kwargs.items() if k in allowed}
         if not fields:
             return await get_project(project_id)
@@ -141,6 +164,127 @@ async def delete_project(project_id: int) -> bool:
         cursor = await db.execute("DELETE FROM projects WHERE id = ?", (project_id,))
         await db.commit()
         return cursor.rowcount > 0
+    finally:
+        await db.close()
+
+
+async def add_tokens_used(project_id: int, tokens: int) -> None:
+    """Ajouter des tokens au compteur du projet (opération atomique)."""
+    if tokens <= 0:
+        return
+    db = await get_db()
+    try:
+        await db.execute(
+            "UPDATE projects SET tokens_used = tokens_used + ?, updated_at = datetime('now') WHERE id = ?",
+            (tokens, project_id)
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+
+async def get_tokens_used(project_id: int) -> int:
+    """Retourner le nombre total de tokens consommés par un projet."""
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT tokens_used FROM projects WHERE id = ?", (project_id,))
+        row = await cursor.fetchone()
+        return row["tokens_used"] if row else 0
+    finally:
+        await db.close()
+
+
+async def save_brief(project_id: int, brief_data: dict) -> None:
+    """Sauvegarder le brief JSON d'un projet."""
+    db = await get_db()
+    try:
+        await db.execute(
+            "UPDATE projects SET brief = ?, updated_at = datetime('now') WHERE id = ?",
+            (json.dumps(brief_data, ensure_ascii=False), project_id)
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+
+async def get_brief(project_id: int) -> Optional[dict]:
+    """Récupérer le brief JSON d'un projet."""
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT brief FROM projects WHERE id = ?", (project_id,))
+        row = await cursor.fetchone()
+        if row and row["brief"]:
+            try:
+                return json.loads(row["brief"])
+            except Exception:
+                return None
+        return None
+    finally:
+        await db.close()
+
+
+# ─── Table settings ───
+
+async def get_setting(key: str) -> Optional[str]:
+    """Récupérer une valeur de réglage (déchiffrée si nécessaire)."""
+    db = await get_db()
+    try:
+        cursor = await db.execute(
+            "SELECT value, encrypted FROM settings WHERE key = ?", (key,)
+        )
+        row = await cursor.fetchone()
+        if not row:
+            return None
+        val = row["value"]
+        if row["encrypted"] and val:
+            try:
+                from backend.core.settings_crypto import decrypt_value
+                return decrypt_value(val)
+            except Exception:
+                return val
+        return val
+    finally:
+        await db.close()
+
+
+async def set_setting(key: str, value: str, encrypted: bool = False) -> None:
+    """Créer ou mettre à jour un réglage."""
+    db = await get_db()
+    try:
+        stored = value
+        if encrypted and value:
+            try:
+                from backend.core.settings_crypto import encrypt_value
+                stored = encrypt_value(value)
+            except Exception:
+                pass
+        await db.execute(
+            """INSERT INTO settings (key, value, encrypted)
+               VALUES (?, ?, ?)
+               ON CONFLICT(key) DO UPDATE SET value=excluded.value,
+                 encrypted=excluded.encrypted,
+                 updated_at=datetime('now')""",
+            (key, stored, 1 if encrypted else 0)
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+
+async def get_all_settings() -> list[dict]:
+    """Retourner tous les réglages (valeurs sensibles masquées)."""
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT key, value, encrypted FROM settings ORDER BY key")
+        rows = await cursor.fetchall()
+        result = []
+        for row in rows:
+            val = row["value"] or ""
+            if row["encrypted"] and len(val) > 8:
+                # Masquer : sk_test_...XXXX
+                val = val[:8] + "..." + val[-4:]
+            result.append({"key": row["key"], "value": val, "encrypted": bool(row["encrypted"])})
+        return result
     finally:
         await db.close()
 
