@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['firebase'],
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:8000/api/:path*',
+      },
+    ];
+  },
   webpack: (config) => {
     // Firebase Storage's Node build imports undici which uses private class fields
     // incompatible with Next.js webpack. Alias it to false so Firebase falls back
