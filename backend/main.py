@@ -18,6 +18,7 @@ from backend.api.logs import router as logs_router
 from backend.api.env import router as env_router
 from backend.api.chat import router as chat_router
 from backend.api.settings import router as settings_router
+from backend.api.gemini_preview import router as gemini_preview_router
 from backend.tools.llm import LLMTool
 
 
@@ -82,6 +83,7 @@ app.include_router(logs_router, prefix="/api")
 app.include_router(env_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
 app.include_router(settings_router, prefix="/api")
+app.include_router(gemini_preview_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")
 
 

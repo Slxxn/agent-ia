@@ -617,8 +617,60 @@ function Step4({
   );
 }
 
+// ─── Gemini Suggestions types ─────────────────────────────────────────────────
+interface GeminiStat { emoji: string; value: string; label: string; }
+interface GeminiSuggestions {
+  palette?: { primary: string; secondary: string; accent: string; background: string; names?: string[] };
+  ambiance?: string;
+  typography?: { display: string; body: string };
+  stats?: GeminiStat[];
+  sections?: string[];
+  animations?: string;
+  tip?: string;
+}
+
 // ─── Step 5: Finir ────────────────────────────────────────────────────────────
 function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unknown) => void }) {
+  const [geminiLoading, setGeminiLoading] = useState(false);
+  const [geminiSuggestions, setGeminiSuggestions] = useState<GeminiSuggestions | null>(null);
+  const [geminiError, setGeminiError] = useState('');
+
+  const fetchGemini = async () => {
+    setGeminiLoading(true);
+    setGeminiError('');
+    try {
+      const res = await fetch('/api/gemini-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName: form.businessName,
+          sector: form.sector,
+          siteGoal: form.siteGoal,
+          tagline: form.tagline,
+          description: form.description,
+          targetAudience: form.targetAudience,
+          uniqueValue: form.uniqueValue,
+          colors: form.colors,
+          colorTheme: form.colorTheme,
+          visualStyle: form.visualStyle,
+          pages: form.pages,
+          features: form.features,
+          budget: form.budget,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGeminiSuggestions(data.suggestions);
+      } else {
+        setGeminiError(data.error || 'Erreur inconnue');
+      }
+    } catch {
+      setGeminiError('Impossible de contacter le serveur');
+    } finally {
+      setGeminiLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -665,6 +717,116 @@ function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unkn
         <Row label="Pages" value={`${form.pages.length} page(s)`} />
         <Row label="Fonctionnalités" value={`${form.features.length} sélectionnée(s)`} />
         <Row label="Budget" value={form.budget} />
+      </div>
+
+      {/* Gemini Suggestions */}
+      <div>
+        <button
+          type="button"
+          onClick={fetchGemini}
+          disabled={geminiLoading}
+          className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold border border-indigo-500/60 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 hover:text-indigo-200 transition-all disabled:opacity-50"
+        >
+          {geminiLoading ? (
+            <>
+              <span className="inline-block w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+              Analyse en cours…
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              Suggestions IA pour mon projet
+            </>
+          )}
+        </button>
+
+        {geminiError && (
+          <p className="mt-2 text-sm text-red-400 text-center">{geminiError}</p>
+        )}
+
+        {geminiSuggestions && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 space-y-5"
+          >
+            {/* Palette */}
+            {geminiSuggestions.palette && (
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Palette recommandée</div>
+                <div className="flex gap-3 flex-wrap">
+                  {(['primary', 'secondary', 'accent', 'background'] as const).map((key, i) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <div
+                        className="w-8 h-8 rounded-lg border border-white/10 shadow-md"
+                        style={{ backgroundColor: geminiSuggestions.palette![key] }}
+                      />
+                      <div>
+                        <div className="text-xs text-gray-400">{geminiSuggestions.palette!.names?.[i] ?? key}</div>
+                        <div className="text-xs text-gray-600 font-mono">{geminiSuggestions.palette![key]}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {geminiSuggestions.ambiance && (
+                  <p className="text-sm text-gray-400 italic">{geminiSuggestions.ambiance}</p>
+                )}
+              </div>
+            )}
+
+            {/* Stats */}
+            {geminiSuggestions.stats && geminiSuggestions.stats.length > 0 && (
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Impact estimé</div>
+                <div className="grid grid-cols-2 gap-3">
+                  {geminiSuggestions.stats.map((s, i) => (
+                    <div key={i} className="bg-gray-800 rounded-lg p-3">
+                      <div className="text-xl mb-1">{s.emoji}</div>
+                      <div className="text-lg font-bold text-white">{s.value}</div>
+                      <div className="text-xs text-gray-400 leading-tight mt-0.5">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sections + Typography */}
+            {(geminiSuggestions.sections || geminiSuggestions.typography) && (
+              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+                {geminiSuggestions.typography && (
+                  <div>
+                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Typographie</div>
+                    <div className="text-sm text-gray-300">
+                      <span className="text-white">{geminiSuggestions.typography.display}</span>
+                      <span className="text-gray-500"> / </span>
+                      <span>{geminiSuggestions.typography.body}</span>
+                    </div>
+                  </div>
+                )}
+                {geminiSuggestions.sections && (
+                  <div>
+                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Sections recommandées</div>
+                    <ul className="space-y-1">
+                      {geminiSuggestions.sections.map((s, i) => (
+                        <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
+                          <span className="text-indigo-400 mt-0.5">›</span> {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tip */}
+            {geminiSuggestions.tip && (
+              <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-4">
+                <div className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-1">Conseil expert</div>
+                <p className="text-sm text-gray-200">{geminiSuggestions.tip}</p>
+              </div>
+            )}
+          </motion.div>
+        )}
       </div>
     </div>
   );

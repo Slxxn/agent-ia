@@ -1350,6 +1350,55 @@ Réponds UNIQUEMENT en JSON :
         validator_model = route_model(task_type="validator_check")
         return await self.call_ollama(prompt, system_prompt=system_prompt, temperature=0.2, model_override=validator_model)
 
+    async def generate_image_keywords(self, objective: str, sector: str = "") -> Dict[str, str]:
+        """Gemini identifie les besoins en images et génère les keywords Unsplash."""
+        system = """Tu es un directeur artistique. Tu reçois un brief de site web et tu identifies les images nécessaires.
+Réponds UNIQUEMENT en JSON : { "slot_name": "unsplash search query in english", ... }
+Max 8 images. Slots typiques : hero, about, service_1, service_2, gallery_1, gallery_2, team, background.
+Les queries doivent être précises et en anglais pour Unsplash."""
+        prompt = f"Brief : {objective}\nSecteur : {sector}\nIdentifie les images nécessaires avec leurs keywords Unsplash."
+        model = _gemini_or(DEEPSEEK_MODEL_FLASH)
+        result = await self.call_ollama(prompt, system_prompt=system, temperature=0.2, model_override=model)
+        content = result.get("content", "{}")
+        import json, re
+        try:
+            m = re.search(r'\{[\s\S]*\}', content)
+            return json.loads(m.group()) if m else {}
+        except Exception:
+            return {}
+
+    async def generate_copywriting(self, objective: str, sector: str = "", brand_name: str = "") -> str:
+        """Gemini génère tous les textes réalistes du site avant la génération DeepSeek."""
+        system = """Tu es un copywriter expert. Tu génères du contenu textuel réaliste et percutant pour un site web.
+Génère :
+- Titre hero accrocheur (max 8 mots)
+- Sous-titre hero (1-2 phrases)
+- 3-4 services/produits avec nom, description courte et prix indicatif
+- 2-3 témoignages clients réalistes avec prénom et ville
+- Section "À propos" (3-4 phrases)
+- 3-4 FAQ pertinentes avec réponses
+- CTA principal et secondaire
+
+Adapte 100% au secteur et à la marque. Pas de texte générique.
+Réponds en français, en texte structuré avec des titres clairs."""
+        prompt = f"Marque : {brand_name}\nSecteur : {sector}\nBrief : {objective}\n\nGénère tout le contenu textuel du site."
+        model = _gemini_or(DEEPSEEK_MODEL_FLASH)
+        result = await self.call_ollama(prompt, system_prompt=system, temperature=0.5, model_override=model)
+        return result.get("content", "")
+
+    async def check_missing_tasks(self, objective: str, tasks: list) -> str:
+        """Gemini relit le plan et identifie les tâches manquantes."""
+        import json
+        system = """Tu es un architecte front-end. Tu reçois un brief et une liste de tâches planifiées.
+Tu identifies ce qui manque : composants oubliés, pages non créées, hooks non définis, fichiers de données manquants.
+Sois concis. Si tout est complet, réponds "RAS".
+Réponds avec une liste courte des manques critiques uniquement."""
+        tasks_str = "\n".join([f"- {t.get('description', t)}" for t in tasks[:20]])
+        prompt = f"Brief : {objective}\n\nTâches planifiées :\n{tasks_str}\n\nQu'est-ce qui manque ?"
+        model = _gemini_or(DEEPSEEK_MODEL_FLASH)
+        result = await self.call_ollama(prompt, system_prompt=system, temperature=0.2, model_override=model)
+        return result.get("content", "RAS")
+
     async def structure_brief(self, raw_objective: str) -> str:
         """Passe le brief brut par Gemini Flash pour le transformer en spec technique claire."""
         system = """Tu es un architecte front-end senior. Tu reçois une demande client brute et tu la transformes en spec technique précise pour un agent de génération de code.

@@ -298,9 +298,24 @@ class BuildValidator:
         For interface-mismatch errors, find the defining file and include it.
         Covers TS2339 (property), TS2554 (arg count), TS2305 (no export), TS2345 (type mismatch).
         """
-        CONTEXT_CODES = {"TS2339", "TS2554", "TS2305", "TS2345", "TS2304"}
+        CONTEXT_CODES = {"TS2339", "TS2554", "TS2305", "TS2345", "TS2304", "TS2551"}
         extra_parts: list[str] = []
         seen_symbols: set[str] = set()
+        seen_paths: set[str] = set()
+
+        # Always include src/types/index.ts if it exists (common source of interface definitions)
+        types_candidates = ["src/types/index.ts", "src/types.ts", "src/types/index.tsx"]
+        for tc in types_candidates:
+            tp = os.path.join(workspace_path, tc)
+            if os.path.exists(tp):
+                try:
+                    with open(tp, encoding="utf-8") as f:
+                        tc_content = f.read()[:3000]
+                    extra_parts.append(f"// Types du projet ({tc}):\n```typescript\n{tc_content}\n```")
+                    seen_paths.add(tc)
+                except OSError:
+                    pass
+                break
 
         for err in errors:
             if err.code not in CONTEXT_CODES:
@@ -318,12 +333,28 @@ class BuildValidator:
                         found = self._find_symbol_source(sym, workspace_path)
                         if found:
                             rel_path, content = found
-                            extra_parts.append(
-                                f"// Définition de '{sym}' dans {rel_path}:\n"
-                                f"```typescript\n{content}\n```"
-                            )
+                            if rel_path not in seen_paths:
+                                seen_paths.add(rel_path)
+                                extra_parts.append(
+                                    f"// Définition de '{sym}' dans {rel_path}:\n"
+                                    f"```typescript\n{content}\n```"
+                                )
 
         return "\n\n".join(extra_parts)
+
+    # TS2551: Property 'X' does not exist … Did you mean 'Y'?
+    _TS2551_RE = re.compile(r"Property '(\w+)' does not exist.*Did you mean '(\w+)'", re.IGNORECASE)
+
+    def _apply_direct_fixes(self, content: str, errors: List["BuildError"]) -> str:
+        """Apply deterministic fixes for errors that have an unambiguous answer (no LLM needed)."""
+        for err in errors:
+            if err.code == "TS2551":
+                m = self._TS2551_RE.search(err.message)
+                if m:
+                    wrong, right = m.group(1), m.group(2)
+                    # Replace property access: .wrong and ['wrong'] and ["wrong"]
+                    content = re.sub(rf'\b{re.escape(wrong)}\b', right, content)
+        return content
 
     async def _fix_file(
         self,
@@ -338,6 +369,19 @@ class BuildValidator:
             return False
 
         current_content: str = read_result.get("content", "")
+
+        # Pre-pass: apply deterministic fixes (TS2551 "Did you mean?") without LLM
+        patched = self._apply_direct_fixes(current_content, errors)
+        if patched.strip() != current_content.strip():
+            write_result = self.filesystem.create_file(file_path, patched)
+            if write_result.get("success"):
+                await add_log(project_id, f"✅ '{file_path}' corrigé (substitution directe).", "info")
+                current_content = patched
+                # Filter out the TS2551 errors we just resolved
+                errors = [e for e in errors if e.code != "TS2551"]
+                if not errors:
+                    return True
+
         error_block = self._format_errors(errors)
 
         # Build cross-file context for interface mismatch errors

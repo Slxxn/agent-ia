@@ -312,6 +312,18 @@ class AgentExecutor:
         await add_log(project_id, f"🧠 [{COMPLEXITY_LABELS[complexity]}] → {model_name} (phase {phase})", "debug")
 
         brief = getattr(self, "_current_brief", None)
+
+        # Injecter le copywriting Gemini dans le contexte
+        copywriting = getattr(self, "_gemini_copywriting", None)
+        if copywriting:
+            context = f"## COPYWRITING (utilise ces textes dans les composants) :\n{copywriting}\n\n{context}"
+
+        # Injecter la map d'images Unsplash dans le contexte
+        image_map = getattr(self, "_image_map", None)
+        if image_map:
+            img_lines = "\n".join(f"- {slot}: {url}" for slot, url in image_map.items())
+            context = f"## IMAGES UNSPLASH (URLs réelles à utiliser, ne pas inventer d'autres URLs) :\n{img_lines}\n\n{context}"
+
         result = await self.llm.generate_code(
             task_description, context,
             model_override=model_name,

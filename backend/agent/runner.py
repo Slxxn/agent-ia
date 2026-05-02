@@ -249,6 +249,43 @@ class AgentRunner:
 
             total_tasks = len(task_ids)
 
+            # ── ÉTAPE 2b : Enrichissement Gemini ──
+            await add_log(project_id, "═══ PHASE 2b : ENRICHISSEMENT GEMINI ═══", "info")
+
+            # Vérification des tâches manquantes
+            try:
+                missing = await llm.check_missing_tasks(planning_objective, plan)
+                if missing and missing.strip():
+                    await add_log(project_id, f"Analyse plan Gemini : {missing}", "debug")
+            except Exception:
+                pass
+
+            # Génération du copywriting
+            _sector = ""
+            _brand = ""
+            if saved_brief:
+                _sector = saved_brief.get("project_type", "")
+                _brand = saved_brief.get("brand_details", {}).get("name", "")
+            try:
+                copywriting = await llm.generate_copywriting(planning_objective, sector=_sector, brand_name=_brand)
+                if copywriting and copywriting.strip():
+                    executor._gemini_copywriting = copywriting
+                    await add_log(project_id, "Copywriting Gemini généré.", "info")
+            except Exception:
+                pass
+
+            # Génération des mots-clés images Unsplash
+            try:
+                image_keywords = await llm.generate_image_keywords(planning_objective, sector=_sector)
+                if image_keywords:
+                    from backend.tools.unsplash import unsplash
+                    image_map = await unsplash.get_image_map(image_keywords, project_id)
+                    if image_map:
+                        executor._image_map = image_map
+                        await add_log(project_id, f"Images Unsplash récupérées : {len(image_map)} visuels.", "info")
+            except Exception:
+                pass
+
             # --- Nouveau : Check des variables d'environnement ---
             env_example = os.path.join(workspace_path, ".env.example")
             env_real = os.path.join(workspace_path, ".env")
