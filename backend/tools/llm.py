@@ -148,6 +148,55 @@ RÈGLES IMPÉRATIVES POUR LES PROJETS REACT/TYPESCRIPT :
      - accéder à item.name  (PAS item.product.name)
      - appeler addItem(product, quantity)  (PAS addItem({ product, quantity }))
    Toujours vérifier la signature de la fonction avant de l'appeler.
+
+9. EXEMPLE CANONIQUE — main.tsx (COPIER EXACTEMENT ce pattern) :
+```tsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import './styles/globals.css';
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode><BrowserRouter><App /></BrowserRouter></React.StrictMode>
+);
+```
+
+10. EXEMPLE CANONIQUE — App.tsx (providers AUTOUR de Routes, jamais de BrowserRouter) :
+```tsx
+import { Routes, Route } from 'react-router-dom';
+import { CartProvider } from './stores/cartStore';
+import Home from './pages/Home';
+function App() {
+  return (
+    <CartProvider>
+      <Routes>
+        <Route path="/" element={<Home />} />
+      </Routes>
+    </CartProvider>
+  );
+}
+export default App;
+```
+
+11. EXEMPLE CANONIQUE — cartStore.tsx (TOUS ces exports sont obligatoires) :
+```tsx
+import { createContext, useContext, useState, ReactNode } from 'react';
+interface CartItem { id: string; name: string; price: number; image: string; quantity: number; }
+interface CartCtx { items: CartItem[]; addItem: (p: Omit<CartItem,'quantity'>) => void; removeItem: (id: string) => void; clearCart: () => void; total: number; itemCount: number; }
+const CartContext = createContext<CartCtx | null>(null);
+export function CartProvider({ children }: { children: ReactNode }) {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const addItem = (p: Omit<CartItem,'quantity'>) => setItems(prev => { const ex = prev.find(i => i.id === p.id); return ex ? prev.map(i => i.id === p.id ? {...i, quantity: i.quantity+1} : i) : [...prev, {...p, quantity: 1}]; });
+  const removeItem = (id: string) => setItems(prev => prev.filter(i => i.id !== id));
+  const clearCart = () => setItems([]);
+  const total = items.reduce((s,i) => s + i.price * i.quantity, 0);
+  const itemCount = items.reduce((s,i) => s + i.quantity, 0);
+  return <CartContext.Provider value={{ items, addItem, removeItem, clearCart, total, itemCount }}>{children}</CartContext.Provider>;
+}
+export const useCart = () => { const ctx = useContext(CartContext); if (!ctx) throw new Error('useCart hors CartProvider'); return ctx; };
+export const useCartStore = useCart;
+export default CartProvider;
+```
 """
 
 ANTI_TRUNCATE_RULES = """\
@@ -627,6 +676,7 @@ _ROUTE_TABLE: dict[str, dict[str, str]] = {
     "scaffold":          {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_FLASH},
     "config":            {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_FLASH},
     "component_ui":      {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_FLASH},
+    "critical_structure":{"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_REASONER, "quality": DEEPSEEK_MODEL_REASONER},
     "section_emotional": {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_REASONER},
     "section_complex":   {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_REASONER, "quality": DEEPSEEK_MODEL_REASONER},
     "validator_check":   {"economy": _gemini_or(DEEPSEEK_MODEL_FLASH), "balanced": _gemini_or(DEEPSEEK_MODEL_FLASH),    "quality": _gemini_or(DEEPSEEK_MODEL_FLASH)},
@@ -1283,9 +1333,17 @@ Format :
         brief     : brief projet complet (injecté dans le system prompt si fourni)
         task      : dict de la tâche courante (pour section_id)
         """
-        prompt = task_description
+        SELF_CHECK = (
+            "\n\n✅ AVANT DE GÉNÉRER — vérifie mentalement :\n"
+            "□ Chaque hook React (useState/useEffect/useContext/useRef/useCallback) est importé depuis 'react'\n"
+            "□ Chaque composant Router (Routes/Route/Link/NavLink/Navigate/Outlet) est importé depuis 'react-router-dom'\n"
+            "□ Les champs accédés (item.X) correspondent EXACTEMENT à l'interface TypeScript définie\n"
+            "□ Toutes les balises JSX sont fermées et les accolades équilibrées\n"
+            "□ Aucun '...', 'TODO', placeholder ni fichier fantôme"
+        )
+        prompt = task_description + SELF_CHECK
         if context:
-            prompt = f"Contexte du projet :\n{context}\n\nTâche : {task_description}"
+            prompt = f"Contexte du projet :\n{context}\n\nTâche : {task_description}{SELF_CHECK}"
 
         # Choisir le modèle via le router (sauf si explicitement overridé)
         if model_override is None:

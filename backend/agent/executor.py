@@ -208,6 +208,13 @@ def _infer_task_type(description: str, complexity: str) -> str:
         return "scaffold"
     if any(k in d for k in ("globals.css", "design system", "tokens", "tailwind.config")):
         return "config"
+    # Critical structural files — use reasoner model for correctness
+    if any(k in d for k in ("types/index", "src/types", "interfaces typescript", "types typescript")):
+        return "critical_structure"
+    if any(k in d for k in ("cartstore", "cart store", "store panier", "panier store", "zustand store", "cartcontext", "cart context")):
+        return "critical_structure"
+    if any(k in d for k in ("app.tsx", "assemblage", "assembly", "toutes les routes", "routing complet", "all routes")):
+        return "critical_structure"
     if any(k in d for k in ("hero", "about", "landing", "vitrine", "accueil", "service", "problem", "solution", "témoignage", "testimonial", "cta final")):
         return "section_emotional"
     if any(k in d for k in ("pricing", "formulaire", "panier", "cart", "checkout", "paiement", "stripe")):
@@ -405,6 +412,53 @@ class AgentExecutor:
             "results": results,
             "summary": summary,
         }
+
+    async def prefetch_llm_response(
+        self,
+        project_id: int,
+        task_description: str,
+        context: str = "",
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Fire LLM call only — no file writes. Used for parallel section pre-fetching.
+        Returns parsed actions or None on failure."""
+        full_ctx = context
+        if self.brain:
+            bc = self.brain.get_context()
+            if bc:
+                full_ctx = f"## PROJET (Project Brain):\n{bc}\n\n{full_ctx}"
+
+        copywriting = getattr(self, "_gemini_copywriting", None)
+        if copywriting:
+            full_ctx = f"## COPYWRITING (utilise ces textes) :\n{copywriting}\n\n{full_ctx}"
+
+        image_map = getattr(self, "_image_map", None)
+        if image_map:
+            img_lines = "\n".join(f"- {slot}: {url}" for slot, url in image_map.items())
+            full_ctx = f"## IMAGES UNSPLASH :\n{img_lines}\n\n{full_ctx}"
+
+        if self._types_content:
+            full_ctx = f"## TYPES DU PROJET :\n```typescript\n{self._types_content}\n```\n\n{full_ctx}"
+
+        complexity = classify_task(task_description)
+        ttype = _infer_task_type(task_description, complexity)
+        phase = getattr(self, "_current_phase", 0)
+        model_name = route_model(task_type=ttype, phase=phase)
+        brief = getattr(self, "_current_brief", None)
+
+        result = await self.llm.generate_code(
+            task_description, full_ctx,
+            model_override=model_name,
+            task_type=ttype,
+            phase=phase,
+            brief=brief,
+        )
+        tokens = (result.get("prompt_tokens", 0) or 0) + (result.get("completion_tokens", 0) or 0)
+        if tokens > 0:
+            await add_tokens_used(project_id, tokens)
+        if not result.get("success"):
+            return None
+        actions = self._parse_actions(result.get("content", ""))
+        return actions or None
 
     async def execute_command(
         self,

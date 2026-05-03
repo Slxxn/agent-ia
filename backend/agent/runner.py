@@ -313,6 +313,9 @@ class AgentRunner:
                         break
                     await asyncio.sleep(1)
             
+            # ── ÉTAPE 2.9 : Config de base canonique ──
+            await cls._write_base_config(workspace_path, project_id)
+
             # ── ÉTAPE 3 : Exécution tâche par tâche ──
             await add_log(project_id, "═══ PHASE 3 : EXÉCUTION ═══", "info")
             project = await project_manager.get(project_id)
@@ -321,13 +324,77 @@ class AgentRunner:
             executor._current_brief = saved_brief
             executor._current_phase = 3
 
-            for i, task_id in enumerate(task_ids):
+            i = 0
+            while i < len(task_ids):
                 await cls._check_controls(project_id)
 
-                task = await task_manager.get(task_id)
+                task = await task_manager.get(task_ids[i])
                 if not task:
+                    i += 1
                     continue
 
+                # ── Détection batch parallèle ──────────────────────────────
+                # Si cette tâche + les suivantes sont des sections indépendantes,
+                # on fire leurs LLM calls en parallèle (3x plus rapide)
+                parallel_batch: list[tuple[int, int, dict]] = []
+                if cls._is_parallelizable(task["description"]):
+                    parallel_batch = [(i, task_ids[i], task)]
+                    j = i + 1
+                    while j < len(task_ids) and len(parallel_batch) < 3:
+                        next_task = await task_manager.get(task_ids[j])
+                        if next_task and cls._is_parallelizable(next_task["description"]):
+                            parallel_batch.append((j, task_ids[j], next_task))
+                            j += 1
+                        else:
+                            break
+
+                if len(parallel_batch) >= 2:
+                    # Build shared context at batch start
+                    batch_ctx = f"Projet : {project_name}\nObjectif : {objective}\n"
+                    tree = filesystem.get_tree()
+                    if tree:
+                        batch_ctx += f"Fichiers existants :\n{tree}\n"
+
+                    await add_log(project_id, f"⚡ LLM parallèle : {len(parallel_batch)} tâches simultanées", "info")
+
+                    # Fire all LLM calls simultaneously
+                    prefetched = await asyncio.gather(*[
+                        executor.prefetch_llm_response(project_id, t["description"], batch_ctx)
+                        for _, _, t in parallel_batch
+                    ], return_exceptions=True)
+
+                    # Process results sequentially (file writes + brain updates)
+                    for (idx, tid, btask), actions in zip(parallel_batch, prefetched):
+                        await add_log(project_id, f"──── Tâche {idx+1}/{total_tasks} : {btask['description']} ────", "info")
+                        await task_manager.start(tid)
+                        if isinstance(actions, Exception) or not actions:
+                            await add_log(project_id, f"⚠️ Prefetch échoué pour tâche {idx+1}, fallback séquentiel.", "warning")
+                            ctx = f"Projet : {project_name}\nObjectif : {objective}\n"
+                            if tree:
+                                ctx += f"Fichiers existants :\n{tree}\n"
+                            fallback = await executor.execute_task(project_id=project_id, task_description=btask["description"], steps=btask.get("steps", []), context=ctx)
+                            if fallback.get("success"):
+                                await task_manager.complete(tid, fallback.get("summary", "OK"))
+                            else:
+                                await task_manager.fail(tid, fallback.get("error", "Échec"))
+                        else:
+                            success_count = 0
+                            for action in actions:
+                                r = await executor._execute_action(project_id, action)
+                                if r.get("success"):
+                                    success_count += 1
+                            if success_count >= len(actions) * 0.7:
+                                await task_manager.complete(tid, f"{success_count}/{len(actions)} actions OK")
+                                await add_log(project_id, f"✅ Tâche {idx+1} terminée ({success_count}/{len(actions)}).", "info")
+                            else:
+                                await task_manager.fail(tid, "Trop d'actions échouées")
+                        progress = ((idx + 1) / total_tasks) * 90
+                        await project_manager.update_progress(project_id, progress)
+
+                    i += len(parallel_batch)
+                    continue
+
+                # ── Exécution séquentielle normale ─────────────────────────
                 await add_log(
                     project_id,
                     f"──── Tâche {i+1}/{total_tasks} : {task['description']} ────",
@@ -335,10 +402,11 @@ class AgentRunner:
                 )
 
                 # Démarrer la tâche
-                await task_manager.start(task_id)
+                await task_manager.start(task_ids[i])
 
                 # Exécuter avec retries
                 success = False
+                previous_error: str | None = None
                 for attempt in range(MAX_RETRIES):
                     await cls._check_controls(project_id)
 
@@ -362,22 +430,33 @@ class AgentRunner:
                     async def on_task_progress(fraction: float, _s=task_start_pct, _r=task_range_pct):
                         await project_manager.update_progress(project_id, _s + fraction * _r)
 
+                    # Enrichir la description avec l'erreur précédente si retry
+                    task_desc = task["description"]
+                    if attempt > 0 and previous_error:
+                        task_desc = (
+                            f"{task['description']}\n\n"
+                            f"⚠️ TENTATIVE {attempt+1} — La tentative précédente a échoué :\n"
+                            f"{previous_error}\n"
+                            f"Identifie et corrige la cause racine. Ne répète pas la même erreur."
+                        )
+
                     # Exécuter la tâche
                     result = await executor.execute_task(
                         project_id=project_id,
-                        task_description=task["description"],
+                        task_description=task_desc,
                         steps=task.get("steps", []),
                         context=context,
                         on_progress=on_task_progress,
                     )
 
                     if result.get("success"):
-                        await task_manager.complete(task_id, result.get("summary", "OK"))
+                        await task_manager.complete(task_ids[i], result.get("summary", "OK"))
                         success = True
                         break
                     else:
-                        await task_manager.fail(task_id, result.get("error", "Échec"))
-                        can_retry = await task_manager.can_retry(task_id)
+                        previous_error = (result.get("error") or result.get("summary") or "Échec inconnu")[:600]
+                        await task_manager.fail(task_ids[i], result.get("error", "Échec"))
+                        can_retry = await task_manager.can_retry(task_ids[i])
                         if not can_retry:
                             await add_log(
                                 project_id,
@@ -385,11 +464,12 @@ class AgentRunner:
                                 "error"
                             )
                             break
-                        await asyncio.sleep(1)  # Petit délai avant retry
+                        await asyncio.sleep(1)
 
                 # Mettre à jour la progression
-                progress = ((i + 1) / total_tasks) * 90  # 90% pour les tâches, 10% pour le README
+                progress = ((i + 1) / total_tasks) * 90
                 await project_manager.update_progress(project_id, progress)
+                i += 1
 
             # ── ÉTAPE 3.4 : Post-traitement statique (fix patterns récurrents) ──
             await cls._check_controls(project_id)
@@ -640,6 +720,52 @@ class AgentRunner:
         err = output[:400]
         await add_log(project_id, f"❌ Déploiement échoué : {err}", "error")
         return None
+
+    @staticmethod
+    def _is_parallelizable(description: str) -> bool:
+        """True if this task generates standalone section components with no cross-task file deps."""
+        d = description.lower()
+        structural = [
+            'package.json', 'tsconfig', 'vite.config', 'postcss', 'globals.css',
+            'design system', 'tailwind', 'src/types', 'types/index', 'cartstore',
+            'cart store', 'store panier', 'cartcontext', 'authcontext', 'app.tsx',
+            'main.tsx', 'assembly', 'assemblage', 'layout', 'navbar', 'footer',
+            'install', 'npm', 'readme', 'firebase', 'stripe', 'checkout',
+        ]
+        if any(s in d for s in structural):
+            return False
+        parallelizable = [
+            'hero', 'features', 'feature grid', 'testimonial', 'pricing',
+            'faq', 'how it works', 'problem', 'solution', 'cta', 'about',
+            'logos', 'social proof', 'gallery', 'newsletter', 'team',
+            'product card', 'product grid', 'filter', 'category',
+        ]
+        return any(p in d for p in parallelizable)
+
+    @classmethod
+    async def _write_base_config(cls, workspace_path: str, project_id: int) -> None:
+        """Pre-write canonical config files before Phase 3 so the LLM starts from a clean base."""
+        tpl_dir = os.path.join(os.path.dirname(__file__), "..", "templates", "react-vite")
+        tpl_dir = os.path.normpath(tpl_dir)
+        if not os.path.isdir(tpl_dir):
+            return
+        files = [
+            "tsconfig.json", "tsconfig.node.json", "vite.config.ts",
+            "postcss.config.js", "src/vite-env.d.ts",
+        ]
+        written = []
+        for rel in files:
+            src = os.path.join(tpl_dir, rel)
+            dst = os.path.join(workspace_path, rel)
+            if not os.path.exists(src):
+                continue
+            if not os.path.exists(dst):
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                import shutil as _shutil
+                _shutil.copy2(src, dst)
+                written.append(rel)
+        if written:
+            await add_log(project_id, f"📋 Config de base : {', '.join(written)}", "debug")
 
     @staticmethod
     def _find_pkg_dir(workspace_path: str) -> str | None:
