@@ -98,15 +98,21 @@ Règles pour la palette :
 Génère les suggestions Gemini pour ce client."""
 
     model = _gemini_or(DEEPSEEK_MODEL_FLASH)
-    result = await llm.call_ollama(prompt, system_prompt=system, temperature=0.3, model_override=model)
-    content = result.get("content", "")
+    try:
+        result = await llm.call_ollama(prompt, system_prompt=system, temperature=0.3, model_override=model)
+        content = result.get("content", "")
+    except Exception as e:
+        return {"success": False, "error": f"Erreur LLM : {e}"}
+
+    # Strip markdown code fences if present
+    content = re.sub(r'```(?:json)?\s*', '', content).strip()
 
     try:
         json_match = re.search(r'\{[\s\S]*\}', content)
         if json_match:
             suggestions = json.loads(json_match.group())
             return {"success": True, "suggestions": suggestions}
-    except Exception:
-        pass
+    except Exception as e:
+        return {"success": False, "error": f"JSON invalide : {e}"}
 
-    return {"success": False, "error": "Impossible de générer les suggestions"}
+    return {"success": False, "error": "Aucun JSON trouvé dans la réponse"}
