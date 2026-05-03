@@ -233,6 +233,8 @@ class StaticPostProcessor:
 
         if fixed:
             await add_log(project_id, f"✅ Imports manquants : React/Router/Firebase ajoutés dans {fixed} fichier(s).", "info")
+            from backend.agent.project_memory import ProjectMemory
+            await ProjectMemory.record_fix("missing_react_imports")
 
     # ── NEW: package.json build script ───────────────────────────────────────
 
@@ -303,6 +305,8 @@ class StaticPostProcessor:
                     fixed += 1
         if fixed:
             await add_log(project_id, f"✅ Button variants : variant='filled' → 'primary' dans {fixed} fichier(s).", "info")
+            from backend.agent.project_memory import ProjectMemory
+            await ProjectMemory.record_fix("button_variant_filled")
 
     # ── NEW: button href fixer ────────────────────────────────────────────────
 
@@ -393,6 +397,8 @@ class StaticPostProcessor:
 
         if fixed:
             await add_log(project_id, f"✅ Imports : named→default corrigé dans {fixed} fichier(s).", "info")
+            from backend.agent.project_memory import ProjectMemory
+            await ProjectMemory.record_fix("named_default_imports")
 
     # ── NEW: CSS opacity arbitrary var fixer ──────────────────────────────────
 
@@ -740,6 +746,8 @@ class StaticPostProcessor:
                     with open(app_path, "w", encoding="utf-8") as f:
                         f.write(fixed)
                     await add_log(project_id, "✅ BrowserRouter : supprimé de App.tsx (déjà dans main.tsx).", "info")
+                    from backend.agent.project_memory import ProjectMemory
+                    await ProjectMemory.record_fix("browser_router_split")
 
         if main_path:
             with open(main_path, encoding="utf-8") as f:
@@ -776,6 +784,8 @@ class StaticPostProcessor:
                     with open(main_path, "w", encoding="utf-8") as f:
                         f.write(main_content)
                     await add_log(project_id, "✅ BrowserRouter : ajouté dans main.tsx pour wrapper App.", "info")
+                    from backend.agent.project_memory import ProjectMemory
+                    await ProjectMemory.record_fix("browser_router_added")
 
     # ── Animation variant key fixer ───────────────────────────────────────────
 

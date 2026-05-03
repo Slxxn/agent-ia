@@ -112,6 +112,13 @@ async def health_check():
     }
 
 
+@app.get("/api/stats/fixes")
+async def get_fix_stats():
+    """Statistiques des fixes statiques — montre quelles règles LLM échouent le plus."""
+    from backend.db.database import get_fix_stats
+    return await get_fix_stats()
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

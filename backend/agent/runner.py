@@ -143,6 +143,15 @@ class AgentRunner:
         context = f"Projet : {project_name}\n"
         if brain_ctx:
             context += f"\n## État du projet:\n{brain_ctx}\n"
+
+        try:
+            from backend.agent.project_memory import ProjectMemory
+            memory = ProjectMemory.load(workspace_path)
+            if memory:
+                context += f"\n{ProjectMemory.to_context(memory)}\n"
+        except Exception:
+            pass
+
         tree = filesystem.get_tree()
         if tree:
             context += f"Fichiers existants :\n{tree}\n"
@@ -465,6 +474,26 @@ class AgentRunner:
             deploy_url = await cls._deploy_firebase(project_id, workspace_path)
             if deploy_url:
                 await update_project(project_id, deploy_url=deploy_url)
+
+            # ── Snapshot mémoire projet ──
+            try:
+                from backend.agent.project_memory import ProjectMemory
+                all_tasks = [await task_manager.get(tid) for tid in task_ids]
+                await ProjectMemory.save(
+                    project_id,
+                    workspace_path,
+                    objective=objective,
+                    project_name=project_name,
+                    brief=saved_brief,
+                    executor=executor,
+                    build_success=True,
+                    build_attempts=2,
+                    deploy_url=deploy_url or "",
+                    tasks=[t for t in all_tasks if t],
+                    phase="complete",
+                )
+            except Exception:
+                pass
 
             # ── Terminé ──
             total_tokens = await get_tokens_used(project_id)

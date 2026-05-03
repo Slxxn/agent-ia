@@ -77,6 +77,16 @@ async def init_db():
         await db.commit()
 
         # Migrations — colonnes ajoutées progressivement
+        # fix_stats table — tracks which static post-processor fixes fire most often
+        await db.executescript("""
+            CREATE TABLE IF NOT EXISTS fix_stats (
+                fix_name TEXT PRIMARY KEY,
+                count INTEGER DEFAULT 0,
+                last_fired TEXT DEFAULT (datetime('now'))
+            );
+        """)
+        await db.commit()
+
         for migration in [
             "ALTER TABLE projects ADD COLUMN objective TEXT DEFAULT ''",
             "ALTER TABLE projects ADD COLUMN tokens_used INTEGER DEFAULT 0",
@@ -405,6 +415,40 @@ async def get_logs_after(project_id: int, after_id: int = 0) -> List[Dict[str, A
         cursor = await db.execute(
             "SELECT * FROM logs WHERE project_id = ? AND id > ? ORDER BY id ASC",
             (project_id, after_id)
+        )
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        await db.close()
+
+
+# ─── Fix stats (error pattern tracking) ───
+
+async def increment_fix_counter(fix_name: str) -> None:
+    """Increment the counter for a static post-processor fix. Used for pattern analysis."""
+    db = await get_db()
+    try:
+        await db.execute(
+            """INSERT INTO fix_stats (fix_name, count, last_fired)
+               VALUES (?, 1, datetime('now'))
+               ON CONFLICT(fix_name) DO UPDATE SET
+                 count = count + 1,
+                 last_fired = datetime('now')""",
+            (fix_name,),
+        )
+        await db.commit()
+    except Exception:
+        pass
+    finally:
+        await db.close()
+
+
+async def get_fix_stats() -> List[Dict[str, Any]]:
+    """Return fix stats ordered by count desc — shows which LLM rules fire most."""
+    db = await get_db()
+    try:
+        cursor = await db.execute(
+            "SELECT fix_name, count, last_fired FROM fix_stats ORDER BY count DESC"
         )
         rows = await cursor.fetchall()
         return [dict(row) for row in rows]
