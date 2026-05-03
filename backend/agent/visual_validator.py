@@ -73,9 +73,11 @@ class VisualValidator:
         self,
         project_id: int,
         workspace_path: str,
-        port: int = 5174,   # use 5174 to avoid conflicts with user's running 5173
+        port: int = 5174,
+        deployed_url: Optional[str] = None,
+        force: bool = False,
     ) -> bool:
-        if not VISUAL_VALIDATION:
+        if not force and not VISUAL_VALIDATION:
             return True
         if not ANTHROPIC_API_KEY:
             await add_log(project_id, "⚠️ ANTHROPIC_API_KEY absent — validation visuelle désactivée.", "debug")
@@ -86,13 +88,18 @@ class VisualValidator:
 
         await add_log(project_id, "═══ PHASE 4.5 : VALIDATION VISUELLE ═══", "info")
 
-        server = await self._start_dev_server(project_id, workspace_path, port)
-        if server is None:
-            await add_log(project_id, "⚠️ Serveur de dev non démarré — validation visuelle ignorée.", "warning")
-            return True
+        server = None
+        if deployed_url:
+            await add_log(project_id, f"🌐 Capture du site déployé : {deployed_url}", "info")
+            tool = ScreenshotTool(url=deployed_url)
+        else:
+            server = await self._start_dev_server(project_id, workspace_path, port)
+            if server is None:
+                await add_log(project_id, "⚠️ Serveur de dev non démarré — validation visuelle ignorée.", "warning")
+                return True
+            tool = ScreenshotTool(url=f"http://localhost:{port}")
 
         try:
-            tool = ScreenshotTool(url=f"http://localhost:{port}")
             for iteration in range(1, MAX_FIX_ITERATIONS + 1):
                 await add_log(project_id, f"📸 Capture d'écran — itération {iteration}/{MAX_FIX_ITERATIONS}...", "info")
 
@@ -139,14 +146,15 @@ class VisualValidator:
             return True
 
         finally:
-            server.terminate()
-            try:
-                await asyncio.wait_for(server.wait(), timeout=5)
-            except (asyncio.TimeoutError, Exception):
+            if server is not None:
+                server.terminate()
                 try:
-                    server.kill()
-                except Exception:
-                    pass
+                    await asyncio.wait_for(server.wait(), timeout=5)
+                except (asyncio.TimeoutError, Exception):
+                    try:
+                        server.kill()
+                    except Exception:
+                        pass
 
     # ── Dev server ─────────────────────────────────────────────────────────
 

@@ -270,7 +270,11 @@ async def validate_visual(project_id: int):
             brain   = ProjectBrain(project_id, workspace_path)
             executor = AgentExecutor(fs, t, llm, brain=brain)
             validator = VisualValidator(executor=executor)
-            await validator.run_validation_loop(project_id, workspace_path)
+            # Use deployed URL if available, otherwise fall back to local dev server
+            deployed_url = project.get("url") if project else None
+            await validator.run_validation_loop(
+                project_id, workspace_path, deployed_url=deployed_url, force=True
+            )
             await add_log(project_id, "✅ Validation visuelle terminée.", "info")
         except Exception as e:
             await add_log(project_id, f"❌ Erreur validation visuelle : {e}", "error")
