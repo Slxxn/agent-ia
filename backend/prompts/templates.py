@@ -152,6 +152,33 @@ RECURRING_BUG_PREVENTION = """
     Ne jamais mettre d'emojis dans les titres de section, badges, labels, ou textes UI.
     Les emojis cassent la typographie et donnent un aspect "template bon marché".
     Si des étoiles sont requises (ratings) → utiliser des icônes Lucide (Star) ou des ★ HTML.
+
+17) BOUTONS — variants valides UNIQUEMENT (dans Button.tsx) :
+    variant="primary"   → fond coloré (CTA principal)
+    variant="secondary" → fond secondaire
+    variant="outline"   → bordure visible, fond transparent
+    variant="ghost"     → sans bordure ni fond
+    JAMAIS variant="filled"     → n'existe pas, utiliser "primary"
+    JAMAIS variant="default"    → n'existe pas, utiliser "primary"
+    JAMAIS variant="contained"  → n'existe pas, utiliser "primary"
+    JAMAIS variant="solid"      → n'existe pas, utiliser "primary"
+    Button n'accepte PAS de prop href → envelopper dans <a href="..."><Button>...</Button></a>
+
+18) IMPORTS REACT — TOUJOURS déclarer chaque API utilisée :
+    Chaque hook ou fonction React DOIT apparaître dans l'import :
+      import { createContext, useState, useEffect, useContext, useRef } from 'react';
+    De même pour react-router-dom :
+      import { Routes, Route, Link, useNavigate, useLocation, useParams, Navigate, Outlet } from 'react-router-dom';
+    Et pour Firebase :
+      import { initializeApp, getApps } from 'firebase/app';  ← OBLIGATOIRE si getAuth()/getFirestore() utilisés
+    RÈGLE : si tu écris `createContext(` sans l'importer → erreur runtime garantie.
+    CONTRÔLE : vérifie chaque fichier — la ligne d'import DOIT lister tous les noms utilisés.
+
+19) ALIAS @ — vite.config.ts DOIT avoir resolve.alias :
+    resolve: { alias: { '@': path.resolve(__dirname, './src') } }
+    Si tu utilises `import X from '@/components/...'` sans cet alias → erreur build.
+    Utilise toujours des chemins relatifs (../../) OU vérifie que l'alias est configuré.
+    PRÉFÉRENCE : chemins relatifs pour éviter toute ambiguïté.
 """
 
 # ─── Firebase full stack pattern ──────────────────────────────────────────────

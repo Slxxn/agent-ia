@@ -286,6 +286,7 @@ class AgentExecutor:
         self._current_phase  = 0   # mis à jour par runner.py
         self._current_brief: dict | None = None  # brief projet injecté par runner.py
         self._syntax_issues: dict[str, list[str]] = {}  # populated by per-file validation
+        self._types_content: str | None = None  # set when src/types/index.ts is written
 
     async def execute_task(
         self,
@@ -323,6 +324,11 @@ class AgentExecutor:
         if image_map:
             img_lines = "\n".join(f"- {slot}: {url}" for slot, url in image_map.items())
             context = f"## IMAGES UNSPLASH (URLs réelles à utiliser, ne pas inventer d'autres URLs) :\n{img_lines}\n\n{context}"
+
+        # Injecter le contenu du fichier de types dans le contexte
+        types_content = self._types_content
+        if types_content:
+            context = f"## TYPES DU PROJET (utilise UNIQUEMENT ces interfaces, ne jamais inventer de champs) :\n```typescript\n{types_content}\n```\n\n{context}"
 
         result = await self.llm.generate_code(
             task_description, context,
@@ -652,6 +658,10 @@ class AgentExecutor:
         result = self.filesystem.create_file(path, content)
         if result.get("success"):
             await add_log(project_id, f"Fichier créé : {result.get('path', path)}", "info")
+            # ── Cache types content for injection into subsequent tasks ────
+            path_norm = path.replace("\\", "/")
+            if "types/index.ts" in path_norm or "types/index.tsx" in path_norm:
+                self._types_content = content
             # ── Per-file syntax validation ────────────────────────────────
             syntax_issues = SyntaxValidator.validate(path, content)
             if syntax_issues:
@@ -795,24 +805,46 @@ class AgentExecutor:
         issues: List[str],
     ) -> Optional[str]:
         """Demander au LLM de réparer un fichier tronqué/incomplet."""
+        ext = path.rsplit('.', 1)[-1].lower() if '.' in path else ''
+        is_truncated = any("troncature" in i or "tronqu" in i or "placeholder" in i for i in issues)
+
         for attempt in range(MAX_REPAIR_ATTEMPTS):
             issues_text = ", ".join(issues)
-            ext = path.rsplit('.', 1)[-1].lower() if '.' in path else ''
-            # For truncated TSX/JSX files, show the tail to help the LLM continue
-            tail_hint = ""
-            if ext in ('tsx', 'jsx') and len(broken_content) > 800:
-                tail_lines = broken_content.rstrip().split('\n')[-30:]
-                tail_hint = (
-                    f"\n\nDernières lignes du fichier (là où la troncature s'est produite) :\n"
-                    f"```\n{'  '.join(tail_lines)}\n```\n"
-                    f"Continue à partir de là et ferme toutes les balises JSX et accolades ouvertes."
+
+            # For truncated files: lightweight "continue from tail" prompt to save tokens
+            if is_truncated and ext in ('tsx', 'jsx', 'ts', 'js') and len(broken_content) > 400:
+                tail_lines = broken_content.rstrip().split('\n')[-40:]
+                tail = '\n'.join(tail_lines)
+                repair_prompt = (
+                    f"Le fichier `{path}` a été TRONQUÉ (coupé avant la fin).\n\n"
+                    f"Voici la fin du fichier là où la coupure s'est produite :\n"
+                    f"```\n{tail}\n```\n\n"
+                    f"Continue EXACTEMENT depuis là où le fichier s'est arrêté. "
+                    f"Ferme toutes les balises JSX ouvertes et les accolades manquantes. "
+                    f"Ne répète PAS le début du fichier — renvoie UNIQUEMENT la suite manquante dans un bloc :\n"
+                    f"```{ext}\n[suite du fichier ici]\n```"
                 )
+                result = await self.llm.generate_code(repair_prompt)
+                if result.get("success"):
+                    continuation = result.get("content", "")
+                    # Extract the code block
+                    m = re.search(r'```[a-zA-Z]*\n([\s\S]+?)```', continuation)
+                    suffix = m.group(1).rstrip() if m else continuation.strip()
+                    if suffix:
+                        stitched = broken_content.rstrip() + '\n' + suffix
+                        if not self._check_file_integrity(path, stitched):
+                            return stitched
+                        # If still broken, fall through to full regeneration
+                        broken_content = stitched
+                        is_truncated = False  # next attempt: full regen
+                continue
+
+            # Full regeneration for structural issues
             repair_prompt = (
                 f"Le fichier '{path}' que tu as généré est INCOMPLET ou TRONQUÉ. "
                 f"Problèmes détectés : {issues_text}.\n\n"
                 f"Voici le contenu actuel (potentiellement tronqué) :\n\n"
-                f"```\n{broken_content}\n```\n"
-                f"{tail_hint}\n"
+                f"```\n{broken_content}\n```\n\n"
                 f"Renvoie la VERSION COMPLÈTE et CORRIGÉE de ce fichier. "
                 f"Toutes les balises JSX doivent être fermées (<div>...</div>), "
                 f"toutes les accolades équilibrées, aucun placeholder. "

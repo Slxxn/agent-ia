@@ -27,6 +27,10 @@ class StaticPostProcessor:
     async def run(self, project_id: int) -> None:
         await add_log(project_id, "═══ PHASE 3.4 : POST-TRAITEMENT STATIQUE ═══", "info")
         try:
+            await self._fix_missing_react_imports(project_id)
+        except Exception as e:
+            await add_log(project_id, f"⚠️ Post-processor React imports : {e}", "debug")
+        try:
             await self._fix_package_build_script(project_id)
         except Exception as e:
             await add_log(project_id, f"⚠️ Post-processor build script : {e}", "debug")
@@ -94,6 +98,141 @@ class StaticPostProcessor:
             await self._fix_navbar_logo(project_id)
         except Exception as e:
             await add_log(project_id, f"⚠️ Post-processor navbar logo : {e}", "debug")
+
+    # ── NEW: missing React / Router imports ──────────────────────────────────
+
+    # APIs that must be imported from 'react'
+    _REACT_APIS: dict[str, re.Pattern] = {
+        'createContext': re.compile(r'\bcreateContext\s*[(<]'),
+        'useContext':    re.compile(r'\buseContext\s*\('),
+        'useState':      re.compile(r'\buseState\s*[\(<]'),
+        'useEffect':     re.compile(r'\buseEffect\s*\('),
+        'useRef':        re.compile(r'\buseRef\s*[\(<]'),
+        'useCallback':   re.compile(r'\buseCallback\s*\('),
+        'useMemo':       re.compile(r'\buseMemo\s*\('),
+        'useReducer':    re.compile(r'\buseReducer\s*\('),
+        'forwardRef':    re.compile(r'\bforwardRef\s*[\(<]'),
+        'memo':          re.compile(r'\bmemo\s*\('),
+    }
+
+    # APIs that must be imported from 'react-router-dom'
+    _ROUTER_APIS: dict[str, re.Pattern] = {
+        'Routes':       re.compile(r'<Routes[\s>/]'),
+        'Route':        re.compile(r'<Route[\s>/]'),
+        'Link':         re.compile(r'<Link[\s>/]'),
+        'NavLink':      re.compile(r'<NavLink[\s>/]'),
+        'Navigate':     re.compile(r'<Navigate[\s>/]|\bNavigate\s*\('),
+        'Outlet':       re.compile(r'<Outlet[\s>/]'),
+        'useNavigate':  re.compile(r'\buseNavigate\s*\('),
+        'useLocation':  re.compile(r'\buseLocation\s*\('),
+        'useParams':    re.compile(r'\buseParams\s*\('),
+    }
+
+    @staticmethod
+    def _get_imported_names(content: str, module: str) -> set[str]:
+        """Return set of names already imported from `module`."""
+        names: set[str] = set()
+        for m in re.finditer(
+            rf"import\s*\{{([^}}]*)\}}\s*from\s*['\"]{{module}}['\"]".replace("{module}", re.escape(module)),
+            content,
+        ):
+            for name in m.group(1).split(','):
+                stripped = name.strip().split(' as ')[0].strip()
+                if stripped:
+                    names.add(stripped)
+        return names
+
+    async def _fix_missing_react_imports(self, project_id: int) -> None:
+        """Add missing React hooks and router imports to files that use them without importing."""
+        src_dir = os.path.join(self.workspace_path, "src")
+        if not os.path.exists(src_dir):
+            return
+
+        fixed = 0
+        for root, _dirs, files in os.walk(src_dir):
+            if "node_modules" in root:
+                continue
+            for fname in files:
+                if not fname.endswith((".tsx", ".ts", ".jsx", ".js")):
+                    continue
+                fpath = os.path.join(root, fname)
+                try:
+                    with open(fpath, encoding="utf-8") as f:
+                        content = f.read()
+                except OSError:
+                    continue
+
+                original = content
+
+                # --- React imports ---
+                already_react = self._get_imported_names(content, "react")
+                needed_react: set[str] = set()
+                for api, pattern in self._REACT_APIS.items():
+                    if api not in already_react and pattern.search(content):
+                        needed_react.add(api)
+
+                if needed_react:
+                    existing = re.search(
+                        r"import\s*\{([^}]*)\}\s*from\s*['\"]react['\"]",
+                        content,
+                    )
+                    if existing:
+                        old_names = {n.strip() for n in existing.group(1).split(',') if n.strip()}
+                        all_names = sorted(old_names | needed_react)
+                        content = content.replace(
+                            existing.group(0),
+                            f"import {{ {', '.join(all_names)} }} from 'react';",
+                        )
+                    else:
+                        new_line = f"import {{ {', '.join(sorted(needed_react))} }} from 'react';\n"
+                        content = new_line + content
+
+                # --- Router imports ---
+                already_router = self._get_imported_names(content, "react-router-dom")
+                needed_router: set[str] = set()
+                for api, pattern in self._ROUTER_APIS.items():
+                    if api not in already_router and pattern.search(content):
+                        needed_router.add(api)
+
+                if needed_router:
+                    existing = re.search(
+                        r"import\s*\{([^}]*)\}\s*from\s*['\"]react-router-dom['\"]",
+                        content,
+                    )
+                    if existing:
+                        old_names = {n.strip() for n in existing.group(1).split(',') if n.strip()}
+                        all_names = sorted(old_names | needed_router)
+                        content = content.replace(
+                            existing.group(0),
+                            f"import {{ {', '.join(all_names)} }} from 'react-router-dom';",
+                        )
+                    else:
+                        new_line = f"import {{ {', '.join(sorted(needed_router))} }} from 'react-router-dom';\n"
+                        # Insert after React import if present
+                        react_imp = re.search(r"(import\s*\{[^}]*\}\s*from\s*['\"]react['\"];?\n?)", content)
+                        if react_imp:
+                            pos = react_imp.end()
+                            content = content[:pos] + new_line + content[pos:]
+                        else:
+                            content = new_line + content
+
+                # --- Firebase: ensure initializeApp imported from 'firebase/app' ---
+                uses_firebase_sdks = re.search(
+                    r"from\s*['\"]firebase/(auth|firestore|storage)['\"]", content
+                )
+                has_app_import = re.search(r"from\s*['\"]firebase/app['\"]", content)
+                uses_init = re.search(r'\binitializeApp\s*\(', content)
+                if uses_firebase_sdks and uses_init and not has_app_import:
+                    new_line = "import { initializeApp, getApps } from 'firebase/app';\n"
+                    content = new_line + content
+
+                if content != original:
+                    with open(fpath, "w", encoding="utf-8") as f:
+                        f.write(content)
+                    fixed += 1
+
+        if fixed:
+            await add_log(project_id, f"✅ Imports manquants : React/Router/Firebase ajoutés dans {fixed} fichier(s).", "info")
 
     # ── NEW: package.json build script ───────────────────────────────────────
 

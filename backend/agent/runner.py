@@ -444,7 +444,7 @@ class AgentRunner:
                 await add_log(project_id, "═══ PHASE 4 : VALIDATION BUILD ═══", "info")
                 await project_manager.update_progress(project_id, 91.0)
                 validator = BuildValidator(llm, terminal, filesystem)
-                await validator.run_and_fix_loop(project_id, workspace_path, max_attempts=5)
+                await validator.run_and_fix_loop(project_id, workspace_path, max_attempts=2)
                 await project_manager.update_progress(project_id, 96.0)
 
             # ── ÉTAPE 4.5 : Validation visuelle ──
