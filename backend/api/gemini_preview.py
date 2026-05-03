@@ -115,4 +115,4 @@ Génère les suggestions Gemini pour ce client."""
     except Exception as e:
         return {"success": False, "error": f"JSON invalide : {e}"}
 
-    return {"success": False, "error": "Aucun JSON trouvé dans la réponse"}
+    return {"success": False, "error": f"Aucun JSON trouvé. Réponse reçue : {content[:300]!r}"}
