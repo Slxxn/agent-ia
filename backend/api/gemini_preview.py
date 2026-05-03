@@ -100,9 +100,13 @@ Génère les suggestions Gemini pour ce client."""
     model = _gemini_or(DEEPSEEK_MODEL_FLASH)
     try:
         result = await llm.call_ollama(prompt, system_prompt=system, temperature=0.3, model_override=model)
-        content = result.get("content", "")
     except Exception as e:
         return {"success": False, "error": f"Erreur LLM : {e}"}
+
+    if not result.get("success", True) and "content" not in result:
+        return {"success": False, "error": result.get("error", "Erreur LLM inconnue")}
+
+    content = result.get("content", "")
 
     # Strip markdown code fences if present
     content = re.sub(r'```(?:json)?\s*', '', content).strip()
