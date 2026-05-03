@@ -153,7 +153,7 @@ class ProjectMemory:
     # ── Error pattern tracking ───────────────────────────────────────────────
 
     @classmethod
-    async def record_fix(cls, project_id: int, fix_name: str) -> None:
+    async def record_fix(cls, fix_name: str) -> None:
         """
         Increment a counter for a static fix in the DB.
         Call this from StaticPostProcessor when a fix fires.

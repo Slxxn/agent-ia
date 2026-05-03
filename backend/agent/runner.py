@@ -520,7 +520,9 @@ class AgentRunner:
         # Prefer globally installed firebase to avoid npx cache corruption
         fb_bin = _shutil.which("firebase")
         if fb_bin:
-            return await t.run_command(fb_bin, *args, timeout=timeout)
+            import shlex as _shlex
+            cmd = _shlex.join([fb_bin, *args])
+            return await t.run_command(cmd, timeout=timeout)
 
         # Use npx but wipe the cache dir first to avoid ENOTEMPTY errors
         npx_cache = os.path.expanduser("~/.npm/_npx")
