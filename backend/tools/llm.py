@@ -55,7 +55,7 @@ OLLAMA_MODEL    = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:7b")
 
 # Gemini Flash (tâches simples — ultra-rapide)
 GEMINI_API_KEY  = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL    = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL    = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
 GEMINI_TIMEOUT  = 60
 
