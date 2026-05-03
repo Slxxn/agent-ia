@@ -484,6 +484,27 @@ class AgentRunner:
             cls._stop_flags.pop(project_id, None)
 
     @classmethod
+    async def _firebase_cmd(cls, t: "TerminalTool", *args, timeout: int = 120) -> dict:
+        """Run firebase-tools via global install (preferred) or npx, clearing npx cache on failure."""
+        import shutil as _shutil, asyncio as _asyncio
+
+        # Prefer globally installed firebase to avoid npx cache corruption
+        fb_bin = _shutil.which("firebase")
+        if fb_bin:
+            return await t.run_command(fb_bin, *args, timeout=timeout)
+
+        # Use npx but wipe the cache dir first to avoid ENOTEMPTY errors
+        npx_cache = os.path.expanduser("~/.npm/_npx")
+        if os.path.isdir(npx_cache):
+            try:
+                import shutil as _sh
+                _sh.rmtree(npx_cache, ignore_errors=True)
+            except Exception:
+                pass
+
+        return await t.run_npx("--yes", "firebase-tools", *args, timeout=timeout)
+
+    @classmethod
     async def _deploy_firebase(cls, project_id: int, workspace_path: str) -> str | None:
         """Build + deploy vers Firebase Hosting. Retourne l'URL publique ou None."""
         import re as _re
@@ -504,17 +525,25 @@ class AgentRunner:
         site_id = f"{project_fb}-p{project_id}"
         site_id = _re.sub(r'[^a-z0-9-]', '-', site_id.lower())[:30].rstrip('-')
 
-        # Créer le site Firebase s'il n'existe pas encore
-        create_r = await t.run_npx(
-            "--yes", "firebase-tools", "hosting:sites:create", site_id,
+        # Créer le site Firebase — vérifier si déjà existant via la sortie
+        create_r = await cls._firebase_cmd(
+            t, "hosting:sites:create", site_id,
             "--project", project_fb,
+            "--token", token,
             "--non-interactive",
-            timeout=60,
+            timeout=90,
         )
-        if not create_r["success"]:
-            out = (create_r.get("stdout", "") + create_r.get("stderr", "")).lower()
-            if "already exists" not in out and "already in use" not in out:
-                await add_log(project_id, f"⚠️ Création du site Firebase '{site_id}' échouée (peut déjà exister).", "warning")
+        out_create = (create_r.get("stdout", "") + create_r.get("stderr", "")).lower()
+        site_ready = (
+            create_r["success"]
+            or "already exists" in out_create
+            or "already in use" in out_create
+            or site_id in out_create
+        )
+        if not site_ready:
+            await add_log(project_id, f"❌ Impossible de créer le site Firebase '{site_id}' — déploiement annulé.", "error")
+            return None
+        await add_log(project_id, f"✅ Site Firebase '{site_id}' prêt.", "info")
 
         # Générer firebase.json (toujours écraser pour garantir le bon site_id)
         firebase_json_path = os.path.join(workspace_path, "firebase.json")
@@ -543,10 +572,10 @@ class AgentRunner:
             return None
         await add_log(project_id, "✅ Build réussi.", "info")
 
-        # firebase deploy — try with token, fall back to local auth on 401
+        # firebase deploy
         await add_log(project_id, "🚀 Déploiement vers Firebase Hosting...", "info")
-        deploy_r = await t.run_npx(
-            "--yes", "firebase-tools", "deploy",
+        deploy_r = await cls._firebase_cmd(
+            t, "deploy",
             "--only", "hosting",
             "--token", token,
             "--project", project_fb,
@@ -554,9 +583,9 @@ class AgentRunner:
             timeout=300,
         )
         if not deploy_r["success"] and "401" in (deploy_r.get("stdout", "") + deploy_r.get("stderr", "")):
-            await add_log(project_id, "⚠️ Token expiré, tentative avec l'auth locale...", "warning")
-            deploy_r = await t.run_npx(
-                "--yes", "firebase-tools", "deploy",
+            await add_log(project_id, "⚠️ Token expiré, tentative sans token...", "warning")
+            deploy_r = await cls._firebase_cmd(
+                t, "deploy",
                 "--only", "hosting",
                 "--project", project_fb,
                 "--non-interactive",
