@@ -109,35 +109,35 @@ class AgentPlanner:
         font_pair_names = list(FONT_PAIRS.keys())
         narrative_types = list(NARRATIVE_TEMPLATES.keys())
 
-        brief_prompt = f"""Tu es un directeur artistique. À partir du goal ci-dessous, génère un brief créatif JSON.
+        brief_prompt = f"""You are an art director. From the goal below, generate a creative JSON brief.
 
-Goal : {goal_text}
+Goal: {goal_text}
 
-Palettes disponibles : {palette_names}
-Font pairs disponibles : {font_pair_names}
-Types de narrative disponibles : {narrative_types}
+Available palettes: {palette_names}
+Available font pairs: {font_pair_names}
+Available narrative types: {narrative_types}
 
-Réponds UNIQUEMENT avec un objet JSON valide (pas de markdown, pas d'explication) :
+Respond ONLY with a valid JSON object (no markdown, no explanation):
 {{
-  "project_type": "<ex: vitrine_bien_etre>",
-  "metier": "<ex: masseuse>",
-  "palette_key": "<une clé exacte de la liste palettes>",
-  "font_pair_key": "<une clé exacte de la liste font pairs>",
-  "narrative_type": "<une clé exacte de la liste narratives>",
+  "project_type": "<e.g.: wellness_showcase>",
+  "metier": "<e.g.: massage therapist>",
+  "palette_key": "<an exact key from the palettes list>",
+  "font_pair_key": "<an exact key from the font pairs list>",
+  "narrative_type": "<an exact key from the narratives list>",
   "photos_keywords": ["<keyword1>", "<keyword2>", "<keyword3>"],
   "brand_details": {{
-    "name": "<nom du projet ou brand déduit>",
-    "city": "<ville si mentionnée, sinon vide>",
-    "unique_method": "<méthode signature si mentionnée>",
-    "signature_phrase": "<phrase d'accroche courte, poétique>"
+    "name": "<project name or deduced brand>",
+    "city": "<city if mentioned, otherwise empty>",
+    "unique_method": "<signature method if mentioned>",
+    "signature_phrase": "<short poetic tagline>"
   }},
-  "integrations_required": ["<ex: stripe>"]
+  "integrations_required": ["<e.g.: stripe>"]
 }}"""
 
         brief_model = route_model(task_type="brief_creation")
         result = await self.llm.call_ollama(
             brief_prompt,
-            system_prompt="Tu es un directeur artistique expert. Réponds uniquement en JSON valide.",
+            system_prompt="You are an expert art director. Respond only in valid JSON.",
             temperature=0.4,
             model_override=brief_model,
         )
@@ -252,38 +252,38 @@ Réponds UNIQUEMENT avec un objet JSON valide (pas de markdown, pas d'explicatio
     def _build_react_constraints(self, is_landing: bool, is_ecommerce: bool) -> str:
         from backend.prompts.templates import RECURRING_BUG_PREVENTION
         base = (
-            "\n\n══ CONTRAINTES TECHNIQUES IMPÉRATIVES ══"
-            "\n• Stack : React 18 + Vite + TypeScript + Tailwind CSS + Framer Motion + Lucide React"
-            "\n• JAMAIS de site statique HTML/CSS basique."
-            "\n• package.json DOIT lister TOUTES les dépendances importées (react, react-dom, "
+            "\n\n══ MANDATORY TECHNICAL CONSTRAINTS ══"
+            "\n• Stack: React 18 + Vite + TypeScript + Tailwind CSS + Framer Motion + Lucide React"
+            "\n• NEVER a basic static HTML/CSS site."
+            "\n• package.json MUST list ALL imported dependencies (react, react-dom, "
             "react-router-dom, framer-motion, lucide-react, clsx, tailwind-merge, vite, "
             "@vitejs/plugin-react, tailwindcss, postcss, autoprefixer, typescript)."
-            "\n• vite.config.ts DOIT toujours inclure server: { host: true }."
-            "\n• Chaque import dans le code DOIT correspondre à une dépendance dans package.json."
-            "\n• src/lib/utils.ts DOIT exporter cn() (clsx + tailwind-merge) et formatPrice()."
-            "\n• main.tsx : <BrowserRouter><App /></BrowserRouter> — BrowserRouter ICI UNIQUEMENT."
-            "\n• App.tsx : <Routes><Route /></Routes> — JAMAIS de BrowserRouter dans App.tsx."
+            "\n• vite.config.ts MUST always include server: { host: true }."
+            "\n• Every import in code MUST correspond to a dependency in package.json."
+            "\n• src/lib/utils.ts MUST export cn() (clsx + tailwind-merge) and formatPrice()."
+            "\n• main.tsx: <BrowserRouter><App /></BrowserRouter> — BrowserRouter HERE ONLY."
+            "\n• App.tsx: <Routes><Route /></Routes> — NEVER BrowserRouter in App.tsx."
             f"\n\n{RECURRING_BUG_PREVENTION}"
         )
 
         if is_landing:
             base += (
-                "\n\n══ STRUCTURE LANDING PAGE SAAS — OBLIGATOIRE ══"
-                "\nGénère ces composants dans src/components/sections/ :"
-                "\n1. HeroSection.tsx — titre H1 géant + badge + CTA + glow background"
-                "\n2. LogosSection.tsx — 'Trusted by' + 6-8 entreprises fictives"
-                "\n3. ProblemSection.tsx — 3-4 pain points avec icônes"
-                "\n4. SolutionSection.tsx — présentation du produit"
-                "\n5. FeaturesSection.tsx — bento grid de 6+ features glassmorphism"
-                "\n6. HowItWorksSection.tsx — 3 étapes numérotées"
-                "\n7. TestimonialsSection.tsx — 3-6 témoignages réalistes"
+                "\n\n══ SAAS LANDING PAGE STRUCTURE — MANDATORY ══"
+                "\nGenerate these components in src/components/sections/:"
+                "\n1. HeroSection.tsx — giant H1 title + badge + CTA + glow background"
+                "\n2. LogosSection.tsx — 'Trusted by' + 6-8 fictional companies"
+                "\n3. ProblemSection.tsx — 3-4 pain points with icons"
+                "\n4. SolutionSection.tsx — product presentation"
+                "\n5. FeaturesSection.tsx — bento grid of 6+ glassmorphism features"
+                "\n6. HowItWorksSection.tsx — 3 numbered steps"
+                "\n7. TestimonialsSection.tsx — 3-6 realistic testimonials"
                 "\n8. PricingSection.tsx — 3 tiers (Free/Pro/Enterprise)"
-                "\n9. CTASection.tsx — section finale avec glow"
-                "\n• Navbar.tsx : fixed, backdrop-blur, hamburger mobile"
-                "\n• Footer.tsx : 4 colonnes de liens + copyright"
-                "\n• Home.tsx : assemble toutes les sections"
-                "\n• Animations Framer Motion sur CHAQUE section (whileInView, stagger)."
-                "\n• COPYWRITING : titres percutants, bénéfice-driven, JAMAIS de lorem ipsum."
+                "\n9. CTASection.tsx — final section with glow"
+                "\n• Navbar.tsx: fixed, backdrop-blur, mobile hamburger"
+                "\n• Footer.tsx: 4 columns of links + copyright"
+                "\n• Home.tsx: assembles all sections"
+                "\n• Framer Motion animations on EVERY section (whileInView, stagger)."
+                "\n• COPYWRITING: punchy titles, benefit-driven, NEVER lorem ipsum."
             )
         elif is_ecommerce:
             from backend.prompts.templates import ECOMMERCE_PREMIUM_PROMPT, STRIPE_CHECKOUT_PATTERN, FIREBASE_STACK_PATTERN
@@ -306,12 +306,12 @@ Réponds UNIQUEMENT avec un objet JSON valide (pas de markdown, pas d'explicatio
             )
 
         base += (
-            "\n\n══ QUALITÉ VISUELLE ══"
-            "\n• Design niveau agence / Framer template. JAMAIS de page vide ou générique."
-            "\n• Fond sombre (bg-[#09090B] ou équivalent) avec effets glassmorphism."
-            "\n• Chaque section : animations Framer Motion entrée au scroll."
-            "\n• Typo imposante : titres text-5xl+ font-black."
-            "\n• Images : Unsplash URLs réelles (https://images.unsplash.com/photo-ID?w=800)."
+            "\n\n══ VISUAL QUALITY ══"
+            "\n• Agency-level design / Framer template. NEVER an empty or generic page."
+            "\n• Dark background (bg-[#09090B] or equivalent) with glassmorphism effects."
+            "\n• Each section: Framer Motion scroll-entry animations."
+            "\n• Strong typography: titles text-5xl+ font-black."
+            "\n• Images: real Unsplash URLs (https://images.unsplash.com/photo-ID?w=800)."
         )
         return base
 
@@ -500,53 +500,53 @@ Réponds UNIQUEMENT avec un objet JSON valide (pas de markdown, pas d'explicatio
         """Plan de secours complet pour une landing page SaaS."""
         return [
             {
-                "description": "Config : package.json (toutes dépendances) + vite.config.ts (host:true) + tsconfig.json + tailwind.config.js + postcss.config.js + index.html (Google Fonts)",
-                "steps": ["Créer package.json avec react, react-dom, react-router-dom, framer-motion, lucide-react, clsx, tailwind-merge, vite, @vitejs/plugin-react, tailwindcss, postcss, autoprefixer, @types/react, @types/react-dom", "Créer vite.config.ts avec server.host:true", "Créer tsconfig.json", "Créer tailwind.config.js", "Créer postcss.config.js", "Créer index.html avec Google Fonts"],
+                "description": "Config: package.json (all deps) + vite.config.ts (host:true) + tsconfig.json + tailwind.config.js + postcss.config.js + index.html (Google Fonts)",
+                "steps": ["Create package.json with react, react-dom, react-router-dom, framer-motion, lucide-react, clsx, tailwind-merge, vite, @vitejs/plugin-react, tailwindcss, postcss, autoprefixer, @types/react, @types/react-dom", "Create vite.config.ts with server.host:true", "Create tsconfig.json", "Create tailwind.config.js", "Create postcss.config.js", "Create index.html with Google Fonts"],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Design system : src/lib/utils.ts (cn + formatPrice) + src/index.css (@tailwind + CSS vars) + src/constants/theme.ts",
-                "steps": ["Créer src/lib/utils.ts", "Créer src/index.css avec variables --bg, --primary, --accent", "Créer src/constants/theme.ts"],
+                "description": "Design system: src/lib/utils.ts (cn + formatPrice) + src/index.css (@tailwind + CSS vars) + src/constants/theme.ts",
+                "steps": ["Create src/lib/utils.ts", "Create src/index.css with variables --bg, --primary, --accent", "Create src/constants/theme.ts"],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Layout : src/components/layout/Navbar.tsx (fixed, backdrop-blur, hamburger mobile) + Footer.tsx (4 colonnes)",
-                "steps": ["Créer Navbar.tsx", "Créer Footer.tsx"],
+                "description": "Layout: src/components/layout/Navbar.tsx (fixed, backdrop-blur, mobile hamburger) + Footer.tsx (4 columns)",
+                "steps": ["Create Navbar.tsx", "Create Footer.tsx"],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Hero + Social Proof : src/components/sections/HeroSection.tsx (titre géant + badge + CTA + glow) + LogosSection.tsx (6 entreprises fictives)",
-                "steps": ["Créer HeroSection.tsx avec radial glow, titre H1 gradient, badge animé, 2 CTAs", "Créer LogosSection.tsx"],
+                "description": "Hero + Social Proof: src/components/sections/HeroSection.tsx (giant title + badge + CTA + glow) + LogosSection.tsx (6 fictional companies)",
+                "steps": ["Create HeroSection.tsx with radial glow, H1 gradient title, animated badge, 2 CTAs", "Create LogosSection.tsx"],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Problem + Solution : src/components/sections/ProblemSection.tsx + SolutionSection.tsx avec contenu marketing réel",
-                "steps": ["Créer ProblemSection.tsx avec 3-4 pain points", "Créer SolutionSection.tsx"],
+                "description": "Problem + Solution: src/components/sections/ProblemSection.tsx + SolutionSection.tsx with real marketing content",
+                "steps": ["Create ProblemSection.tsx with 3-4 pain points", "Create SolutionSection.tsx"],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Features bento grid : src/components/sections/FeaturesSection.tsx (6+ features glassmorphism cards + stagger animation)",
-                "steps": ["Créer FeaturesSection.tsx avec bento grid, 6 features, hover animation, icônes Lucide"],
+                "description": "Features bento grid: src/components/sections/FeaturesSection.tsx (6+ glassmorphism cards + stagger animation)",
+                "steps": ["Create FeaturesSection.tsx with bento grid, 6 features, hover animation, Lucide icons"],
                 "tools": ["filesystem"],
             },
             {
-                "description": "How It Works + Testimonials : src/components/sections/HowItWorksSection.tsx (3 étapes) + TestimonialsSection.tsx (3-6 témoignages réalistes)",
-                "steps": ["Créer HowItWorksSection.tsx", "Créer TestimonialsSection.tsx"],
+                "description": "How It Works + Testimonials: src/components/sections/HowItWorksSection.tsx (3 steps) + TestimonialsSection.tsx (3-6 realistic testimonials)",
+                "steps": ["Create HowItWorksSection.tsx", "Create TestimonialsSection.tsx"],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Pricing : src/components/sections/PricingSection.tsx (3 tiers Free/Pro/Enterprise, toggle mensuel/annuel, CTA par tier)",
-                "steps": ["Créer PricingSection.tsx avec 3 tiers et toggle"],
+                "description": "Pricing: src/components/sections/PricingSection.tsx (3 tiers Free/Pro/Enterprise, monthly/annual toggle, CTA per tier)",
+                "steps": ["Create PricingSection.tsx with 3 tiers and toggle"],
                 "tools": ["filesystem"],
             },
             {
-                "description": "CTA final : src/components/sections/CTASection.tsx (section percutante avec gros glow)",
-                "steps": ["Créer CTASection.tsx"],
+                "description": "Final CTA: src/components/sections/CTASection.tsx (impactful section with large glow)",
+                "steps": ["Create CTASection.tsx"],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Assembly : src/main.tsx (BrowserRouter wrapping App) + src/App.tsx (Routes seulement, pas de BrowserRouter) + src/pages/Home.tsx + src/index.css",
-                "steps": ["Créer main.tsx avec BrowserRouter wrapping App (JAMAIS createBrowserRouter)", "Créer App.tsx avec Routes/Route sans BrowserRouter", "Créer Home.tsx assemblant toutes les sections dans l'ordre"],
+                "description": "Assembly: src/main.tsx (BrowserRouter wrapping App) + src/App.tsx (Routes only, no BrowserRouter) + src/pages/Home.tsx + src/index.css",
+                "steps": ["Create main.tsx with BrowserRouter wrapping App (NEVER createBrowserRouter)", "Create App.tsx with Routes/Route without BrowserRouter", "Create Home.tsx assembling all sections in order"],
                 "tools": ["filesystem"],
             },
         ]
@@ -559,90 +559,90 @@ Réponds UNIQUEMENT avec un objet JSON valide (pas de markdown, pas d'explicatio
 
         tasks = [
             {
-                "description": "Config : package.json (react, react-dom, react-router-dom, framer-motion, lucide-react, firebase, @stripe/stripe-js, @stripe/react-stripe-js) + vite.config.ts + tsconfig.json + tailwind.config.js + index.html",
+                "description": "Config: package.json (react, react-dom, react-router-dom, framer-motion, lucide-react, firebase, @stripe/stripe-js, @stripe/react-stripe-js) + vite.config.ts + tsconfig.json + tailwind.config.js + index.html",
                 "steps": [
-                    "Créer package.json avec toutes les dépendances : firebase, @stripe/stripe-js, @stripe/react-stripe-js (PAS supabase)",
-                    "Créer vite.config.ts avec server.host:true et resolve.alias {'@': './src'}",
-                    "Créer tsconfig.json, tailwind.config.js, postcss.config.js, index.html avec Google Fonts",
+                    "Create package.json with all deps: firebase, @stripe/stripe-js, @stripe/react-stripe-js (NOT supabase)",
+                    "Create vite.config.ts with server.host:true and resolve.alias {'@': './src'}",
+                    "Create tsconfig.json, tailwind.config.js, postcss.config.js, index.html with Google Fonts",
                 ],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Data + utils + types + .env.example : src/data/products.ts (12+ produits) + src/lib/utils.ts + src/types/index.ts + .env.example (Firebase + Stripe vars)",
+                "description": "Data + utils + types + .env.example: src/data/products.ts (12+ products) + src/lib/utils.ts + src/types/index.ts + .env.example (Firebase + Stripe vars)",
                 "steps": [
-                    "Créer src/data/products.ts avec 12 produits réels (nom, prix, oldPrice?, image Unsplash, catégorie, description, badge?, rating, inStock) + categories[]",
-                    "Créer src/lib/utils.ts avec cn(), formatPrice(), whatsappLink()",
-                    "Créer src/types/index.ts avec Product, Category, CartItem, User, Order interfaces",
-                    "Créer .env.example avec VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID, VITE_FIREBASE_STORAGE_BUCKET, VITE_FIREBASE_MESSAGING_SENDER_ID, VITE_FIREBASE_APP_ID, VITE_STRIPE_PUBLISHABLE_KEY",
+                    "Create src/data/products.ts with 12 real products (name, price, oldPrice?, Unsplash image, category, description, badge?, rating, inStock) + categories[]",
+                    "Create src/lib/utils.ts with cn(), formatPrice(), whatsappLink()",
+                    "Create src/types/index.ts with Product, Category, CartItem, User, Order interfaces",
+                    "Create .env.example with VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID, VITE_FIREBASE_STORAGE_BUCKET, VITE_FIREBASE_MESSAGING_SENDER_ID, VITE_FIREBASE_APP_ID, VITE_STRIPE_PUBLISHABLE_KEY",
                 ],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Cart context : src/context/CartContext.tsx — COMPLET : CartContext, CartProvider, CartItem, useCart, useCartStore alias, isOpen, toggleCart",
+                "description": "Cart context: src/context/CartContext.tsx — COMPLETE: CartContext, CartProvider, CartItem, useCart, useCartStore alias, isOpen, toggleCart",
                 "steps": [
-                    "Créer src/context/CartContext.tsx avec CartContext + CartProvider + useState pour items et isOpen",
-                    "Implémenter addItem (upsert), removeItem, updateQuantity, clearCart, toggleCart",
-                    "Exporter CartProvider (default + named), useCart hook, useCartStore alias, CartItem type",
+                    "Create src/context/CartContext.tsx with CartContext + CartProvider + useState for items and isOpen",
+                    "Implement addItem (upsert), removeItem, updateQuantity, clearCart, toggleCart",
+                    "Export CartProvider (default + named), useCart hook, useCartStore alias, CartItem type",
                 ],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Firebase lib + Auth : src/lib/firebase.ts (initializeApp + auth + db) + src/context/AuthContext.tsx (email/password + Google) + src/pages/Login.tsx + Register.tsx + ProtectedRoute.tsx",
+                "description": "Firebase lib + Auth: src/lib/firebase.ts (initializeApp + auth + db) + src/context/AuthContext.tsx (email/password + Google) + src/pages/Login.tsx + Register.tsx + ProtectedRoute.tsx",
                 "steps": [
-                    "Créer src/lib/firebase.ts : initializeApp(firebaseConfig) via VITE_FIREBASE_* env vars, export auth = getAuth(app), db = getFirestore(app)",
-                    "Créer src/context/AuthContext.tsx : onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider+signInWithPopup, signOut, loading state",
-                    "Créer src/pages/Login.tsx : formulaire email+password + bouton Google Sign-In, gestion erreurs Firebase (auth/wrong-password, auth/user-not-found...)",
-                    "Créer src/pages/Register.tsx : inscription + setDoc(doc(db,'users',uid), {email, displayName, createdAt})",
-                    "Créer src/components/auth/ProtectedRoute.tsx : const {user,loading} = useAuth(); if loading return spinner; return user ? <Outlet> : <Navigate to='/login'>",
+                    "Create src/lib/firebase.ts: initializeApp(firebaseConfig) via VITE_FIREBASE_* env vars, export auth = getAuth(app), db = getFirestore(app)",
+                    "Create src/context/AuthContext.tsx: onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider+signInWithPopup, signOut, loading state",
+                    "Create src/pages/Login.tsx: email+password form + Google Sign-In button, Firebase error handling (auth/wrong-password, auth/user-not-found...)",
+                    "Create src/pages/Register.tsx: registration + setDoc(doc(db,'users',uid), {email, displayName, createdAt})",
+                    "Create src/components/auth/ProtectedRoute.tsx: const {user,loading} = useAuth(); if loading return spinner; return user ? <Outlet> : <Navigate to='/login'>",
                 ],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Stripe PaymentElement (Apple Pay + Google Pay + cartes) : src/lib/stripe.ts + CheckoutForm.tsx + Checkout.tsx + OrderSuccess.tsx + Firebase Cloud Function createPaymentIntent",
+                "description": "Stripe PaymentElement (Apple Pay + Google Pay + cards): src/lib/stripe.ts + CheckoutForm.tsx + Checkout.tsx + OrderSuccess.tsx + Firebase Cloud Function createPaymentIntent",
                 "steps": [
-                    "Créer src/lib/stripe.ts : export stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)",
-                    "Créer src/components/checkout/CheckoutForm.tsx avec PaymentElement + confirmPayment (automatic_payment_methods active Apple Pay + Google Pay)",
-                    "Créer src/pages/Checkout.tsx : fetch POST /api/create-payment-intent → clientSecret, <Elements stripe={stripePromise} options={{clientSecret}}>",
-                    "Créer src/pages/OrderSuccess.tsx : confirmation + addDoc(collection(db,'orders'), {userId, items, total, status:'paid', createdAt})",
-                    "Créer functions/package.json : {dependencies: {firebase-functions:'^4', firebase-admin:'^12', stripe:'^16'}}",
-                    "Créer functions/src/index.ts : createPaymentIntent onRequest avec stripe.paymentIntents.create({automatic_payment_methods:{enabled:true}}) + stripeWebhook pour update Firestore",
-                    "Mettre à jour firebase.json : ajouter {functions:{source:'functions'}} + rewrite {source:'/api/**', function:'createPaymentIntent'}",
+                    "Create src/lib/stripe.ts: export stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)",
+                    "Create src/components/checkout/CheckoutForm.tsx with PaymentElement + confirmPayment (automatic_payment_methods enables Apple Pay + Google Pay)",
+                    "Create src/pages/Checkout.tsx: fetch POST /api/create-payment-intent → clientSecret, <Elements stripe={stripePromise} options={{clientSecret}}>",
+                    "Create src/pages/OrderSuccess.tsx: confirmation + addDoc(collection(db,'orders'), {userId, items, total, status:'paid', createdAt})",
+                    "Create functions/package.json: {dependencies: {firebase-functions:'^4', firebase-admin:'^12', stripe:'^16'}}",
+                    "Create functions/src/index.ts: createPaymentIntent onRequest with stripe.paymentIntents.create({automatic_payment_methods:{enabled:true}}) + stripeWebhook to update Firestore",
+                    "Update firebase.json: add {functions:{source:'functions'}} + rewrite {source:'/api/**', function:'createPaymentIntent'}",
                 ],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Layout : src/components/layout/Navbar.tsx (isActive helper, compteur panier, hamburger mobile) + Footer.tsx + src/components/cart/CartDrawer.tsx (drawer animé)",
+                "description": "Layout: src/components/layout/Navbar.tsx (isActive helper, cart counter, mobile hamburger) + Footer.tsx + src/components/cart/CartDrawer.tsx (animated drawer)",
                 "steps": [
-                    "Créer Navbar.tsx avec isActive helper (path.startsWith('/#') → false, '/' → exact match), badge panier, hamburger",
-                    "Créer Footer.tsx avec 3-4 colonnes de liens",
-                    "Créer CartDrawer.tsx : drawer Framer Motion, items list, quantités éditables, total, bouton Checkout",
+                    "Create Navbar.tsx with isActive helper (path.startsWith('/#') → false, '/' → exact match), cart badge, hamburger",
+                    "Create Footer.tsx with 3-4 columns of links",
+                    "Create CartDrawer.tsx: Framer Motion drawer, items list, editable quantities, total, Checkout button",
                 ],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Composants produit : src/components/product/ProductCard.tsx (hover, quick-add, badge) + ProductGrid.tsx + src/components/catalogue/FilterBar.tsx",
+                "description": "Product components: src/components/product/ProductCard.tsx (hover, quick-add, badge) + ProductGrid.tsx + src/components/catalogue/FilterBar.tsx",
                 "steps": [
-                    "Créer ProductCard.tsx avec image, nom, prix, badge, hover scale, bouton add-to-cart",
-                    "Créer ProductGrid.tsx avec grid responsive",
-                    "Créer FilterBar.tsx avec boutons catégories + champ recherche",
+                    "Create ProductCard.tsx with image, name, price, badge, hover scale, add-to-cart button",
+                    "Create ProductGrid.tsx with responsive grid",
+                    "Create FilterBar.tsx with category buttons + search field",
                 ],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Pages Home + Products + ProductDetail : hero animé, catalogue filtrable, page détail avec galerie et bouton WhatsApp",
+                "description": "Pages Home + Products + ProductDetail: animated hero, filterable catalog, detail page with gallery and WhatsApp button",
                 "steps": [
-                    "Créer src/pages/Home.tsx : hero + produits featured + catégories + CTA",
-                    "Créer src/pages/Products.tsx : FilterBar + ProductGrid + état filtres",
-                    "Créer src/pages/ProductDetail.tsx : galerie images, description, features, add-to-cart, bouton WhatsApp",
+                    "Create src/pages/Home.tsx: hero + featured products + categories + CTA",
+                    "Create src/pages/Products.tsx: FilterBar + ProductGrid + filter state",
+                    "Create src/pages/ProductDetail.tsx: image gallery, description, features, add-to-cart, WhatsApp button",
                 ],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Assembly : src/main.tsx (BrowserRouter wrapper) + src/App.tsx (Routes + CartProvider SANS BrowserRouter) + src/index.css (@tailwind + variables CSS)",
+                "description": "Assembly: src/main.tsx (BrowserRouter wrapper) + src/App.tsx (Routes + CartProvider WITHOUT BrowserRouter) + src/index.css (@tailwind + CSS variables)",
                 "steps": [
-                    "Créer main.tsx : ReactDOM.createRoot + <BrowserRouter><App /></BrowserRouter>",
-                    "Créer App.tsx : <CartProvider><Navbar/><Routes><Route/></Routes><Footer/><CartDrawer/></CartProvider> — JAMAIS de BrowserRouter ici",
-                    "Créer src/index.css avec @tailwind base/components/utilities + variables CSS --primary, --bg",
+                    "Create main.tsx: ReactDOM.createRoot + <BrowserRouter><App /></BrowserRouter>",
+                    "Create App.tsx: <CartProvider><Navbar/><Routes><Route/></Routes><Footer/><CartDrawer/></CartProvider> — NEVER BrowserRouter here",
+                    "Create src/index.css with @tailwind base/components/utilities + CSS variables --primary, --bg",
                 ],
                 "tools": ["filesystem"],
             },
@@ -655,26 +655,26 @@ Réponds UNIQUEMENT avec un objet JSON valide (pas de markdown, pas d'explicatio
         return tasks
 
     def _fallback_plan(self, objective: str) -> List[Dict[str, Any]]:
-        """Plan de secours générique."""
+        """Generic fallback plan."""
         return [
             {
-                "description": "Initialiser la structure et la configuration du projet",
-                "steps": ["Créer les fichiers de configuration (package.json, vite.config.ts, tsconfig.json, tailwind.config.js, index.html)"],
+                "description": "Initialize project structure and configuration",
+                "steps": ["Create config files (package.json, vite.config.ts, tsconfig.json, tailwind.config.js, index.html)"],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Générer le code source principal avec design premium",
-                "steps": ["Analyser les besoins", "Créer les composants principaux avec Framer Motion et Tailwind CSS"],
+                "description": "Generate main source code with premium design",
+                "steps": ["Analyze requirements", "Create main components with Framer Motion and Tailwind CSS"],
                 "tools": ["filesystem", "llm"],
             },
             {
-                "description": "Créer les utilitaires et données mockées réalistes",
-                "steps": ["src/lib/utils.ts", "Données de contenu réalistes"],
+                "description": "Create utilities and realistic mock data",
+                "steps": ["src/lib/utils.ts", "Realistic content data"],
                 "tools": ["filesystem"],
             },
             {
-                "description": "Assembly final : main.tsx (BrowserRouter wrapping App) + App.tsx (Routes sans BrowserRouter) + index.css",
-                "steps": ["main.tsx : BrowserRouter wrapping <App />, JAMAIS createBrowserRouter", "App.tsx : <Routes><Route /></Routes> seulement"],
+                "description": "Final assembly: main.tsx (BrowserRouter wrapping App) + App.tsx (Routes without BrowserRouter) + index.css",
+                "steps": ["main.tsx: BrowserRouter wrapping <App />, NEVER createBrowserRouter", "App.tsx: <Routes><Route /></Routes> only"],
                 "tools": ["filesystem"],
             },
         ]

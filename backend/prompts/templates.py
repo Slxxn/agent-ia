@@ -6,9 +6,9 @@ Injectés dans le contexte de la tâche pour guider la génération de code.
 # ─── Bug-prevention patterns — injected into every React project ───────────────
 
 RECURRING_BUG_PREVENTION = """
-══ RÈGLES ANTI-BUGS — OBLIGATOIRES POUR TOUT PROJET REACT ══
+══ BUG PREVENTION RULES — MANDATORY FOR ALL REACT PROJECTS ══
 
-1) NAVBAR — isActive helper (copier-coller EXACT, ne jamais improviser) :
+1) NAVBAR — isActive helper (copy-paste EXACTLY, never improvise):
    import { useLocation } from 'react-router-dom';
    const location = useLocation();
    const isActive = (path: string) => {
@@ -16,179 +16,179 @@ RECURRING_BUG_PREVENTION = """
      if (path === '/') return location.pathname === '/';
      return location.pathname === path || location.pathname.startsWith(path + '/');
    };
-   // NE JAMAIS utiliser link.path.split('#')[0] pour détecter l'état actif.
-   // NE JAMAIS utiliser key={link.path} quand plusieurs liens ont le même path → key={link.label}
+   // NEVER use link.path.split('#')[0] to detect active state.
+   // NEVER use key={link.path} when multiple links share the same path → use key={link.label}
 
-2) SECTIONS — Backgrounds visuellement distincts (thème clair) :
-   - JAMAIS bg-[var(--surface)] ni bg-slate-50 seul → trop proche du blanc, invisible
-   - Pattern obligatoire pour thème clair :
-       sections impaires  → bg-white
-       sections paires    → bg-violet-50   ← clairement visible, safe avec tout texte foncé
-       1 section forte    → bg-gradient-to-br from-violet-50 to-blue-50  (ex: About)
-   - Pour thème sombre : alterner bg-[#09090B] / bg-[#0F0F12]
-   - NAVBAR — ancres hash : utiliser onClick + scrollIntoView, JAMAIS <Link to="/#section">
-     Pattern correct :
+2) SECTIONS — Visually distinct backgrounds (light theme):
+   - NEVER bg-[var(--surface)] or bg-slate-50 alone → too close to white, invisible
+   - Mandatory pattern for light theme:
+       odd sections  → bg-white
+       even sections → bg-violet-50   ← clearly visible, safe with any dark text
+       1 strong section → bg-gradient-to-br from-violet-50 to-blue-50  (e.g.: About)
+   - For dark theme: alternate bg-[#09090B] / bg-[#0F0F12]
+   - NAVBAR — hash anchors: use onClick + scrollIntoView, NEVER <Link to="/#section">
+     Correct pattern:
        const handleNavClick = (hash: string) => {
          if (!hash) return;
          const el = document.getElementById(hash.replace('#', ''));
          el?.scrollIntoView({ behavior: 'smooth' });
        };
-     ou <a href="#section"> pour les liens simples (HTML natif).
-   - SECTIONS ancres : ajouter id="about", id="contact", id="categories" sur les <section>
+     or <a href="#section"> for simple links (native HTML).
+   - SECTION anchors: add id="about", id="contact", id="categories" on <section> elements
 
-3) BROWSERROUTER — split obligatoire :
-   main.tsx  →  <BrowserRouter><App /></BrowserRouter>   (BrowserRouter ICI uniquement)
-   App.tsx   →  <Routes><Route /></Routes>              (JAMAIS de BrowserRouter ici)
-   JAMAIS deux BrowserRouter imbriqués → crash React au runtime.
+3) BROWSERROUTER — mandatory split:
+   main.tsx  →  <BrowserRouter><App /></BrowserRouter>   (BrowserRouter HERE only)
+   App.tsx   →  <Routes><Route /></Routes>              (NEVER BrowserRouter here)
+   NEVER two nested BrowserRouters → React crash at runtime.
 
-4) IMPORTS — toujours vérifier :
-   - Chaque import dans le code doit correspondre à une dépendance dans package.json.
-   - Chaque composant importé doit être créé dans la même tâche ou une tâche précédente.
-   - Ne jamais importer depuis un chemin qui n'existe pas encore.
+4) IMPORTS — always verify:
+   - Every import in code must correspond to a dependency in package.json.
+   - Every imported component must be created in the same task or a previous task.
+   - Never import from a path that doesn't exist yet.
 
-5) FRAMER MOTION — cohérence des clés de variants (CRITIQUE) :
-   Les variants staggerContainer/staggerItem utilisent les clés "hidden" et "show".
-   Les variants fadeInUp/scaleIn/fadeIn utilisent les clés "hidden" et "visible".
-   RÈGLE ABSOLUE : la clé passée à animate= ou whileInView= DOIT correspondre
-   à une clé définie dans variants=.
-   - staggerContainer → toujours animate="show" ou whileInView="show"
-   - staggerItem      → hérite automatiquement, ne pas mettre animate= dessus
-   - fadeInUp/scaleIn → animate="visible" ou whileInView="visible"
-   SI les clés ne correspondent pas → le composant reste à opacity:0 → section INVISIBLE.
-   JAMAIS : variants={staggerContainer} animate="visible"  ← invisible !
-   TOUJOURS : variants={staggerContainer} whileInView="show"  ← correct
+5) FRAMER MOTION — variant key consistency (CRITICAL):
+   staggerContainer/staggerItem variants use keys "hidden" and "show".
+   fadeInUp/scaleIn/fadeIn variants use keys "hidden" and "visible".
+   ABSOLUTE RULE: the key passed to animate= or whileInView= MUST match
+   a key defined in variants=.
+   - staggerContainer → always animate="show" or whileInView="show"
+   - staggerItem      → inherits automatically, do NOT put animate= on it
+   - fadeInUp/scaleIn → animate="visible" or whileInView="visible"
+   IF keys don't match → component stays at opacity:0 → section INVISIBLE.
+   NEVER: variants={staggerContainer} animate="visible"  ← invisible!
+   ALWAYS: variants={staggerContainer} whileInView="show"  ← correct
 
-   GRILLES FILTRÉES (Gallery, catalogue avec catégories) :
-   - NE PAS utiliser whileInView sur les cartes d'une grille filtrée → reste invisible après filtre.
-   - Pattern correct pour grilles filtrables :
+   FILTERED GRIDS (Gallery, catalog with categories):
+   - DO NOT use whileInView on cards in a filtered grid → stays invisible after filter.
+   - Correct pattern for filterable grids:
        <motion.div key={activeCategory} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
          {filtered.map((item, i) => (
            <motion.div key={item.id} initial={{ opacity: 0, scale: 0.95 }}
              animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
-   - La clé key={activeCategory} sur le container déclanche une ré-animation à chaque filtre.
+   - The key={activeCategory} on the container triggers re-animation on each filter.
 
-6) CSS — toute classe custom utilisée DOIT être définie dans globals.css :
-   - Si tu utilises className="gradient-text" → définir .gradient-text dans globals.css
-   - Si tu utilises className="section-label" → définir .section-label dans globals.css
-   - Si tu utilises className="shadow-glow"   → définir .shadow-glow dans globals.css
-   - Ne jamais référencer une classe Tailwind arbitraire qui n'existe pas.
-   - Les modificateurs d'opacité sur des variables CSS (bg-[var(--primary)]/10) ne
-     fonctionnent PAS dans Tailwind v3 sauf si la variable est en format RGB channels.
-     → Préférer : bg-primary/10 si "primary" est défini dans tailwind.config.js,
-       OU utiliser color-mix() dans globals.css directement.
-   - ring-2 ring-[var(--primary)] affiche BLEU par défaut si la variable n'est pas reconnue.
-     Pour les cards "highlighted" (ex: pricing), utiliser style={{ boxShadow: '...' }} :
+6) CSS — every custom class used MUST be defined in globals.css:
+   - If you use className="gradient-text" → define .gradient-text in globals.css
+   - If you use className="section-label" → define .section-label in globals.css
+   - If you use className="shadow-glow"   → define .shadow-glow in globals.css
+   - Never reference an arbitrary Tailwind class that doesn't exist.
+   - Opacity modifiers on CSS variables (bg-[var(--primary)]/10) do NOT
+     work in Tailwind v3 unless the variable is in RGB channels format.
+     → Prefer: bg-primary/10 if "primary" is defined in tailwind.config.js,
+       OR use color-mix() directly in globals.css.
+   - ring-2 ring-[var(--primary)] shows BLUE by default if the variable isn't recognized.
+     For "highlighted" cards (e.g.: pricing), use style={{ boxShadow: '...' }}:
        style={{ boxShadow: '0 0 0 3px rgba(R,G,B,0.3), 0 4px 24px rgba(R,G,B,0.15)' }}
 
-7) POLICES — cohérence obligatoire entre index.html et globals.css :
-   - Les polices chargées dans <link> Google Fonts de index.html DOIVENT correspondre
-     exactement aux noms dans --font-display et --font-body dans globals.css.
-   - Si index.html charge "Cormorant Garamond" → globals.css doit avoir
-     --font-display: 'Cormorant Garamond', serif; PAS 'Syne' ni autre.
-   - Vérifier la correspondance exacte du nom de police (sensible à la casse et aux espaces).
+7) FONTS — mandatory consistency between index.html and globals.css:
+   - Fonts loaded in <link> Google Fonts in index.html MUST match
+     exactly the names in --font-display and --font-body in globals.css.
+   - If index.html loads "Cormorant Garamond" → globals.css must have
+     --font-display: 'Cormorant Garamond', serif; NOT 'Syne' or anything else.
+   - Verify exact font name match (case-sensitive and space-sensitive).
 
-8) LAYOUT & ESPACEMENT DES SECTIONS :
-   - Si Layout.tsx ajoute pt-16 lg:pt-20 sur <main> pour compenser la navbar fixe,
-     NE PAS ajouter de padding-top supplémentaire dans HeroSection ou la première section.
-   - Espacement standard entre sections : py-12 lg:py-16 (jamais py-24 lg:py-32).
-   - Les sections consécutives cumulent leur padding (bottom + top) → rester modéré.
+8) LAYOUT & SECTION SPACING:
+   - If Layout.tsx adds pt-16 lg:pt-20 on <main> to compensate for fixed navbar,
+     DO NOT add extra padding-top in HeroSection or the first section.
+   - Standard spacing between sections: py-12 lg:py-16 (never py-24 lg:py-32).
+   - Consecutive sections accumulate their padding (bottom + top) → stay moderate.
 
-9) IMAGES EXTERNES — utiliser uniquement des URLs vérifiées et publiques :
-   - Unsplash : https://images.unsplash.com/photo-{ID}?w=800&q=80 → fiable
-   - Wikipedia Commons : NE PAS utiliser pour des logos de marques → URLs souvent inexistantes.
-   - Pour des logos de marques (OPI, Essie, etc.) → utiliser du texte stylisé, pas des images.
-   - Pour des avatars/photos : Unsplash uniquement avec un vrai photo ID.
-   - NE JAMAIS inventer une URL d'image → affichage cassé assuré.
+9) EXTERNAL IMAGES — use only verified and public URLs:
+   - Unsplash: https://images.unsplash.com/photo-{ID}?w=800&q=80 → reliable
+   - Wikipedia Commons: DO NOT use for brand logos → URLs often non-existent.
+   - For brand logos (OPI, Essie, etc.) → use styled text, not images.
+   - For avatars/photos: Unsplash only with a real photo ID.
+   - NEVER invent an image URL → guaranteed broken display.
 
-10) LAYOUT PATTERN — Outlet vs children :
-    - Si Layout.tsx utilise <Outlet />, alors App.tsx DOIT utiliser des routes imbriquées :
+10) LAYOUT PATTERN — Outlet vs children:
+    - If Layout.tsx uses <Outlet />, then App.tsx MUST use nested routes:
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           ...
         </Route>
-    - JAMAIS <Layout><Home /></Layout> si Layout utilise Outlet → TS error + render vide.
+    - NEVER <Layout><Home /></Layout> if Layout uses Outlet → TS error + empty render.
 
-11) HOMEPAGE STRUCTURE — Max 6-7 sections, ordre optimal :
-    Ordre obligatoire : Hero → Logos/Social proof → Value proposition → Features (3 max) → CTA → Footer
-    - Hero DOIT avoir : headline, sous-headline, bouton CTA principal, visuel ou image.
-    - Ne JAMAIS mettre la FAQ complète, la liste complète des services, ou la galerie complète sur la homepage.
-      → Utiliser des sections "teaser" (3 items max) avec un lien "Voir tout".
-    - Chaque section doit avoir un fond visuellement distinct de la précédente (alternance claire/sombre).
-    - Max 3 features/avantages mis en avant sur la homepage — choisir les plus impactants.
-    - Une seule section CTA forte en fin de page avant le footer.
+11) HOMEPAGE STRUCTURE — Max 6-7 sections, optimal order:
+    Mandatory order: Hero → Logos/Social proof → Value proposition → Features (3 max) → CTA → Footer
+    - Hero MUST have: headline, sub-headline, primary CTA button, visual or image.
+    - NEVER put the full FAQ, complete services list, or full gallery on the homepage.
+      → Use "teaser" sections (3 items max) with a "See all" link.
+    - Each section must have a visually distinct background from the previous (light/dark alternation).
+    - Max 3 features/benefits highlighted on the homepage — choose the most impactful.
+    - A single strong CTA section at the end of the page before the footer.
 
-12) EXPORTS NOMMÉS — RÈGLE ABSOLUE :
-    Chaque composant React DOIT avoir LES DEUX exports :
-      export const MonComposant: React.FC = () => { ... };   ← export nommé
-      export default MonComposant;                            ← export default
-    JAMAIS uniquement "export default" — les fichiers index.ts ré-exportent via le nom.
-    Idem pour les badges, contexts, hooks : toujours export nommé + export default.
+12) NAMED EXPORTS — ABSOLUTE RULE:
+    Every React component MUST have BOTH exports:
+      export const MyComponent: React.FC = () => { ... };   ← named export
+      export default MyComponent;                            ← default export
+    NEVER only "export default" — index.ts files re-export by name.
+    Same for badges, contexts, hooks: always named export + default export.
 
-13) COHÉRENCE NOMS DE CHAMPS DANS LES DATA FILES :
-    Avant d'accéder à un champ dans un composant, vérifier l'interface dans le fichier data.
-    Exemples d'erreurs fréquentes :
-    - data/gallery.ts définit { url: string } mais composant utilise image.imageUrl → crash
-    - data/homeContent.ts définit { badge: string } mais composant utilise heroContent.badges.map() → crash
-    - data/services.ts définit { price, duration } mais composant appelle service.features.map() → crash
-    RÈGLE : toujours inspecter l'interface TypeScript du data file avant d'écrire le composant.
+13) FIELD NAME CONSISTENCY IN DATA FILES:
+    Before accessing a field in a component, check the interface in the data file.
+    Common error examples:
+    - data/gallery.ts defines { url: string } but component uses image.imageUrl → crash
+    - data/homeContent.ts defines { badge: string } but component uses heroContent.badges.map() → crash
+    - data/services.ts defines { price, duration } but component calls service.features.map() → crash
+    RULE: always inspect the TypeScript interface of the data file before writing the component.
 
-14) BOUTONS DANS LES FORMULAIRES — type="button" obligatoire :
-    Tout <button> qui N'EST PAS un submit DOIT avoir type="button" pour éviter une soumission accidentelle.
-    JAMAIS de <button onClick={...}> sans type dans un <form>.
-    SURTOUT les boutons de navigation (prev/next stepper), les filtres de galerie, les toggles.
-    Pattern correct : <button type="button" onClick={handleFilter}>...</button>
+14) FORM BUTTONS — type="button" mandatory:
+    Any <button> that is NOT a submit MUST have type="button" to prevent accidental submission.
+    NEVER <button onClick={...}> without type inside a <form>.
+    ESPECIALLY navigation buttons (prev/next stepper), gallery filters, toggles.
+    Correct pattern: <button type="button" onClick={handleFilter}>...</button>
 
-15) BADGES "FEATURED" DANS LES CARDS — JAMAIS en absolute -top :
-    Un badge "Le plus populaire" / "Popular" en position absolute -top-3 se superpose au contenu.
-    Pattern correct : placer le badge DANS le flux normal en haut de la card :
+15) "FEATURED" BADGES IN CARDS — NEVER in absolute -top:
+    A "Most popular" / "Popular" badge in absolute -top-3 position overlaps content.
+    Correct pattern: place the badge IN the normal flow at the top of the card:
       <div className="flex justify-center mb-4">
         <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">
-          Le plus populaire
+          Most popular
         </span>
       </div>
-    Ajouter pt-8 ou pt-12 sur la card non-featured pour aligner les corps de card.
+    Add pt-8 or pt-12 on the non-featured card to align card bodies.
 
-16) EMOJIS — INTERDITS dans les UI de production :
-    Ne jamais mettre d'emojis dans les titres de section, badges, labels, ou textes UI.
-    Les emojis cassent la typographie et donnent un aspect "template bon marché".
-    Si des étoiles sont requises (ratings) → utiliser des icônes Lucide (Star) ou des ★ HTML.
+16) EMOJIS — FORBIDDEN in production UIs:
+    Never put emojis in section titles, badges, labels, or UI text.
+    Emojis break typography and give a "cheap template" feel.
+    If stars are required (ratings) → use Lucide icons (Star) or ★ HTML entities.
 
-17) BOUTONS — variants valides UNIQUEMENT (dans Button.tsx) :
-    variant="primary"   → fond coloré (CTA principal)
-    variant="secondary" → fond secondaire
-    variant="outline"   → bordure visible, fond transparent
-    variant="ghost"     → sans bordure ni fond
-    JAMAIS variant="filled"     → n'existe pas, utiliser "primary"
-    JAMAIS variant="default"    → n'existe pas, utiliser "primary"
-    JAMAIS variant="contained"  → n'existe pas, utiliser "primary"
-    JAMAIS variant="solid"      → n'existe pas, utiliser "primary"
-    Button n'accepte PAS de prop href → envelopper dans <a href="..."><Button>...</Button></a>
+17) BUTTONS — valid variants ONLY (in Button.tsx):
+    variant="primary"   → colored background (primary CTA)
+    variant="secondary" → secondary background
+    variant="outline"   → visible border, transparent background
+    variant="ghost"     → no border or background
+    NEVER variant="filled"     → doesn't exist, use "primary"
+    NEVER variant="default"    → doesn't exist, use "primary"
+    NEVER variant="contained"  → doesn't exist, use "primary"
+    NEVER variant="solid"      → doesn't exist, use "primary"
+    Button does NOT accept href prop → wrap in <a href="..."><Button>...</Button></a>
 
-18) IMPORTS REACT — TOUJOURS déclarer chaque API utilisée :
-    Chaque hook ou fonction React DOIT apparaître dans l'import :
+18) REACT IMPORTS — ALWAYS declare every API used:
+    Every React hook or function MUST appear in the import:
       import { createContext, useState, useEffect, useContext, useRef } from 'react';
-    De même pour react-router-dom :
+    Same for react-router-dom:
       import { Routes, Route, Link, useNavigate, useLocation, useParams, Navigate, Outlet } from 'react-router-dom';
-    Et pour Firebase :
-      import { initializeApp, getApps } from 'firebase/app';  ← OBLIGATOIRE si getAuth()/getFirestore() utilisés
-    RÈGLE : si tu écris `createContext(` sans l'importer → erreur runtime garantie.
-    CONTRÔLE : vérifie chaque fichier — la ligne d'import DOIT lister tous les noms utilisés.
+    And for Firebase:
+      import { initializeApp, getApps } from 'firebase/app';  ← MANDATORY if getAuth()/getFirestore() used
+    RULE: if you write `createContext(` without importing it → guaranteed runtime error.
+    CHECK: verify each file — the import line MUST list all names used.
 
-19) ALIAS @ — vite.config.ts DOIT avoir resolve.alias :
+19) @ ALIAS — vite.config.ts MUST have resolve.alias:
     resolve: { alias: { '@': path.resolve(__dirname, './src') } }
-    Si tu utilises `import X from '@/components/...'` sans cet alias → erreur build.
-    Utilise toujours des chemins relatifs (../../) OU vérifie que l'alias est configuré.
-    PRÉFÉRENCE : chemins relatifs pour éviter toute ambiguïté.
+    If you use `import X from '@/components/...'` without this alias → build error.
+    Always use relative paths (../../) OR verify the alias is configured.
+    PREFERENCE: relative paths to avoid any ambiguity.
 """
 
 # ─── Firebase full stack pattern ──────────────────────────────────────────────
 
 FIREBASE_STACK_PATTERN = """
-══ STACK FIREBASE COMPLÈTE — AUTH + FIRESTORE + HOSTING ══
+══ COMPLETE FIREBASE STACK — AUTH + FIRESTORE + HOSTING ══
 
-Package unique : firebase (inclut auth, firestore, storage, functions)
+Single package: firebase (includes auth, firestore, storage, functions)
 
-src/lib/firebase.ts (TOUJOURS ce fichier, jamais d'autres noms) :
+src/lib/firebase.ts (ALWAYS this file, never other names):
   import { initializeApp, getApps } from 'firebase/app';
   import { getAuth } from 'firebase/auth';
   import { getFirestore } from 'firebase/firestore';
@@ -206,18 +206,18 @@ src/lib/firebase.ts (TOUJOURS ce fichier, jamais d'autres noms) :
   export const auth = getAuth(app);
   export const db   = getFirestore(app);
 
-src/context/AuthContext.tsx :
+src/context/AuthContext.tsx:
   - createContext<AuthContextType | null>(null)
-  - useEffect : onAuthStateChanged(auth, setUser) → unsubscribe on cleanup
+  - useEffect: onAuthStateChanged(auth, setUser) → unsubscribe on cleanup
   - signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider + signInWithPopup
-  - Exposer : user, loading, signIn(email, pw), signUp(email, pw), signInWithGoogle(), signOut()
+  - Expose: user, loading, signIn(email, pw), signUp(email, pw), signInWithGoogle(), signOut()
 
-src/components/auth/ProtectedRoute.tsx :
+src/components/auth/ProtectedRoute.tsx:
   const { user, loading } = useAuth();
   if (loading) return <LoadingSpinner />;
   return user ? <Outlet /> : <Navigate to="/login" replace />;
 
-Firestore collections standards :
+Standard Firestore collections:
   - users/{uid}        : { email, displayName, createdAt, role }
   - products/{id}      : { name, price, category, imageUrl, inStock, description }
   - orders/{id}        : { userId, items[], total, status, createdAt, stripePaymentIntentId }
@@ -235,11 +235,11 @@ Firestore collections standards :
 # ─── Payment pattern (Stripe + Firebase Cloud Functions) ──────────────────────
 
 STRIPE_CHECKOUT_PATTERN = """
-══ PAIEMENTS STRIPE — APPLE PAY + GOOGLE PAY + CARTES — PATTERN OBLIGATOIRE ══
+══ STRIPE PAYMENTS — APPLE PAY + GOOGLE PAY + CARDS — MANDATORY PATTERN ══
 
-Architecture : React (frontend) + Firebase Cloud Functions (backend serverless)
-Packages frontend : @stripe/stripe-js @stripe/react-stripe-js
-Package backend   : stripe (dans functions/package.json)
+Architecture: React (frontend) + Firebase Cloud Functions (serverless backend)
+Frontend packages: @stripe/stripe-js @stripe/react-stripe-js
+Backend package: stripe (in functions/package.json)
 
 ━━━ FRONTEND ━━━
 
@@ -249,7 +249,7 @@ src/lib/stripe.ts :
 
 src/components/checkout/CheckoutForm.tsx :
   import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-  // PaymentElement affiche AUTOMATIQUEMENT : Apple Pay, Google Pay, cartes, Link
+  // PaymentElement AUTOMATICALLY shows: Apple Pay, Google Pay, cards, Link
   const stripe = useStripe();
   const elements = useElements();
   const handleSubmit = async (e: React.FormEvent) => {
@@ -267,15 +267,15 @@ src/components/checkout/CheckoutForm.tsx :
     <form onSubmit={handleSubmit}>
       <PaymentElement />
       <button disabled={!stripe || loading}>
-        {loading ? 'Traitement...' : 'Payer'}
+        {loading ? 'Processing...' : 'Pay'}
       </button>
       {errorMsg && <p className="text-red-500">{errorMsg}</p>}
     </form>
   );
 
-src/pages/Checkout.tsx :
+src/pages/Checkout.tsx:
   import { Elements } from '@stripe/react-stripe-js';
-  // clientSecret récupéré via la Cloud Function createPaymentIntent
+  // clientSecret retrieved via the Cloud Function createPaymentIntent
   const [clientSecret, setClientSecret] = useState('');
   useEffect(() => {
     fetch('/api/create-payment-intent', {
@@ -291,14 +291,14 @@ src/pages/Checkout.tsx :
     </Elements>
   ) : <LoadingSpinner />;
 
-src/pages/OrderSuccess.tsx :
-  - Affiche un message de confirmation de commande
-  - Lit l'orderId depuis les query params Stripe (payment_intent)
-  - Sauvegarde la commande dans Firestore orders/{id}
+src/pages/OrderSuccess.tsx:
+  - Displays an order confirmation message
+  - Reads orderId from Stripe query params (payment_intent)
+  - Saves order to Firestore orders/{id}
 
 ━━━ BACKEND (Firebase Cloud Functions) ━━━
 
-functions/package.json : { "dependencies": { "firebase-functions": "^4", "firebase-admin": "^12", "stripe": "^16" } }
+functions/package.json: { "dependencies": { "firebase-functions": "^4", "firebase-admin": "^12", "stripe": "^16" } }
 
 functions/src/index.ts :
   import * as functions from 'firebase-functions';
@@ -312,7 +312,7 @@ functions/src/index.ts :
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency,
-      automatic_payment_methods: { enabled: true },  // active Apple Pay + Google Pay
+      automatic_payment_methods: { enabled: true },  // enables Apple Pay + Google Pay
     });
     res.json({ clientSecret: paymentIntent.client_secret });
   });
@@ -322,14 +322,14 @@ functions/src/index.ts :
     const event = stripe.webhooks.constructEvent(req.rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET!);
     if (event.type === 'payment_intent.succeeded') {
       const pi = event.data.object as Stripe.PaymentIntent;
-      // Mettre à jour le statut de la commande dans Firestore
+      // Update order status in Firestore
       const admin = await import('firebase-admin');
       await admin.firestore().collection('orders').doc(pi.metadata.orderId).update({ status: 'paid' });
     }
     res.json({ received: true });
   });
 
-firebase.json (ajouter) :
+firebase.json (add):
   "functions": { "source": "functions" },
   "hosting": {
     "rewrites": [
@@ -340,15 +340,15 @@ firebase.json (ajouter) :
 
 .env.example :
   VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
-  STRIPE_SECRET_KEY=sk_test_...         (Firebase Functions config, JAMAIS dans src/)
+  STRIPE_SECRET_KEY=sk_test_...         (Firebase Functions config, NEVER in src/)
   STRIPE_WEBHOOK_SECRET=whsec_...
 
-IMPORTANT :
-  - JAMAIS STRIPE_SECRET_KEY dans src/ — uniquement dans les Firebase Functions
-  - automatic_payment_methods: { enabled: true } active Apple Pay + Google Pay automatiquement
-  - Apple Pay nécessite un domaine vérifié (Firebase Hosting vérifie automatiquement *.web.app)
-  - Google Pay fonctionne sur Chrome desktop et Android sans configuration supplémentaire
-  - En mode test : cartes test Stripe → 4242 4242 4242 4242
+IMPORTANT:
+  - NEVER put STRIPE_SECRET_KEY in src/ — only in Firebase Functions
+  - automatic_payment_methods: { enabled: true } automatically enables Apple Pay + Google Pay
+  - Apple Pay requires a verified domain (Firebase Hosting auto-verifies *.web.app)
+  - Google Pay works on Chrome desktop and Android with no extra configuration
+  - In test mode: Stripe test card → 4242 4242 4242 4242
 """
 
 # Alias pour compatibilité avec l'ancien nom
@@ -357,29 +357,29 @@ SUPABASE_AUTH_PATTERN = FIREBASE_STACK_PATTERN
 # ─── Generic static ────────────────────────────────────────────────────────────
 
 STATIC_PROJECT_PROMPT = """
-Tu génères un site web statique HTML/CSS/JS pur (Tailwind via CDN).
-Standards : moderne, responsive, aucun placeholder, vrai contenu métier.
+Generate a pure HTML/CSS/JS static website (Tailwind via CDN).
+Standards: modern, responsive, no placeholders, real business content.
 
-Structure index.html :
-- Google Fonts via <link> (Inter ou Plus Jakarta Sans)
+index.html structure:
+- Google Fonts via <link> (Inter or Plus Jakarta Sans)
 - Tailwind Play CDN
-- Navigation sticky + hero + sections de contenu + footer
-- Animations CSS (transitions, keyframes) ou Alpine.js si interactivité
+- Sticky navigation + hero + content sections + footer
+- CSS animations (transitions, keyframes) or Alpine.js for interactivity
 
-Lancement : ouvrir index.html directement dans le navigateur.
-Hébergement gratuit : Cloudflare Pages, Netlify, Vercel (drag & drop).
+Launch: open index.html directly in browser.
+Free hosting: Cloudflare Pages, Netlify, Vercel (drag & drop).
 """
 
 # ─── SaaS Landing Page (principal template premium) ───────────────────────────
 
 SAAS_LANDING_PAGE_PROMPT = """
 ══════════════════════════════════════════════════════════════════════
- TEMPLATE LANDING PAGE SAAS — QUALITÉ AGENCE / FRAMER PREMIUM
+ SAAS LANDING PAGE TEMPLATE — AGENCY QUALITY / PREMIUM FRAMER
 ══════════════════════════════════════════════════════════════════════
 
-Stack : React 18 + Vite + TypeScript + Tailwind CSS + Framer Motion + Lucide React
+Stack: React 18 + Vite + TypeScript + Tailwind CSS + Framer Motion + Lucide React
 
-━━━ STACK EXACT À GÉNÉRER ━━━
+━━━ EXACT STACK TO GENERATE ━━━
 
 package.json doit contenir EXACTEMENT ces dépendances :
 {
@@ -404,38 +404,38 @@ package.json doit contenir EXACTEMENT ces dépendances :
   }
 }
 
-━━━ STRUCTURE DES FICHIERS OBLIGATOIRE ━━━
+━━━ MANDATORY FILE STRUCTURE ━━━
 
 src/
 ├── components/
 │   ├── layout/
-│   │   ├── Navbar.tsx         ← fixed, backdrop-blur, hamburger mobile
-│   │   └── Footer.tsx         ← 4 colonnes, liens, copyright
+│   │   ├── Navbar.tsx         ← fixed, backdrop-blur, mobile hamburger
+│   │   └── Footer.tsx         ← 4 columns, links, copyright
 │   └── sections/
-│       ├── HeroSection.tsx    ← titre géant + CTA + visuel + glow bg
-│       ├── LogosSection.tsx   ← "trusted by" + 6-8 logos texte
-│       ├── ProblemSection.tsx ← 3-4 pain points avec icônes
+│       ├── HeroSection.tsx    ← giant title + CTA + visual + glow bg
+│       ├── LogosSection.tsx   ← "trusted by" + 6-8 text logos
+│       ├── ProblemSection.tsx ← 3-4 pain points with icons
 │       ├── SolutionSection.tsx
-│       ├── FeaturesSection.tsx ← bento grid 6+ cards glassmorphism
-│       ├── HowItWorksSection.tsx ← 3 étapes numérotées
-│       ├── TestimonialsSection.tsx ← 3-6 quotes réalistes
-│       ├── PricingSection.tsx ← 3 tiers avec toggle mensuel/annuel
-│       └── CTASection.tsx     ← section finale avec glow
+│       ├── FeaturesSection.tsx ← bento grid 6+ glassmorphism cards
+│       ├── HowItWorksSection.tsx ← 3 numbered steps
+│       ├── TestimonialsSection.tsx ← 3-6 realistic quotes
+│       ├── PricingSection.tsx ← 3 tiers with monthly/annual toggle
+│       └── CTASection.tsx     ← final section with glow
 ├── lib/
 │   └── utils.ts               ← cn() helper + formatPrice()
 ├── constants/
-│   └── theme.ts               ← palette + variants réutilisables
+│   └── theme.ts               ← palette + reusable variants
 ├── pages/
-│   └── Home.tsx               ← assemble toutes les sections
+│   └── Home.tsx               ← assembles all sections
 ├── App.tsx                    ← BrowserRouter + Routes
 ├── main.tsx                   ← ReactDOM.createRoot
-└── index.css                  ← @tailwind + variables CSS custom
+└── index.css                  ← @tailwind + custom CSS variables
 
-━━━ PALETTE DE COULEURS ━━━
+━━━ COLOR PALETTE ━━━
 
-Choisir UNE palette et la définir dans index.css en variables CSS :
+Choose ONE palette and define it in index.css as CSS variables:
 
-  Dark SaaS (par défaut) :
+  Dark SaaS (default):
     --bg: #09090B;
     --surface: #18181B;
     --border: rgba(255,255,255,0.08);
@@ -445,83 +445,83 @@ Choisir UNE palette et la définir dans index.css en variables CSS :
     --text: #FAFAFA;
     --text-muted: #A1A1AA;
 
-tailwind.config.js doit étendre les couleurs avec ces variables.
+tailwind.config.js must extend colors with these variables.
 
-━━━ COMPOSANTS CLÉS — PATTERNS EXACT ━━━
+━━━ KEY COMPONENTS — EXACT PATTERNS ━━━
 
-NAVBAR :
+NAVBAR:
   - position: fixed, top: 0, z-index: 50
   - bg: backdrop-blur-xl bg-black/80 border-b border-white/8
-  - Logo : nom + Zap icon (ou similaire)
-  - Nav links : Features, Pricing, About (hidden sur mobile)
-  - CTAs : "Log in" (ghost) + "Get started" (filled primary)
-  - Mobile : icône Menu/X pour toggle, drawer ou dropdown
+  - Logo: name + Zap icon (or similar)
+  - Nav links: Features, Pricing, About (hidden on mobile)
+  - CTAs: "Log in" (ghost) + "Get started" (filled primary)
+  - Mobile: Menu/X icon toggle, drawer or dropdown
 
-HERO :
-  - Plein écran : min-h-screen flex items-center justify-center
-  - Badge animé : pulsing dot + texte court (ex: "Now in public beta")
-  - H1 : 5xl/7xl/8xl, font-black, tracking-tight, 2-3 lignes max
-    → 1-2 mots en gradient violet→cyan ou violet→pink
-  - Subheadline : max-w-xl text-lg text-white/70
-  - CTA row : bouton filled + bouton outline ghost
-  - Social proof row : "5,000+ teams" + 5 avatars (initiales colorées)
-  - Hero visual : card/dashboard mockup ou abstract shape en absolute
-  - Background : 2 radial glow blobs en absolute, pointer-events-none
+HERO:
+  - Full screen: min-h-screen flex items-center justify-center
+  - Animated badge: pulsing dot + short text (e.g.: "Now in public beta")
+  - H1: 5xl/7xl/8xl, font-black, tracking-tight, 2-3 lines max
+    → 1-2 words in violet→cyan or violet→pink gradient
+  - Subheadline: max-w-xl text-lg text-white/70
+  - CTA row: filled button + ghost outline button
+  - Social proof row: "5,000+ teams" + 5 avatars (colored initials)
+  - Hero visual: card/dashboard mockup or abstract shape in absolute position
+  - Background: 2 radial glow blobs in absolute, pointer-events-none
 
-FEATURES SECTION — Bento Grid :
+FEATURES SECTION — Bento Grid:
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
     {/* Big card */}
     <div className="lg:col-span-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
     {/* Standard cards */}
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
 
-TESTIMONIALS :
-  Grid 3 colonnes (lg:grid-cols-3), chaque card :
-  - Quote en italique
-  - Avatar (initiales dans cercle coloré OU image Unsplash face)
-  - Nom + Rôle + Entreprise
-  - 5 étoiles dorées (★★★★★)
+TESTIMONIALS:
+  3-column grid (lg:grid-cols-3), each card:
+  - Quote in italic
+  - Avatar (initials in colored circle OR Unsplash face image)
+  - Name + Role + Company
+  - 5 gold stars (★★★★★)
 
-PRICING — Toggle mensuel/annuel :
+PRICING — Monthly/annual toggle:
   const [annual, setAnnual] = useState(false)
-  3 tiers : Free ($0) / Pro ($29/mois ou $19 annuel) / Enterprise (custom)
-  Tier Pro highlighted : ring-2 ring-violet-500 shadow-lg shadow-violet-500/20
+  3 tiers: Free ($0) / Pro ($29/mo or $19 annual) / Enterprise (custom)
+  Pro tier highlighted: ring-2 ring-violet-500 shadow-lg shadow-violet-500/20
 
 ━━━ COPYWRITING ━━━
 
-Adapter le copy au domaine du projet. Style : bénéfice-driven, émotionnel, concret.
+Adapt copy to the project domain. Style: benefit-driven, emotional, concrete.
 
-Pour le Hero, s'inspirer de ces patterns (ADAPTER au vrai sujet) :
+For the Hero, draw from these patterns (ADAPT to the actual subject):
   "Ship faster. Break nothing. Sleep well." (DevTools)
   "Your analytics, finally making sense." (Analytics)
   "Stop losing leads. Start closing deals." (CRM/Sales)
   "The creative workspace your team deserves." (Design/PM)
 
-Pour les features, structurer ainsi :
-  TITRE COURT (3-5 mots max) + DESCRIPTION 1 phrase bénéfice
+For features, structure as:
+  SHORT TITLE (3-5 words max) + DESCRIPTION 1 benefit sentence
   Ex: "Zero-latency sync" → "Collaborate without the lag. Your team stays in sync, always."
 
-Pour les témoignages, inventer des profils réalistes :
+For testimonials, invent realistic profiles:
   - Sarah Chen, Engineering Lead @ Datastream
   - Marcus Okonkwo, Founder @ BuildFast
   - Julie Marchand, Head of Product @ Nexus AI
 
 ━━━ ANIMATIONS ━━━
 
-Chaque section DOIT avoir :
-1. motion.div avec whileInView {{ opacity: 0→1, y: 40→0 }} viewport once
-2. Stagger sur les grilles (staggerChildren: 0.08)
-3. whileHover sur les cards et boutons
+Every section MUST have:
+1. motion.div with whileInView {{ opacity: 0→1, y: 40→0 }} viewport once
+2. Stagger on grids (staggerChildren: 0.08)
+3. whileHover on cards and buttons
 
 ━━━ RESPONSIVE ━━━
 
-Navbar : hamburger sur mobile (useState toggle)
-Hero : text-4xl sm:text-6xl lg:text-8xl — titre toujours lisible
-Grid : grid-cols-1 md:grid-cols-2 lg:grid-cols-3 partout
-Padding : px-4 sm:px-6 lg:px-8 — jamais de débordement horizontal
+Navbar: hamburger on mobile (useState toggle)
+Hero: text-4xl sm:text-6xl lg:text-8xl — title always readable
+Grid: grid-cols-1 md:grid-cols-2 lg:grid-cols-3 everywhere
+Padding: px-4 sm:px-6 lg:px-8 — no horizontal overflow
 
-Lancement : npm run dev → http://localhost:5173
-Hébergement : Vercel (vercel deploy), Netlify, Cloudflare Pages
+Launch: npm run dev → http://localhost:5173
+Hosting: Vercel (vercel deploy), Netlify, Cloudflare Pages
 
 {RECURRING_BUG_PREVENTION}
 """
@@ -529,26 +529,26 @@ Hébergement : Vercel (vercel deploy), Netlify, Cloudflare Pages
 # ─── React + Node.js + SQLite ──────────────────────────────────────────────────
 
 REACT_NODE_SQLITE_PROJECT_PROMPT = """
-Stack : React (Vite, Tailwind, Framer Motion, Lucide React) + Node.js (Express) + SQLite
+Stack: React (Vite, Tailwind, Framer Motion, Lucide React) + Node.js (Express) + SQLite
 
-FRONTEND — même niveau de qualité visuelle que le template SaaS Landing Page.
-BACKEND — API REST Express avec SQLite (via better-sqlite3 ou sqlite3).
+FRONTEND — same visual quality level as the SaaS Landing Page template.
+BACKEND — REST API Express with SQLite (via better-sqlite3 or sqlite3).
 
-vite.config.ts DOIT contenir server: { host: true }
+vite.config.ts MUST contain server: { host: true }
 
-Structure backend :
+Backend structure:
   server/
   ├── index.js       ← Express app, CORS, routes
   ├── db.js          ← SQLite init + migrations
-  └── routes/        ← endpoints CRUD
+  └── routes/        ← CRUD endpoints
 
-Lancement :
-  - Frontend : npm run dev (port 5173)
-  - Backend : node server/index.js (port 3001)
+Launch:
+  - Frontend: npm run dev (port 5173)
+  - Backend: node server/index.js (port 3001)
 
-Hébergement :
-  - Frontend : Vercel, Netlify, Cloudflare Pages
-  - Backend : Railway, Render, Fly.io
+Hosting:
+  - Frontend: Vercel, Netlify, Cloudflare Pages
+  - Backend: Railway, Render, Fly.io
 
 {RECURRING_BUG_PREVENTION}
 """
@@ -556,37 +556,37 @@ Hébergement :
 # ─── React + Supabase ──────────────────────────────────────────────────────────
 
 REACT_SUPABASE_PROJECT_PROMPT = """
-Stack : React (Vite, Tailwind, Framer Motion, Lucide React) + Supabase
+Stack: React (Vite, Tailwind, Framer Motion, Lucide React) + Supabase
 
-FRONTEND — même niveau de qualité visuelle que le template SaaS Landing Page.
+FRONTEND — same visual quality level as the SaaS Landing Page template.
 BACKEND — Supabase (auth, PostgreSQL, Storage, Realtime).
 
-vite.config.ts DOIT contenir server: { host: true }
+vite.config.ts MUST contain server: { host: true }
 
-Client Supabase dans src/lib/supabase.ts :
+Supabase client in src/lib/supabase.ts:
   import {{ createClient }} from '@supabase/supabase-js'
   export const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY)
 
-Variables d'environnement (.env) :
+Environment variables (.env):
   VITE_SUPABASE_URL=...
   VITE_SUPABASE_ANON_KEY=...
 
-Hébergement : Supabase (backend) + Vercel (frontend)
+Hosting: Supabase (backend) + Vercel (frontend)
 """
 
 # ─── E-commerce premium template ──────────────────────────────────────────────
 
 ECOMMERCE_PREMIUM_PROMPT = """
 ══════════════════════════════════════════════════════════════════════
- TEMPLATE E-COMMERCE PREMIUM — QUALITÉ AGENCE
- Stack : React 18 + Vite + TypeScript + Tailwind + Firebase + Stripe
+ PREMIUM E-COMMERCE TEMPLATE — AGENCY QUALITY
+ Stack: React 18 + Vite + TypeScript + Tailwind + Firebase + Stripe
 ══════════════════════════════════════════════════════════════════════
 
-━━━ STRUCTURE OBLIGATOIRE ━━━
+━━━ MANDATORY STRUCTURE ━━━
 
 src/
 ├── lib/
-│   ├── firebase.ts              ← initializeApp, getAuth, getFirestore (TOUJOURS ce nom)
+│   ├── firebase.ts              ← initializeApp, getAuth, getFirestore (ALWAYS this name)
 │   ├── stripe.ts                ← loadStripe(VITE_STRIPE_PUBLISHABLE_KEY)
 │   └── utils.ts                 ← cn(), formatPrice(), whatsappLink()
 ├── context/
@@ -594,36 +594,36 @@ src/
 │   └── AuthContext.tsx          ← Firebase Auth (email + Google) + useAuth
 ├── components/
 │   ├── layout/
-│   │   ├── Navbar.tsx           ← fixed, compteur panier, isActive helper, hamburger
+│   │   ├── Navbar.tsx           ← fixed, cart counter, isActive helper, hamburger
 │   │   └── Footer.tsx
 │   ├── product/
-│   │   ├── ProductCard.tsx      ← hover anim, quick-add, badge Nouveau/Promo
+│   │   ├── ProductCard.tsx      ← hover anim, quick-add, New/Sale badge
 │   │   └── ProductGrid.tsx
 │   ├── cart/
-│   │   └── CartDrawer.tsx       ← drawer Framer Motion, items, quantités, total
+│   │   └── CartDrawer.tsx       ← Framer Motion drawer, items, quantities, total
 │   ├── checkout/
-│   │   └── CheckoutForm.tsx     ← Stripe PaymentElement (Apple Pay + Google Pay + cartes)
+│   │   └── CheckoutForm.tsx     ← Stripe PaymentElement (Apple Pay + Google Pay + cards)
 │   └── auth/
-│       └── ProtectedRoute.tsx   ← vérifie useAuth().user
+│       └── ProtectedRoute.tsx   ← checks useAuth().user
 ├── pages/
-│   ├── Home.tsx                 ← hero + produits featured + catégories + CTA
-│   ├── Products.tsx             ← catalogue filtrable (catégorie + recherche)
-│   ├── ProductDetail.tsx        ← galerie, specs, add-to-cart, bouton WhatsApp
-│   ├── Cart.tsx                 ← résumé panier éditable
-│   ├── Checkout.tsx             ← Elements wrapper + clientSecret depuis Cloud Function
-│   ├── OrderSuccess.tsx         ← confirmation commande + sauvegarde Firestore
-│   ├── Login.tsx                ← email/password + bouton Google
-│   └── Register.tsx             ← inscription + création profil Firestore
+│   ├── Home.tsx                 ← hero + featured products + categories + CTA
+│   ├── Products.tsx             ← filterable catalog (category + search)
+│   ├── ProductDetail.tsx        ← gallery, specs, add-to-cart, WhatsApp button
+│   ├── Cart.tsx                 ← editable cart summary
+│   ├── Checkout.tsx             ← Elements wrapper + clientSecret from Cloud Function
+│   ├── OrderSuccess.tsx         ← order confirmation + Firestore save
+│   ├── Login.tsx                ← email/password + Google button
+│   └── Register.tsx             ← registration + Firestore profile creation
 ├── data/
-│   └── products.ts              ← 12+ produits avec VRAIS noms/prix/images Unsplash
+│   └── products.ts              ← 12+ products with REAL names/prices/Unsplash images
 ├── types/
 │   └── index.ts                 ← Product, Category, CartItem, User, Order
-functions/                       ← Firebase Cloud Functions (backend serverless)
+functions/                       ← Firebase Cloud Functions (serverless backend)
 ├── package.json                 ← firebase-functions, firebase-admin, stripe
 └── src/
     └── index.ts                 ← createPaymentIntent + stripeWebhook
 
-━━━ CART CONTEXT — PATTERN EXACT ━━━
+━━━ CART CONTEXT — EXACT PATTERN ━━━
 
 src/context/CartContext.tsx :
   interface CartItem { id: string; name: string; price: number; image: string; quantity: number; }
@@ -643,24 +643,24 @@ src/context/CartContext.tsx :
   export const useCart = () => { const ctx = useContext(CartContext); if (!ctx) throw new Error('useCart must be used inside CartProvider'); return ctx; };
   export const useCartStore = useCart;
 
-━━━ PRODUITS — FORMAT EXACT ━━━
+━━━ PRODUCTS — EXACT FORMAT ━━━
 
 src/data/products.ts :
   export interface Product { id: string; name: string; price: number; oldPrice?: number; image: string; images?: string[]; category: string; description: string; badge?: string; rating: number; reviewCount?: number; features?: string[]; inStock: boolean; }
   export const products: Product[] = [ /* 12+ produits avec VRAIS noms, VRAIS prix, images Unsplash */ ];
   export const categories: Category[] = [ /* 5+ catégories avec id, name, icon, count */ ];
 
-━━━ RÈGLES VISUELLES ━━━
+━━━ VISUAL RULES ━━━
 
-• BACKGROUNDS visuellement distincts entre sections :
-  Hero → gradient sombre | LogosSection → bg-slate-50 | FeaturesSection → bg-white |
+• Visually DISTINCT BACKGROUNDS between sections:
+  Hero → dark gradient | LogosSection → bg-slate-50 | FeaturesSection → bg-white |
   ProblemSection → bg-violet-50 | SolutionSection → bg-white |
   CategoriesSection → bg-slate-50 | AboutSection → bg-gradient-to-br from-violet-50 to-blue-50 |
   HowItWorksSection → bg-violet-50 | TestimonialsSection → bg-gradient-to-b from-violet-50 to-white |
-  PricingSection → bg-violet-50 | InfosSection → bg-slate-50 | CTA → gradient violet fort
-• JAMAIS bg-[var(--surface)] ni bg-slate-50 seul pour les sections "off" → utiliser bg-violet-50
-• IDs sur toutes les sections d'ancre : id="categories", id="about", id="contact"
-• html { scroll-behavior: smooth; } dans index.css
+  PricingSection → bg-violet-50 | InfosSection → bg-slate-50 | CTA → strong violet gradient
+• NEVER bg-[var(--surface)] or bg-slate-50 alone for "off" sections → use bg-violet-50
+• IDs on all anchor sections: id="categories", id="about", id="contact"
+• html { scroll-behavior: smooth; } in index.css
 
 {RECURRING_BUG_PREVENTION}
 """
@@ -668,43 +668,43 @@ src/data/products.ts :
 # ─── Stripe ────────────────────────────────────────────────────────────────────
 
 STRIPE_INTEGRATION_PROMPT = """
-Intègre Stripe pour les paiements.
+Integrate Stripe for payments.
 
-Frontend (@stripe/react-stripe-js + @stripe/stripe-js) :
+Frontend (@stripe/react-stripe-js + @stripe/stripe-js):
   <Elements stripe={{stripePromise}}>
     <CheckoutForm />
   </Elements>
 
-Backend (stripe npm package) :
+Backend (stripe npm package):
   POST /api/create-payment-intent
   POST /api/create-checkout-session
 
-.env :
+.env:
   STRIPE_SECRET_KEY=sk_test_...
   VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 
-Ne jamais exposer la clé secrète côté client.
-Mode test → mode prod : changer les clés, activer les webhooks.
+Never expose the secret key client-side.
+Test mode → prod mode: change keys, enable webhooks.
 """
 
 # ─── PayPal ────────────────────────────────────────────────────────────────────
 
 PAYPAL_INTEGRATION_PROMPT = """
-Intègre PayPal comme méthode de paiement alternative.
+Integrate PayPal as an alternative payment method.
 
-SDK @paypal/react-paypal-js :
+SDK @paypal/react-paypal-js:
   <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID }}>
     <PayPalButtons createOrder={{...}} onApprove={{...}} />
   </PayPalScriptProvider>
 
-Backend :
+Backend:
   POST /api/paypal/create-order
   POST /api/paypal/capture-order
 
-.env :
+.env:
   PAYPAL_CLIENT_ID=...
   PAYPAL_CLIENT_SECRET=...
   VITE_PAYPAL_CLIENT_ID=...
 
-Mode sandbox → live : changer les clés et l'environment.
+Sandbox mode → live: change keys and environment.
 """

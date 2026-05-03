@@ -39,63 +39,63 @@ async def gemini_preview(data: FormPreviewRequest):
 
     llm = LLMTool()
 
-    system = """Tu es un expert en design web et marketing digital. Tu analyses le brief d'un client et tu génères des recommandations concrètes et percutantes.
+    system = """You are a web design and digital marketing expert. You analyze a client brief and generate concrete, impactful recommendations.
 
-Réponds UNIQUEMENT en JSON valide avec cette structure exacte :
+Respond ONLY in valid JSON with this exact structure:
 {
   "palette": {
     "primary": "#hexcode",
     "secondary": "#hexcode",
     "accent": "#hexcode",
     "background": "#hexcode",
-    "names": ["Nom couleur 1", "Nom couleur 2", "Nom couleur 3"]
+    "names": ["Color name 1", "Color name 2", "Color name 3"]
   },
-  "ambiance": "description courte de l'ambiance visuelle en 1 phrase",
+  "ambiance": "short description of the visual ambiance in 1 sentence",
   "typography": {
-    "display": "Nom police titre",
-    "body": "Nom police corps"
+    "display": "Display font name",
+    "body": "Body font name"
   },
   "stats": [
     {
       "emoji": "📈",
-      "value": "3x plus",
-      "label": "de réservations avec un bouton visible en permanence"
+      "value": "3x more",
+      "label": "bookings with a permanently visible button"
     }
   ],
-  "sections": ["Hero avec accroche forte", "Galerie avant/après", "..."],
-  "animations": "description des animations recommandées en 1 phrase",
-  "tip": "conseil personnalisé court et percutant pour ce secteur spécifique"
+  "sections": ["Hero with strong headline", "Before/After gallery", "..."],
+  "animations": "description of recommended animations in 1 sentence",
+  "tip": "short personalized tip for this specific sector"
 }
 
-Règles pour les stats :
+Rules for stats:
 - Maximum 4 stats
-- Chiffres simples et compréhensibles par tout le monde
-- 100% pertinentes pour le secteur du client
-- Format court : "X fois plus de Y" ou "X% des clients font Z"
-- Basées sur des réalités marketing connues
+- Simple numbers understandable by everyone
+- 100% relevant to the client's sector
+- Short format: "X times more Y" or "X% of clients do Z"
+- Based on known marketing realities
 
-Règles pour la palette :
-- Prends en compte les couleurs choisies par le client
-- Complète avec des couleurs harmonieuses
-- Adapte au secteur et au style visuel"""
+Rules for palette:
+- Take into account the colors chosen by the client
+- Complete with harmonious colors
+- Adapt to the sector and visual style"""
 
-    colors_str = ", ".join(data.colors) if data.colors else "non spécifié"
-    prompt = f"""Brief client :
-- Entreprise : {data.businessName}
-- Secteur : {data.sector}
-- Objectif : {data.siteGoal}
-- Accroche : {data.tagline or 'non spécifié'}
-- Description : {data.description or 'non spécifié'}
-- Audience : {data.targetAudience or 'non spécifié'}
-- Avantage : {data.uniqueValue or 'non spécifié'}
-- Couleurs choisies : {colors_str}
-- Thème : {data.colorTheme}
-- Style visuel : {data.visualStyle or 'non spécifié'}
-- Pages souhaitées : {', '.join(data.pages) if data.pages else 'non spécifié'}
-- Fonctionnalités : {', '.join(data.features) if data.features else 'non spécifié'}
-- Budget : {data.budget or 'non spécifié'}
+    colors_str = ", ".join(data.colors) if data.colors else "not specified"
+    prompt = f"""Client brief:
+- Business: {data.businessName}
+- Sector: {data.sector}
+- Goal: {data.siteGoal}
+- Tagline: {data.tagline or 'not specified'}
+- Description: {data.description or 'not specified'}
+- Audience: {data.targetAudience or 'not specified'}
+- Competitive advantage: {data.uniqueValue or 'not specified'}
+- Chosen colors: {colors_str}
+- Theme: {data.colorTheme}
+- Visual style: {data.visualStyle or 'not specified'}
+- Desired pages: {', '.join(data.pages) if data.pages else 'not specified'}
+- Features: {', '.join(data.features) if data.features else 'not specified'}
+- Budget: {data.budget or 'not specified'}
 
-Génère les suggestions Gemini pour ce client."""
+Generate the AI suggestions for this client."""
 
     model = _gemini_or(DEEPSEEK_MODEL_FLASH)
     try:

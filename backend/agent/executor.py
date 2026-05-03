@@ -749,43 +749,43 @@ class AgentExecutor:
         # Prompts spécialisés selon le type de fichier
         if 'store' in path.lower() or 'context' in path.lower() or 'cart' in path.lower():
             prompt = (
-                f"Génère le fichier '{path}' COMPLET pour un projet React/TypeScript e-commerce.\n\n"
-                f"Ce fichier est un store/context React. Il DOIT contenir :\n"
-                f"- L'interface CartItem (id, name, price, image, quantity)\n"
-                f"- CartContext créé avec createContext\n"
-                f"- CartProvider implémenté avec React createElement (PAS de JSX dans un .ts)\n"
-                f"- useState pour gérer items[]\n"
-                f"- Fonctions : addItem, removeItem, updateQuantity, clearCart\n"
-                f"- Exports : CartProvider (default + named), useCart, useCartStore (alias), CartItem\n\n"
-                f"IMPORTANT : utilise createElement() au lieu du JSX car l'extension est .ts\n\n"
-                f"Utilise le format :\n```filename:{path}\ncontenu complet\n```"
+                f"Generate the COMPLETE file '{path}' for a React/TypeScript e-commerce project.\n\n"
+                f"This file is a React store/context. It MUST contain:\n"
+                f"- The CartItem interface (id, name, price, image, quantity)\n"
+                f"- CartContext created with createContext\n"
+                f"- CartProvider implemented with React createElement (NO JSX in a .ts file)\n"
+                f"- useState to manage items[]\n"
+                f"- Functions: addItem, removeItem, updateQuantity, clearCart\n"
+                f"- Exports: CartProvider (default + named), useCart, useCartStore (alias), CartItem\n\n"
+                f"IMPORTANT: use createElement() instead of JSX because the extension is .ts\n\n"
+                f"Use this format:\n```filename:{path}\ncomplete content\n```"
             )
         elif ext in ('ts', 'tsx') and 'button' in path.lower():
             prompt = (
-                f"Génère le fichier '{path}' COMPLET : composant Button React avec Tailwind CSS, "
-                f"class-variance-authority, @radix-ui/react-slot. Exporte Button et buttonVariants.\n"
-                f"Format : ```filename:{path}\ncontenu\n```"
+                f"Generate the COMPLETE file '{path}': React Button component with Tailwind CSS, "
+                f"class-variance-authority, @radix-ui/react-slot. Export Button and buttonVariants.\n"
+                f"Format: ```filename:{path}\ncontent\n```"
             )
         elif ext in ('ts', 'tsx') and 'badge' in path.lower():
             prompt = (
-                f"Génère le fichier '{path}' COMPLET : composant Badge React avec Tailwind CSS, "
-                f"class-variance-authority. Exporte Badge et badgeVariants.\n"
-                f"Format : ```filename:{path}\ncontenu\n```"
+                f"Generate the COMPLETE file '{path}': React Badge component with Tailwind CSS, "
+                f"class-variance-authority. Export Badge and badgeVariants.\n"
+                f"Format: ```filename:{path}\ncontent\n```"
             )
         elif ext in ('ts', 'tsx') and 'sheet' in path.lower():
             prompt = (
-                f"Génère le fichier '{path}' COMPLET : composant Sheet React basé sur "
-                f"@radix-ui/react-dialog. Exporte Sheet, SheetTrigger, SheetContent, "
+                f"Generate the COMPLETE file '{path}': React Sheet component based on "
+                f"@radix-ui/react-dialog. Export Sheet, SheetTrigger, SheetContent, "
                 f"SheetHeader, SheetFooter, SheetTitle, SheetDescription, SheetClose, "
                 f"SheetPortal, SheetOverlay.\n"
-                f"Format : ```filename:{path}\ncontenu\n```"
+                f"Format: ```filename:{path}\ncontent\n```"
             )
         else:
             prompt = (
-                f"Génère le fichier '{path}' COMPLET pour un projet React/TypeScript.\n"
-                f"Ce fichier a été marqué comme vide ou avec seulement un commentaire. "
-                f"Génère une implémentation complète et fonctionnelle.\n"
-                f"Format : ```filename:{path}\ncontenu complet\n```"
+                f"Generate the COMPLETE file '{path}' for a React/TypeScript project.\n"
+                f"This file was marked as empty or containing only a comment. "
+                f"Generate a complete and functional implementation.\n"
+                f"Format: ```filename:{path}\ncomplete content\n```"
             )
 
         for attempt in range(MAX_REPAIR_ATTEMPTS):
@@ -870,13 +870,13 @@ class AgentExecutor:
                 tail_lines = broken_content.rstrip().split('\n')[-40:]
                 tail = '\n'.join(tail_lines)
                 repair_prompt = (
-                    f"Le fichier `{path}` a été TRONQUÉ (coupé avant la fin).\n\n"
-                    f"Voici la fin du fichier là où la coupure s'est produite :\n"
+                    f"File `{path}` was TRUNCATED (cut off before the end).\n\n"
+                    f"Here is the end of the file where the cut occurred:\n"
                     f"```\n{tail}\n```\n\n"
-                    f"Continue EXACTEMENT depuis là où le fichier s'est arrêté. "
-                    f"Ferme toutes les balises JSX ouvertes et les accolades manquantes. "
-                    f"Ne répète PAS le début du fichier — renvoie UNIQUEMENT la suite manquante dans un bloc :\n"
-                    f"```{ext}\n[suite du fichier ici]\n```"
+                    f"Continue EXACTLY from where the file stopped. "
+                    f"Close all open JSX tags and missing braces. "
+                    f"Do NOT repeat the beginning of the file — return ONLY the missing continuation in a block:\n"
+                    f"```{ext}\n[file continuation here]\n```"
                 )
                 result = await self.llm.generate_code(repair_prompt)
                 if result.get("success"):
@@ -895,16 +895,16 @@ class AgentExecutor:
 
             # Full regeneration for structural issues
             repair_prompt = (
-                f"Le fichier '{path}' que tu as généré est INCOMPLET ou TRONQUÉ. "
-                f"Problèmes détectés : {issues_text}.\n\n"
-                f"Voici le contenu actuel (potentiellement tronqué) :\n\n"
+                f"File '{path}' is INCOMPLETE or TRUNCATED. "
+                f"Issues detected: {issues_text}.\n\n"
+                f"Here is the current content (potentially truncated):\n\n"
                 f"```\n{broken_content}\n```\n\n"
-                f"Renvoie la VERSION COMPLÈTE et CORRIGÉE de ce fichier. "
-                f"Toutes les balises JSX doivent être fermées (<div>...</div>), "
-                f"toutes les accolades équilibrées, aucun placeholder. "
-                f"Utilise le format :\n\n"
+                f"Return the COMPLETE and CORRECTED version of this file. "
+                f"All JSX tags must be closed (<div>...</div>), "
+                f"all braces balanced, no placeholders. "
+                f"Use this format:\n\n"
                 f"```filename:{path}\n"
-                f"contenu complet ici\n"
+                f"complete content here\n"
                 f"```"
             )
             result = await self.llm.generate_code(repair_prompt)
