@@ -2011,19 +2011,38 @@ Use EXACTLY these values in the theme object.
         )
 
         prompt = f"Client brief:\n{objective}\n{ds_hint}\nGenerate the JSON site spec:"
-        model = _gemini_or(DEEPSEEK_MODEL_FLASH)
+        model = _gemini_or(DEEPSEEK_MODEL_PRO)
         result = await self.call_ollama(prompt, system_prompt=system, temperature=0.3, model_override=model)
         raw = result.get("content", "")
 
-        # Extract JSON
-        import re as _re
+        import re as _re, json as _json, logging as _logging
+
+        # Strip markdown code fences if present
+        raw = _re.sub(r'^```(?:json)?\s*', '', raw.strip(), flags=_re.MULTILINE)
+        raw = _re.sub(r'```\s*$', '', raw.strip(), flags=_re.MULTILINE)
+        raw = raw.strip()
+
+        # Try direct parse first
+        try:
+            parsed = _json.loads(raw)
+            if parsed.get("pages"):
+                return parsed
+        except Exception:
+            pass
+
+        # Extract largest JSON object
         json_match = _re.search(r'\{[\s\S]*\}', raw)
         if not json_match:
+            _logging.warning(f"generate_site_spec: no JSON found in output (len={len(raw)}): {raw[:300]}")
             return None
         try:
-            import json as _json
-            return _json.loads(json_match.group(0))
-        except Exception:
+            parsed = _json.loads(json_match.group(0))
+            if not parsed.get("pages"):
+                _logging.warning(f"generate_site_spec: JSON parsed but no 'pages' key. Keys: {list(parsed.keys())}")
+                return None
+            return parsed
+        except Exception as e:
+            _logging.warning(f"generate_site_spec: JSON parse failed: {e}. Raw[:300]: {raw[:300]}")
             return None
 
     async def generate_design_system(self, objective: str) -> dict:
