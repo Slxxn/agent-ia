@@ -296,6 +296,7 @@ class AgentExecutor:
         self.brain           = brain
         self._current_phase  = 0   # mis à jour par runner.py
         self._current_brief: dict | None = None  # brief projet injecté par runner.py
+        self._design_system: dict | None = None  # design system client (palette + fonts)
         self._syntax_issues: dict[str, list[str]] = {}  # populated by per-file validation
         self._types_content: str | None = None  # set when src/types/index.ts is written
 
@@ -347,6 +348,7 @@ class AgentExecutor:
             task_type=ttype,
             phase=phase,
             brief=brief,
+            design_system=getattr(self, "_design_system", None),
         )
 
         # Tracker les tokens consommés
@@ -455,6 +457,7 @@ class AgentExecutor:
             task_type=ttype,
             phase=phase,
             brief=brief,
+            design_system=getattr(self, "_design_system", None),
         )
         tokens = (result.get("prompt_tokens", 0) or 0) + (result.get("completion_tokens", 0) or 0)
         if tokens > 0:
@@ -720,6 +723,15 @@ class AgentExecutor:
             path_norm = path.replace("\\", "/")
             if "types/index.ts" in path_norm or "types/index.tsx" in path_norm:
                 self._types_content = content
+            # ── Aesthetic critique pass for section components ────────────
+            if self._design_system and self._is_section_component(path):
+                fname = os.path.basename(path.replace('\\', '/'))
+                improved = await self.llm.critique_section(content, self._design_system, fname)
+                if improved and improved.strip() != content.strip():
+                    fix_r = self.filesystem.create_file(path, improved)
+                    if fix_r.get("success"):
+                        content = improved
+                        await add_log(project_id, f"✨ '{fname}' amélioré par la critique visuelle.", "info")
             # ── Per-file syntax validation ────────────────────────────────
             syntax_issues = SyntaxValidator.validate(path, content)
             if syntax_issues:
@@ -739,6 +751,19 @@ class AgentExecutor:
         else:
             await add_log(project_id, f"Erreur création fichier {path} : {result.get('error')}", "error")
         return result
+
+    @staticmethod
+    def _is_section_component(path: str) -> bool:
+        """True if this file is a UI section component that should be critiqued aesthetically."""
+        p = path.lower().replace('\\', '/')
+        if not path.endswith('.tsx'):
+            return False
+        if 'node_modules' in p:
+            return False
+        section_keywords = ('section', 'hero', 'feature', 'testimonial', 'pricing',
+                            'about', 'cta', 'landing', 'problem', 'solution', 'howit',
+                            'faq', 'footer', 'navbar', 'logo')
+        return any(kw in p for kw in section_keywords)
 
     # ─── Régénération fichier fantôme ───────────────────────────────────
 

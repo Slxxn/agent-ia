@@ -204,8 +204,10 @@ class ProjectMemory:
 
         # ── Design brief ──────────────────────────────────────────────────
         if brief:
-            palette = brief.get("palette", {})
-            fonts   = brief.get("fonts", {})
+            # Support both old brief format and new design_system format
+            ds = brief.get("design_system", {})
+            palette = ds.get("palette", brief.get("palette", {}))
+            fonts   = ds.get("fonts",   brief.get("fonts",   {}))
             mood    = palette.get("mood", "").lower()
             theme   = "dark" if any(k in mood for k in ("sombre", "dark", "premium", "nuit")) else "light"
             data["design"] = {
@@ -214,6 +216,9 @@ class ProjectMemory:
                 "fonts":          {"display": fonts.get("display", ""), "body": fonts.get("body", "")},
                 "theme":          theme,
             }
+            # Persist full design system for future chat tasks
+            if ds:
+                data["design_system"] = ds
 
         # ── Types content ─────────────────────────────────────────────────
         if executor and getattr(executor, "_types_content", None):

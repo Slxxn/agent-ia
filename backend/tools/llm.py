@@ -674,6 +674,83 @@ _MOD_TECH_ARCH = """
 ▸ NO USELESS STATE: useState only when there is a real interaction
 """
 
+_MOD_FEWSHOT = """
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FEW-SHOT QUALITY REFERENCE — COPY THESE EXACT PATTERNS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▸ RADIAL GLOW BACKGROUND (mandatory for Hero + CTA):
+```tsx
+<section className="relative overflow-hidden py-32">
+  <div className="absolute inset-0 pointer-events-none">
+    <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-[var(--primary)]/10 rounded-full blur-[120px]" />
+    <div className="absolute top-20 right-0 w-[400px] h-[400px] bg-[var(--accent)]/6 rounded-full blur-[100px]" />
+  </div>
+  <div className="relative z-10 max-w-7xl mx-auto px-6">{{/* content */}}</div>
+</section>
+```
+
+▸ STAGGER GRID (mandatory for Features, Testimonials, Cards):
+```tsx
+const container = {{ hidden: {{ opacity: 0 }}, show: {{ opacity: 1, transition: {{ staggerChildren: 0.09, delayChildren: 0.15 }} }} }}
+const item = {{ hidden: {{ opacity: 0, y: 32, filter: 'blur(4px)' }}, show: {{ opacity: 1, y: 0, filter: 'blur(0px)', transition: {{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} }} }}
+
+<motion.div variants={{container}} initial="hidden" whileInView="show" viewport={{{{ once: true }}}}>
+  {{cards.map((c, i) => (
+    <motion.div key={{i}} variants={{item}}
+      className="group bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6
+                 hover:border-[var(--accent)]/30 hover:bg-[var(--surface2)] transition-all duration-300
+                 hover:shadow-xl hover:shadow-[var(--primary)]/5">
+      {{/* card content */}}
+    </motion.div>
+  ))}}
+</motion.div>
+```
+
+▸ SECTION EYEBROW + HEADLINE (copy this structure every time):
+```tsx
+<motion.span initial={{{{ opacity: 0, y: 10 }}}} whileInView={{{{ opacity: 1, y: 0 }}}} viewport={{{{ once: true }}}}
+  className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.15em] uppercase
+             text-[var(--accent)] bg-[var(--accent)]/8 border border-[var(--accent)]/20 rounded-full px-3 py-1.5 mb-6">
+  ✦ SECTION LABEL
+</motion.span>
+<motion.h2 initial={{{{ opacity: 0, y: 24 }}}} whileInView={{{{ opacity: 1, y: 0 }}}}
+  transition={{{{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}}} viewport={{{{ once: true }}}}
+  className="text-4xl lg:text-6xl font-bold tracking-tight text-[var(--text)] leading-[1.1] mb-6">
+  Headline with{{' '}}
+  <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[var(--accent2)]">
+    gradient accent
+  </span>
+</motion.h2>
+```
+
+▸ CTA BUTTON PAIR (always use this exact pattern):
+```tsx
+<div className="flex flex-wrap gap-4">
+  <motion.button whileHover={{{{ scale: 1.03 }}}} whileTap={{{{ scale: 0.97 }}}}
+    className="inline-flex items-center gap-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)]
+               text-white font-semibold px-8 py-4 rounded-xl shadow-lg shadow-[var(--primary)]/20
+               hover:shadow-[var(--primary)]/30 transition-all duration-200">
+    Primary CTA <ArrowRight size={{18}} />
+  </motion.button>
+  <motion.button whileHover={{{{ scale: 1.02 }}}}
+    className="inline-flex items-center gap-2 border border-[var(--border)] hover:border-[var(--accent)]/50
+               text-[var(--text)] font-medium px-8 py-4 rounded-xl hover:bg-[var(--surface)] transition-all duration-200">
+    Secondary CTA
+  </motion.button>
+</div>
+```
+
+▸ GLASSMORPHISM CARD (for pricing, hero cards, featured boxes):
+```tsx
+<div className="relative bg-white/[0.03] backdrop-blur-xl border border-white/8 rounded-2xl p-8
+               shadow-2xl shadow-black/40 hover:border-[var(--accent)]/20 transition-all duration-300">
+  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[var(--accent)]/5 to-transparent pointer-events-none" />
+  {{/* content */}}
+</div>
+```
+"""
+
 # ─── Module registry & assembly ────────────────────────────────────────────────
 
 _ALL_MODULES = {
@@ -687,6 +764,7 @@ _ALL_MODULES = {
     "ui_components":  _MOD_UI_COMPONENTS,
     "copywriting":    _MOD_COPYWRITING,
     "tech_arch":      _MOD_TECH_ARCH,
+    "fewshot":        _MOD_FEWSHOT,
 }
 
 # Which modules each task type receives (ordered, subset of _ALL_MODULES)
@@ -696,10 +774,10 @@ _TASK_MODULES: dict[str, list[str]] = {
     "data":               [],
     "utility":            ["tech_arch"],
     "critical_structure": ["tech_arch", "ui_components"],
-    "component_ui":       ["ui_components", "visual_effects", "animation"],
+    "component_ui":       ["ui_components", "visual_effects", "animation", "fewshot"],
     "section_emotional":  ["design_system", "typography", "layouts", "visual_effects",
-                           "scroll", "animation", "archetypes", "ui_components", "copywriting"],
-    "section_complex":    ["animation", "archetypes", "ui_components", "tech_arch", "copywriting"],
+                           "scroll", "animation", "archetypes", "ui_components", "copywriting", "fewshot"],
+    "section_complex":    ["animation", "archetypes", "ui_components", "tech_arch", "copywriting", "fewshot"],
     "repair":             [],
     "planning":           [],
     "validator_check":    [],
@@ -707,19 +785,74 @@ _TASK_MODULES: dict[str, list[str]] = {
 }
 
 
+def _build_design_tokens_module(design_system: dict) -> str:
+    """Build a dynamic design tokens module from the client-specific design system."""
+    palette = design_system.get("palette", {})
+    tokens = palette.get("tokens", {})
+    fonts = design_system.get("fonts", {})
+    mood = design_system.get("mood", "")
+    visual_style = design_system.get("visual_style", "")
+
+    if not tokens:
+        return _MOD_DESIGN_SYSTEM
+
+    css_vars = "\n".join(f"  --{k}: {v};" for k, v in tokens.items())
+    display_font = fonts.get("display", "Syne")
+    body_font = fonts.get("body", "DM Sans")
+    import_url = fonts.get("import_url", "")
+    font_link = f'<link href="{import_url}" rel="stylesheet" />' if import_url else ""
+
+    return f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CLIENT DESIGN SYSTEM — MANDATORY (overrides all palette defaults)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+These tokens were generated specifically for this client. Use them EXCLUSIVELY.
+NEVER hardcode hex colors. ALWAYS use var(--token-name).
+Mood: {mood} | Visual: {visual_style}
+
+▸ globals.css — :root block (copy EXACTLY):
+:root {{
+{css_vars}
+  --font-display: '{display_font}', sans-serif;
+  --font-body: '{body_font}', sans-serif;
+}}
+body {{ background-color: var(--bg); color: var(--text); font-family: var(--font-body); }}
+h1, h2, h3 {{ font-family: var(--font-display); }}
+
+▸ index.html — Google Fonts (in <head>):
+  {font_link}
+
+▸ tailwind.config.js — extend.colors:
+  bg: 'var(--bg)', surface: 'var(--surface)', surface2: 'var(--surface2)',
+  border: 'var(--border)', primary: 'var(--primary)', 'primary-hover': 'var(--primary-hover)',
+  accent: 'var(--accent)', accent2: 'var(--accent2)', text: 'var(--text)', muted: 'var(--muted)'
+
+▸ Typography (apply to ALL headings):
+  H1 hero: text-5xl lg:text-7xl xl:text-9xl font-black tracking-tight leading-[0.9]
+  H2:      text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight
+  Body:    text-base lg:text-lg leading-relaxed opacity-80
+"""
+
+
 def get_system_prompt(
     task_type: str,
     brief: dict | None = None,
     task: dict | None = None,
+    design_system: dict | None = None,
 ) -> str:
     """
     Assemble the system prompt from only the modules relevant to this task type.
-    For section tasks with a brief, append the project-specific context block.
+    If design_system is provided, replaces the generic design_system module with
+    client-specific tokens. For section tasks with a brief, appends brand context.
     """
     modules = _TASK_MODULES.get(task_type, list(_ALL_MODULES.keys()))
     parts = [_PROMPT_HEADER, "\n", ANTI_TRUNCATE_RULES, "\n", REACT_EXPORT_RULES]
     for mod_key in modules:
-        parts.append(_ALL_MODULES[mod_key])
+        if mod_key == "design_system" and design_system:
+            parts.append(_build_design_tokens_module(design_system))
+        else:
+            parts.append(_ALL_MODULES[mod_key])
 
     base = "\n".join(parts)
 
@@ -1416,6 +1549,7 @@ Format:
         phase: int = 0,
         brief: Optional[Dict[str, Any]] = None,
         task: Optional[Dict[str, Any]] = None,
+        design_system: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Générer du code pour une tâche donnée, avec anti-troncature.
 
@@ -1440,7 +1574,7 @@ Format:
         if model_override is None:
             model_override = route_model(task_type=task_type, phase=phase)
 
-        system = get_system_prompt(task_type, brief=brief, task=task)
+        system = get_system_prompt(task_type, brief=brief, task=task, design_system=design_system)
 
         return await self.call_ollama(
             prompt,
@@ -1578,6 +1712,152 @@ Response format:
         model = _gemini_or(DEEPSEEK_MODEL_FLASH)
         result = await self.call_ollama(prompt, system_prompt=system, temperature=0.2, model_override=model)
         return result.get("content", raw_objective)
+
+    async def generate_design_system(self, objective: str) -> dict:
+        """
+        Generate a client-specific design system from the brief/objective text.
+        Extracts explicit colors (#RRGGBB), visual style, sector, mood.
+        Uses Gemini Flash for speed. Returns {} on failure.
+        """
+        import json as _json
+        import re as _re
+
+        hex_colors = _re.findall(r'#[0-9a-fA-F]{6}\b', objective)
+        hex_hint = (
+            f"\nClient specified these exact colors (use as primary/accent): {', '.join(hex_colors[:4])}"
+            if hex_colors else ""
+        )
+
+        system = """You are an expert art director and brand designer.
+Given a client brief, generate a precise design system for their website.
+
+Rules:
+- If the client specified hex colors, use them as primary/accent and derive bg, surface, border, muted to complement
+- Match color temperature and mode (dark/light) to the described visual style
+- Choose fonts matching the brand personality: luxury=serif display, tech=geometric sans, agency=bold grotesque
+- Be specific with hex values — no vague color names
+
+Respond ONLY with valid JSON, no markdown fences, no explanation."""
+
+        prompt = f"""Client brief:
+{objective[:2500]}{hex_hint}
+
+Generate this JSON exactly:
+{{
+  "palette": {{
+    "name": "descriptive palette name",
+    "mood": "2-3 mood adjectives",
+    "tokens": {{
+      "bg": "#hex",
+      "surface": "#hex",
+      "surface2": "#hex",
+      "border": "#hex",
+      "primary": "#hex",
+      "primary-hover": "#hex",
+      "accent": "#hex",
+      "accent2": "#hex",
+      "text": "#hex",
+      "muted": "#hex",
+      "success": "#10B981"
+    }}
+  }},
+  "fonts": {{
+    "display": "Font Name",
+    "body": "Font Name",
+    "import_url": "https://fonts.googleapis.com/css2?family=..."
+  }},
+  "mood": "brief mood description",
+  "visual_style": "glassmorphism / elevated / minimal / bold / luxury / organic"
+}}"""
+
+        model = _gemini_or(DEEPSEEK_MODEL_FLASH)
+        result = await self.call_ollama(
+            prompt, system_prompt=system, temperature=0.2, model_override=model
+        )
+        content = result.get("content", "").strip()
+        try:
+            content = _re.sub(r'^```[a-zA-Z]*\n?', '', content)
+            content = _re.sub(r'\n?```$', '', content)
+            m = _re.search(r'\{[\s\S]*\}', content)
+            if m:
+                return _json.loads(m.group())
+        except Exception:
+            pass
+        return {}
+
+    async def critique_section(
+        self,
+        component_code: str,
+        design_system: dict,
+        section_name: str = "",
+    ) -> Optional[str]:
+        """
+        Fast aesthetic critique of a generated section component using Gemini Flash.
+        Scores visual quality and returns improved code if avg score < 7.
+        Targets only visual/animation weaknesses — never restructures logic.
+        Returns improved code string or None if acceptable / Gemini unavailable.
+        """
+        if not GEMINI_API_KEY:
+            return None
+        if len(component_code) > 7000:
+            return None
+
+        import json as _json
+        import re as _re
+
+        tokens = design_system.get("palette", {}).get("tokens", {})
+        primary = tokens.get("primary", "var(--primary)")
+        accent = tokens.get("accent", "var(--accent)")
+        mood = design_system.get("mood", "")
+
+        system = """You are a senior UI critic specializing in React/Tailwind visual quality.
+Score the component and optionally return targeted improvements.
+Focus ONLY on: visual depth (glows/gradients/shadows), animations (Framer Motion), typography hierarchy, design token compliance.
+NEVER restructure component logic or change data/props.
+Respond ONLY with valid JSON."""
+
+        prompt = f"""Evaluate this React/Tailwind component ({section_name}):
+
+```tsx
+{component_code[:5000]}
+```
+
+Project mood: {mood} | Primary: {primary} | Accent: {accent}
+
+Score 1-10 for each dimension:
+- visual_depth: background glows, gradients, shadows, glassmorphism effects
+- animations: Framer Motion entrance animations, hover states, micro-interactions
+- typography: size hierarchy, gradient text on key words, tracking/leading
+- design_tokens: uses var(--xxx) not hardcoded hex colors
+
+If average < 7: provide improved code targeting the single weakest area.
+If average >= 7: set improved_code to null.
+Do NOT repeat the whole file — only return if genuinely improved.
+
+JSON:
+{{
+  "scores": {{"visual_depth": 7, "animations": 6, "typography": 8, "design_tokens": 9}},
+  "avg": 7.5,
+  "weak_area": "animations",
+  "improved_code": null
+}}"""
+
+        result = await self._call_gemini_flash(
+            prompt, system_prompt=system, temperature=0.15
+        )
+        content = result.get("content", "").strip()
+        try:
+            m = _re.search(r'\{[\s\S]*\}', content)
+            if m:
+                data = _json.loads(m.group())
+                avg = float(data.get("avg", 10))
+                improved = data.get("improved_code")
+                if avg < 7 and improved and isinstance(improved, str) and len(improved) > 300:
+                    code_m = _re.search(r'```[a-zA-Z]*\n([\s\S]+?)```', improved)
+                    return code_m.group(1).strip() if code_m else improved.strip()
+        except Exception:
+            pass
+        return None
 
     # ─── Connexion / health ────────────────────────────────────────────────
 

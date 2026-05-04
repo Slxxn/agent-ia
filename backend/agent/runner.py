@@ -149,6 +149,10 @@ class AgentRunner:
             memory = ProjectMemory.load(workspace_path)
             if memory:
                 context += f"\n{ProjectMemory.to_context(memory)}\n"
+                # Restore design system so critique pass works on chat edits too
+                ds = memory.get("design_system")
+                if ds and not getattr(executor, "_design_system", None):
+                    executor._design_system = ds
         except Exception:
             pass
 
@@ -260,6 +264,27 @@ class AgentRunner:
 
             # ── ÉTAPE 2b : Enrichissement Gemini ──
             await add_log(project_id, "═══ PHASE 2b : ENRICHISSEMENT GEMINI ═══", "info")
+
+            # ── Design System client (Phase Design Thinking) ──────────────
+            # Generate a client-specific palette + typography from the brief
+            # before any code generation, so all LLM calls use consistent tokens.
+            try:
+                design_system = await llm.generate_design_system(planning_objective)
+                if design_system and design_system.get("palette", {}).get("tokens"):
+                    executor._design_system = design_system
+                    palette_name = design_system.get("palette", {}).get("name", "custom")
+                    fonts = design_system.get("fonts", {})
+                    mood = design_system.get("mood", "")
+                    await add_log(
+                        project_id,
+                        f"🎨 Design system : {palette_name} | "
+                        f"{fonts.get('display', '?')}/{fonts.get('body', '?')} | {mood}",
+                        "info",
+                    )
+                else:
+                    await add_log(project_id, "⚠️ Design system non généré — palettes par défaut utilisées.", "debug")
+            except Exception as _ds_err:
+                await add_log(project_id, f"⚠️ Design system échoué : {_ds_err}", "debug")
 
             # Vérification des tâches manquantes
             try:
@@ -561,12 +586,17 @@ class AgentRunner:
             try:
                 from backend.agent.project_memory import ProjectMemory
                 all_tasks = [await task_manager.get(tid) for tid in task_ids]
+                # Merge design_system into brief for memory persistence
+                _brief_for_memory = saved_brief or {}
+                _ds = getattr(executor, "_design_system", None)
+                if _ds:
+                    _brief_for_memory = {**_brief_for_memory, "design_system": _ds}
                 await ProjectMemory.save(
                     project_id,
                     workspace_path,
                     objective=objective,
                     project_name=project_name,
-                    brief=saved_brief,
+                    brief=_brief_for_memory,
                     executor=executor,
                     build_success=True,
                     build_attempts=2,
