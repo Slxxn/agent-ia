@@ -497,6 +497,8 @@ class AgentRunner:
                         filesystem.create_file(file_path, repaired)
                         await add_log(project_id, f"✅ '{file_path}' réparé.", "info")
                 executor._syntax_issues.clear()
+                # Re-run post-processor after repairs so new files get the same fixes
+                await post_processor.run(project_id)
 
             # ── ÉTAPE 3.5 : npm install autonome ──
             await cls._check_controls(project_id)
@@ -751,7 +753,7 @@ class AgentRunner:
             return
         files = [
             "tsconfig.json", "tsconfig.node.json", "vite.config.ts",
-            "postcss.config.js", "src/vite-env.d.ts",
+            "postcss.config.js", "src/vite-env.d.ts", "src/lib/motion.ts",
         ]
         written = []
         for rel in files:

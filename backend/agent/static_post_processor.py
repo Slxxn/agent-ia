@@ -106,6 +106,14 @@ class StaticPostProcessor:
             await self._fix_duplicate_context_export(project_id)
         except Exception as e:
             await add_log(project_id, f"⚠️ Post-processor duplicate context export : {e}", "debug")
+        try:
+            await self._fix_jsx_comment_in_props(project_id)
+        except Exception as e:
+            await add_log(project_id, f"⚠️ Post-processor JSX comment in props : {e}", "debug")
+        try:
+            await self._fix_invalid_lucide_icons(project_id)
+        except Exception as e:
+            await add_log(project_id, f"⚠️ Post-processor Lucide icons : {e}", "debug")
 
     # ── NEW: missing React / Router imports ──────────────────────────────────
 
@@ -1157,6 +1165,94 @@ class StaticPostProcessor:
                     fixed.append(fname)
         if fixed:
             await add_log(project_id, f"✅ Duplicate context exports supprimés : {', '.join(fixed)}", "info")
+
+    # ── JSX comment between props fixer ───────────────────────────────────────
+
+    async def _fix_jsx_comment_in_props(self, project_id: int) -> None:
+        """Remove JSX block comments placed between JSX attributes (invalid syntax)."""
+        src_dir = os.path.join(self.workspace_path, "src")
+        if not os.path.isdir(src_dir):
+            return
+        pattern = re.compile(r'\}\s*\{/\*[^*]*\*+(?:[^/][^*]*\*+)*/\}', re.DOTALL)
+        fixed = []
+        for root, _dirs, files in os.walk(src_dir):
+            if "node_modules" in root:
+                continue
+            for fname in files:
+                if not fname.endswith((".tsx", ".jsx")):
+                    continue
+                fpath = os.path.join(root, fname)
+                with open(fpath, encoding="utf-8") as f:
+                    content = f.read()
+                cleaned = pattern.sub("}", content)
+                if cleaned != content:
+                    with open(fpath, "w", encoding="utf-8") as f:
+                        f.write(cleaned)
+                    fixed.append(fname)
+        if fixed:
+            await add_log(project_id, f"✅ JSX comments in props supprimés : {', '.join(fixed)}", "info")
+
+    # ── Invalid Lucide icon fixer ──────────────────────────────────────────────
+
+    # Icons that exist in lucide-react ≥ 0.300 but are often hallucinated
+    _LUCIDE_REPLACEMENTS = {
+        "Recycle":       "RotateCcw",
+        "Ecology":       "Leaf",
+        "EcoLeaf":       "Leaf",
+        "Nature":        "Leaf",
+        "GreenLeaf":     "Leaf",
+        "Sustainable":   "Leaf",
+        "Planet":        "Globe",
+        "Dispatch":      "Send",
+        "Reuse":         "RotateCcw",
+        "Upcycle":       "RotateCcw",
+        "CircularEconomy": "RefreshCcw",
+        "Fashion":       "Shirt",
+        "Cloth":         "Shirt",
+        "Clothing":      "Shirt",
+        "Appareil":      "Smartphone",
+        "Bijou":         "Gem",
+        "Jewelry":       "Gem",
+        "Jewel":         "Gem",
+        "Necklace":      "Gem",
+        "Diamond":       "Gem",
+        "Crown":         "Award",
+        "Satisfaction":  "ThumbsUp",
+        "Guarantee":     "ShieldCheck",
+        "Warranty":      "ShieldCheck",
+        "Lightning":     "Zap",
+        "Flash":         "Zap",
+        "Rocket2":       "Rocket",
+        "Chat":          "MessageCircle",
+        "Talk":          "MessageCircle",
+        "Discuss":       "MessageCircle",
+        "Handshake":     "Handshake",
+    }
+
+    async def _fix_invalid_lucide_icons(self, project_id: int) -> None:
+        """Replace hallucinated Lucide icon names with valid equivalents."""
+        src_dir = os.path.join(self.workspace_path, "src")
+        if not os.path.isdir(src_dir):
+            return
+        fixed = []
+        for root, _dirs, files in os.walk(src_dir):
+            if "node_modules" in root:
+                continue
+            for fname in files:
+                if not fname.endswith((".tsx", ".jsx", ".ts")):
+                    continue
+                fpath = os.path.join(root, fname)
+                with open(fpath, encoding="utf-8") as f:
+                    content = f.read()
+                new = content
+                for bad, good in self._LUCIDE_REPLACEMENTS.items():
+                    new = re.sub(rf'\b{bad}\b', good, new)
+                if new != content:
+                    with open(fpath, "w", encoding="utf-8") as f:
+                        f.write(new)
+                    fixed.append(fname)
+        if fixed:
+            await add_log(project_id, f"✅ Lucide icons corrigés : {', '.join(fixed)}", "info")
 
     # ── Helpers ────────────────────────────────────────────────────────────────
 
