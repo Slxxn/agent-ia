@@ -431,9 +431,11 @@ VITE_DEMO_PASSWORD=preview
         with open(firebaserc_path, "w") as f:
             _json.dump({"projects": {"default": project_fb}}, f, indent=2)
 
-        # npm run build
+        # npm run build — cap Node.js heap to avoid OOM on low-RAM VPS
         await add_log(project_id, "🔨 Build de production (npm run build)...", "info")
-        build_r = await t.run_npm("run", "build", timeout=300)
+        build_r = await t.run_command(
+            "NODE_OPTIONS=--max-old-space-size=512 npm run build", timeout=360
+        )
         if not build_r["success"]:
             err = (build_r.get("stderr", "") or build_r.get("stdout", ""))[:400]
             await add_log(project_id, f"❌ Build échoué — déploiement annulé : {err}", "error")
