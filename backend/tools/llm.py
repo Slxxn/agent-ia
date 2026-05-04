@@ -672,6 +672,87 @@ _MOD_TECH_ARCH = """
 ▸ RESPONSIVE: mobile-first, mobile hamburger, fluid text (text-4xl sm:text-6xl lg:text-8xl)
 ▸ PERFORMANCE: viewport={{ once: true }} on all animations, loading="lazy" on images
 ▸ NO USELESS STATE: useState only when there is a real interaction
+
+▸ FIREBASE CONFIG — always use import.meta.env:
+```typescript
+// src/lib/firebase.ts
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+const firebaseConfig = {
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+};
+const app = initializeApp(firebaseConfig);
+export const auth    = getAuth(app);
+export const db      = getFirestore(app);
+export const storage = getStorage(app);
+export default app;
+```
+
+▸ DEMO AUTH — MANDATORY when authentication is required:
+The project runs in preview mode (VITE_DEMO_AUTH=true). Always implement a demo
+fallback in the auth context so the preview works without real user accounts:
+```typescript
+// src/context/AuthContext.tsx
+import { createContext, useContext, useState, useEffect } from 'react';
+import { signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from '../lib/firebase';
+
+const DEMO_MODE  = import.meta.env.VITE_DEMO_AUTH === 'true';
+const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? 'demo@preview.com';
+const DEMO_PASS  = import.meta.env.VITE_DEMO_PASSWORD ?? 'preview';
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+}
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser]       = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, u => { setUser(u); setLoading(false); });
+    return unsub;
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
+    if (DEMO_MODE && email === DEMO_EMAIL && password === DEMO_PASS) {
+      // Mock user for preview — no Firebase call needed
+      setUser({ email, uid: 'demo-uid', displayName: 'Demo User' } as unknown as User);
+      return;
+    }
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const signOut = async () => {
+    if (DEMO_MODE) { setUser(null); return; }
+    await fbSignOut(auth);
+  };
+
+  return <AuthContext.Provider value={{ user, loading, signIn, signOut }}>{children}</AuthContext.Provider>;
+}
+export const useAuth = () => { const ctx = useContext(AuthContext); if (!ctx) throw new Error('useAuth outside AuthProvider'); return ctx; };
+export default AuthProvider;
+```
+The login form must pre-fill the demo credentials visually:
+```tsx
+// Show demo hint on the login page
+{import.meta.env.VITE_DEMO_AUTH === 'true' && (
+  <p className="text-xs text-center text-muted mt-2 opacity-60">
+    Mode démo — {import.meta.env.VITE_DEMO_EMAIL} / {import.meta.env.VITE_DEMO_PASSWORD}
+  </p>
+)}
+```
 """
 
 _MOD_FEWSHOT = """

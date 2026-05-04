@@ -581,6 +581,13 @@ class AgentRunner:
                 await visual_validator.run_validation_loop(project_id, workspace_path)
                 await project_manager.update_progress(project_id, 97.0)
 
+            # ── ÉTAPE 4b : Injection .env owner Firebase ──
+            try:
+                cls._write_workspace_env(workspace_path, project_name)
+                await add_log(project_id, "🔑 .env Firebase owner injecté dans le workspace.", "debug")
+            except Exception as _env_err:
+                await add_log(project_id, f"⚠️ Injection .env échouée : {_env_err}", "debug")
+
             # ── ÉTAPE 5 : Génération du README ──
             await cls._check_controls(project_id)
             await add_log(project_id, "═══ PHASE 5 : GÉNÉRATION README ═══", "info")
@@ -659,6 +666,55 @@ class AgentRunner:
                 pass
 
         return await t.run_npx("--yes", "firebase-tools", *args, timeout=timeout)
+
+    @classmethod
+    def _write_workspace_env(cls, workspace_path: str, project_name: str = "") -> None:
+        """
+        Write .env to the generated workspace with owner Firebase credentials.
+        VITE_DEMO_AUTH=true enables the mock login (demo@preview.com / preview).
+        Client handoff = replace these values with the client's own Firebase project.
+        """
+        api_key      = os.getenv("OWNER_FIREBASE_API_KEY", "")
+        auth_domain  = os.getenv("OWNER_FIREBASE_AUTH_DOMAIN", "")
+        project_id   = os.getenv("OWNER_FIREBASE_PROJECT_ID", "")
+        storage      = os.getenv("OWNER_FIREBASE_STORAGE_BUCKET", "")
+        sender_id    = os.getenv("OWNER_FIREBASE_MESSAGING_SENDER_ID", "")
+        app_id       = os.getenv("OWNER_FIREBASE_APP_ID", "")
+
+        if not api_key:
+            return  # No owner Firebase config — skip silently
+
+        slug = (project_name or "project").lower().replace(" ", "-")
+        content = f"""# ─────────────────────────────────────────────────────────────────
+# Firebase config — PREVIEW (compte owner)
+# ─────────────────────────────────────────────────────────────────
+# Ce projet tourne actuellement sur le compte Firebase du développeur.
+# Pour livrer au client : remplacer les valeurs ci-dessous par les
+# credentials de son propre projet Firebase, puis faire `npm run build`.
+#
+# 1. Créer un projet sur https://console.firebase.google.com
+# 2. Ajouter une app Web → copier les valeurs firebaseConfig
+# 3. Activer Authentication (Email/Password) + Firestore + Storage
+# 4. Remplacer chaque VITE_FIREBASE_* ci-dessous
+# 5. Passer VITE_DEMO_AUTH à false (ou supprimer la ligne)
+# ─────────────────────────────────────────────────────────────────
+
+VITE_FIREBASE_API_KEY={api_key}
+VITE_FIREBASE_AUTH_DOMAIN={auth_domain}
+VITE_FIREBASE_PROJECT_ID={project_id}
+VITE_FIREBASE_STORAGE_BUCKET={storage}
+VITE_FIREBASE_MESSAGING_SENDER_ID={sender_id}
+VITE_FIREBASE_APP_ID={app_id}
+
+# Mode démo — login mock actif (demo@preview.com / preview)
+# Passer à false pour activer la vraie authentification Firebase.
+VITE_DEMO_AUTH=true
+VITE_DEMO_EMAIL=demo@{slug}.com
+VITE_DEMO_PASSWORD=preview
+"""
+        env_path = os.path.join(workspace_path, ".env")
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.write(content)
 
     @classmethod
     async def _deploy_firebase(cls, project_id: int, workspace_path: str) -> str | None:
