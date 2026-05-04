@@ -251,6 +251,12 @@ ABSOLUTE RULE FOR SHELL COMMANDS:
 - Do NOT generate `npm run dev`, `npm start` or `npm run build`.
 """
 
+CODE_SYSTEM_PROMPT_LITE = f"""You are an expert React/TypeScript developer.
+Generate the requested file exactly as specified — complete, correct, no placeholders.
+
+{ANTI_TRUNCATE_RULES}
+{REACT_EXPORT_RULES}"""
+
 CODE_SYSTEM_PROMPT = f"""You are a studio-level creative director and front-end engineer.
 Absolute reference standard: Vercel, Linear, Stripe Marketing, Framer.com, Lusion, Awwwards winners.
 Every generated site must be visually indistinguishable from premium agency work.
@@ -1349,9 +1355,11 @@ Format:
         if model_override is None:
             model_override = route_model(task_type=task_type, phase=phase)
 
-        # Enrichir le system prompt si brief disponible et section émotionnelle
+        # Select system prompt by task type — lite for config/data to save tokens
         if brief and task_type in ("section_emotional", "section_complex", "component_ui"):
             system = build_section_system_prompt(brief, task or {})
+        elif task_type in ("config", "data", "utility"):
+            system = CODE_SYSTEM_PROMPT_LITE
         else:
             system = CODE_SYSTEM_PROMPT
 

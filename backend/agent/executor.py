@@ -206,8 +206,12 @@ def _infer_task_type(description: str, complexity: str) -> str:
     d = description.lower()
     if any(k in d for k in ("npm install", "npm i ", "package.json", "tsconfig", "vite.config", "postcss")):
         return "scaffold"
-    if any(k in d for k in ("globals.css", "design system", "tokens", "tailwind.config")):
+    if any(k in d for k in ("globals.css", "design system", "tokens", "tailwind.config", "index.css")):
         return "config"
+    if any(k in d for k in ("data/products", "data/", "mock", "utils.ts", "lib/utils", "constants/", ".env.example")):
+        return "data"
+    if any(k in d for k in ("firebase.ts", "stripe.ts", "lib/firebase", "lib/stripe", "supabase.ts")):
+        return "utility"
     # Critical structural files — use reasoner model for correctness
     if any(k in d for k in ("types/index", "src/types", "interfaces typescript", "types typescript")):
         return "critical_structure"
