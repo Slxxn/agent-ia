@@ -131,6 +131,16 @@ class StaticPostProcessor:
         'memo':          re.compile(r'\bmemo\s*\('),
     }
 
+    # APIs that must be imported from 'framer-motion'
+    _FRAMER_APIS: dict[str, re.Pattern] = {
+        'motion':          re.compile(r'\bmotion\.[a-z]'),
+        'AnimatePresence': re.compile(r'<AnimatePresence[\s>/]|\bAnimatePresence\b'),
+        'useAnimation':    re.compile(r'\buseAnimation\s*\('),
+        'useInView':       re.compile(r'\buseInView\s*\('),
+        'useScroll':       re.compile(r'\buseScroll\s*\('),
+        'useTransform':    re.compile(r'\buseTransform\s*\('),
+    }
+
     # APIs that must be imported from 'react-router-dom'
     _ROUTER_APIS: dict[str, re.Pattern] = {
         'Routes':       re.compile(r'<Routes[\s>/]'),
@@ -231,6 +241,29 @@ class StaticPostProcessor:
                             content = content[:pos] + new_line + content[pos:]
                         else:
                             content = new_line + content
+
+                # --- Framer-motion imports ---
+                already_framer = self._get_imported_names(content, "framer-motion")
+                needed_framer: set[str] = set()
+                for api, pattern in self._FRAMER_APIS.items():
+                    if api not in already_framer and pattern.search(content):
+                        needed_framer.add(api)
+
+                if needed_framer:
+                    existing = re.search(
+                        r"import\s*\{([^}]*)\}\s*from\s*['\"]framer-motion['\"]",
+                        content,
+                    )
+                    if existing:
+                        old_names = {n.strip() for n in existing.group(1).split(',') if n.strip()}
+                        all_names = sorted(old_names | needed_framer)
+                        content = content.replace(
+                            existing.group(0),
+                            f"import {{ {', '.join(all_names)} }} from 'framer-motion';",
+                        )
+                    else:
+                        new_line = f"import {{ {', '.join(sorted(needed_framer))} }} from 'framer-motion';\n"
+                        content = new_line + content
 
                 # --- Firebase: ensure initializeApp imported from 'firebase/app' ---
                 uses_firebase_sdks = re.search(
