@@ -98,6 +98,10 @@ class StaticPostProcessor:
             await self._fix_navbar_logo(project_id)
         except Exception as e:
             await add_log(project_id, f"⚠️ Post-processor navbar logo : {e}", "debug")
+        try:
+            await self._fix_duplicate_context_export(project_id)
+        except Exception as e:
+            await add_log(project_id, f"⚠️ Post-processor duplicate context export : {e}", "debug")
 
     # ── NEW: missing React / Router imports ──────────────────────────────────
 
@@ -1077,6 +1081,37 @@ class StaticPostProcessor:
             with open(navbar_path, "w", encoding="utf-8") as f:
                 f.write(replaced)
             await add_log(project_id, f"✅ Navbar logo : image injectée depuis logoUrl.", "info")
+
+    # ── Duplicate context export ───────────────────────────────────────────────
+
+    async def _fix_duplicate_context_export(self, project_id: int) -> None:
+        """Remove `export const Foo = Foo;` self-referential re-exports that cause duplicate declaration errors."""
+        src_dir = os.path.join(self.workspace_path, "src")
+        if not os.path.isdir(src_dir):
+            return
+        fixed = []
+        for root, _dirs, files in os.walk(src_dir):
+            if "node_modules" in root:
+                continue
+            for fname in files:
+                if not fname.endswith((".ts", ".tsx")):
+                    continue
+                fpath = os.path.join(root, fname)
+                with open(fpath, "r", encoding="utf-8") as f:
+                    content = f.read()
+                # Match: export const Foo = Foo; (self-referential)
+                cleaned = re.sub(
+                    r'^export\s+const\s+(\w+)\s*=\s*\1\s*;?\s*$',
+                    '',
+                    content,
+                    flags=re.MULTILINE,
+                )
+                if cleaned != content:
+                    with open(fpath, "w", encoding="utf-8") as f:
+                        f.write(cleaned)
+                    fixed.append(fname)
+        if fixed:
+            await add_log(project_id, f"✅ Duplicate context exports supprimés : {', '.join(fixed)}", "info")
 
     # ── Helpers ────────────────────────────────────────────────────────────────
 
