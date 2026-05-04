@@ -118,19 +118,23 @@ export default function RequestCard({ request, index, onViewDetails, onValidate,
         Soumis le {request.createdAt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
       </div>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: 6, borderTop: '1px solid var(--bd)', paddingTop: 14 }}>
-        <ActionBtn icon={<Eye size={12} />} label="Détails" onClick={() => onViewDetails(request)} />
-        <ActionBtn icon={<Pencil size={12} />} label="Modifier" onClick={() => onEdit(request)} />
-        <div style={{ marginLeft: 'auto' }}>
-          <ActionBtn
-            icon={<Trash2 size={12} />} label={deleting ? '…' : 'Supprimer'} color="#EF4444"
-            onClick={() => onDelete(request.id)} disabled={deleting}
-          />
+      {/* Actions — 2 rows: primary actions top, status actions bottom */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid var(--bd)', paddingTop: 14 }}>
+        {/* Row 1: always-visible actions */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <ActionBtn icon={<Eye size={12} />} label="Détails" onClick={() => onViewDetails(request)} />
+          <ActionBtn icon={<Pencil size={12} />} label="Modifier" onClick={() => onEdit(request)} />
+          <div style={{ marginLeft: 'auto' }}>
+            <ActionBtn
+              icon={<Trash2 size={12} />} label={deleting ? '…' : 'Supprimer'} color="#EF4444"
+              onClick={() => onDelete(request.id)} disabled={deleting}
+            />
+          </div>
         </div>
 
+        {/* Row 2: status-specific actions */}
         {request.status === 'pending' && (
-          <>
+          <div style={{ display: 'flex', gap: 6 }}>
             <ActionBtn
               icon={<CheckCircle size={12} />} label="Valider" color="#22C55E"
               onClick={() => act(() => onValidate(request.id))} disabled={acting}
@@ -139,22 +143,26 @@ export default function RequestCard({ request, index, onViewDetails, onValidate,
               icon={<XCircle size={12} />} label="Rejeter" color="#EF4444"
               onClick={() => act(() => onReject(request.id))} disabled={acting}
             />
-          </>
+          </div>
         )}
 
         {request.status === 'validated' && (
-          <ActionBtn
-            icon={<Rocket size={12} />} label="Lancer le projet" color="#6366F1"
-            onClick={() => onLaunch(request)} disabled={acting}
-            primary
-          />
+          <div style={{ display: 'flex' }}>
+            <ActionBtn
+              icon={<Rocket size={12} />} label="Lancer le projet" color="#6366F1"
+              onClick={() => onLaunch(request)} disabled={acting}
+              primary
+            />
+          </div>
         )}
 
         {(request.status === 'in_progress' || request.status === 'completed') && (
-          <ActionBtn
-            icon={<RotateCcw size={12} />} label="Régénérer" color="#A78BFA"
-            onClick={() => onRegenerate(request)} disabled={acting}
-          />
+          <div style={{ display: 'flex' }}>
+            <ActionBtn
+              icon={<RotateCcw size={12} />} label="Régénérer" color="#A78BFA"
+              onClick={() => onRegenerate(request)} disabled={acting}
+            />
+          </div>
         )}
       </div>
     </motion.div>
