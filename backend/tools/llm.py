@@ -2017,33 +2017,48 @@ Use EXACTLY these values in the theme object.
 
         import re as _re, json as _json, logging as _logging
 
-        # Strip markdown code fences if present
+        # Strip markdown code fences
         raw = _re.sub(r'^```(?:json)?\s*', '', raw.strip(), flags=_re.MULTILINE)
         raw = _re.sub(r'```\s*$', '', raw.strip(), flags=_re.MULTILINE)
         raw = raw.strip()
 
-        # Try direct parse first
-        try:
-            parsed = _json.loads(raw)
-            if parsed.get("pages"):
-                return parsed
-        except Exception:
-            pass
-
-        # Extract largest JSON object
-        json_match = _re.search(r'\{[\s\S]*\}', raw)
-        if not json_match:
-            _logging.warning(f"generate_site_spec: no JSON found in output (len={len(raw)}): {raw[:300]}")
-            return None
-        try:
-            parsed = _json.loads(json_match.group(0))
-            if not parsed.get("pages"):
-                _logging.warning(f"generate_site_spec: JSON parsed but no 'pages' key. Keys: {list(parsed.keys())}")
+        def _try_parse(s: str):
+            try:
+                p = _json.loads(s)
+                return p if p.get("pages") else None
+            except Exception:
                 return None
-            return parsed
-        except Exception as e:
-            _logging.warning(f"generate_site_spec: JSON parse failed: {e}. Raw[:300]: {raw[:300]}")
-            return None
+
+        # 1. Direct parse
+        result = _try_parse(raw)
+        if result:
+            return result
+
+        # 2. Extract largest {...} block
+        json_match = _re.search(r'\{[\s\S]*\}', raw)
+        if json_match:
+            result = _try_parse(json_match.group(0))
+            if result:
+                return result
+
+            # 3. Truncated JSON repair: find last complete page entry and close the JSON
+            chunk = json_match.group(0)
+            # Find last valid closing of a page block "}]}" pattern going backwards
+            for end in range(len(chunk), len(chunk) // 2, -1):
+                candidate = chunk[:end]
+                # Count open braces/brackets to determine needed closing chars
+                opens = candidate.count('{') - candidate.count('}')
+                arr_opens = candidate.count('[') - candidate.count(']')
+                if opens < 0 or arr_opens < 0:
+                    continue
+                repaired = candidate + (']' * arr_opens) + ('}' * opens)
+                result = _try_parse(repaired)
+                if result:
+                    _logging.info(f"generate_site_spec: repaired truncated JSON (trimmed {len(chunk)-end} chars)")
+                    return result
+
+        _logging.warning(f"generate_site_spec: could not parse JSON. Raw[:400]: {raw[:400]}")
+        return None
 
     async def generate_design_system(self, objective: str) -> dict:
         """

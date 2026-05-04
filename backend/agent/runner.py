@@ -236,7 +236,15 @@ class AgentRunner:
             is_3d = any(kw in full_objective.lower() for kw in _3d_keywords)
             if is_3d:
                 await add_log(project_id, "🌐 Mode 3D détecté — blocs Three.js activés.", "info")
-            site_spec = await llm.generate_site_spec(full_objective, design_system, is_3d=is_3d)
+
+            # Strip verbose technical rules before sending to spec generator
+            # (they were for the old code-gen pipeline, not needed for block assembly)
+            import re as _re_strip
+            spec_objective = _re_strip.sub(
+                r'## (Absolute Technical Rules|Homepage Structure Rules)[\s\S]*?(?=## |\Z)',
+                '', full_objective
+            ).strip()
+            site_spec = await llm.generate_site_spec(spec_objective, design_system, is_3d=is_3d)
 
             if not site_spec or not site_spec.get("pages"):
                 await add_log(project_id, "❌ Spec JSON invalide ou vide.", "error")
