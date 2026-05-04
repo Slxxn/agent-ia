@@ -263,7 +263,7 @@ class AgentRunner:
             await post.run(project_id)
 
             # ── PHASE 3.5 : Injection .env Firebase ──────────────────────
-            await cls._write_workspace_env(workspace_path, project_name)
+            cls._write_workspace_env(workspace_path, project_name)
             await add_log(project_id, "🔑 .env Firebase injecté.", "debug")
 
             # ── PHASE 4 : Installation dépendances ───────────────────────
