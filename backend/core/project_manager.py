@@ -4,6 +4,7 @@ Gère le cycle de vie des projets et leur workspace.
 """
 
 import os
+import shutil
 import asyncio
 from typing import Optional, Dict, Any, List
 from backend.db.database import (
@@ -62,7 +63,12 @@ class ProjectManager:
         return os.path.join(WORKSPACE_ROOT, rel_path)
 
     async def delete(self, project_id: int) -> bool:
-        """Supprimer un projet."""
+        """Supprimer un projet et son workspace."""
+        project = await get_project(project_id)
+        if project:
+            workspace_path = await self.get_workspace_path(project_id)
+            if workspace_path and os.path.isdir(workspace_path):
+                shutil.rmtree(workspace_path, ignore_errors=True)
         return await delete_project(project_id)
 
 
