@@ -132,13 +132,15 @@ export default function RequestDetailModal({ request, onClose }: Props) {
 
               {/* Visual identity */}
               <Section title="Identité visuelle">
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 8, background: request.primaryColor, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }} />
-                    <span style={{ fontSize: 10, color: 'var(--muted2)' }}>Principale</span>
-                    <span style={{ fontSize: 10, color: 'var(--text2)', fontFamily: 'monospace' }}>{request.primaryColor}</span>
-                  </div>
-                  <div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 }}>
+                  {(request.colors?.length ? request.colors : [request.primaryColor]).map((color, i) => (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 8, background: color, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }} />
+                      <span style={{ fontSize: 10, color: 'var(--muted2)' }}>{i === 0 ? 'Principale' : `Couleur ${i + 1}`}</span>
+                      <span style={{ fontSize: 10, color: 'var(--text2)', fontFamily: 'monospace' }}>{color}</span>
+                    </div>
+                  ))}
+                  <div style={{ marginLeft: 8 }}>
                     <span style={{ fontSize: 11, color: 'var(--muted2)' }}>Thème : </span>
                     <span style={{ fontSize: 11, color: 'var(--text2)' }}>{request.colorTheme}</span>
                   </div>

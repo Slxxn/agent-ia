@@ -15,6 +15,7 @@ export interface ClientRequest {
   uniqueValue: string;
   logoUrl: string;
   primaryColor: string;
+  colors: string[];
   colorTheme: string;
   visualStyle: string;
   inspirationSites: string;

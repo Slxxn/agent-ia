@@ -794,7 +794,20 @@ function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unkn
             {/* Palette */}
             {geminiSuggestions.palette && (
               <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Palette recommandée</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Palette recommandée</div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const p = geminiSuggestions!.palette!;
+                      const newColors = [p.primary, p.secondary, p.accent].filter(Boolean);
+                      set('colors', newColors);
+                    }}
+                    className="text-xs px-3 py-1 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-600/30 transition-colors font-medium"
+                  >
+                    ✓ Appliquer ces couleurs
+                  </button>
+                </div>
                 <div className="flex gap-3 flex-wrap">
                   {(['primary', 'secondary', 'accent', 'background'] as const).map((key, i) => (
                     <div key={key} className="flex items-center gap-2">

@@ -40,7 +40,7 @@ ${req.logoUrl
 ## Visual Direction
 - Style: ${style ? `${style.label} — ${style.desc}` : req.visualStyle}
 - Color theme: ${theme ? `${theme.label} (${theme.desc}, base: ${theme.preview})` : req.colorTheme}
-- Primary accent color: ${req.primaryColor}
+- Colors: ${(req.colors?.length ? req.colors : [req.primaryColor]).join(', ')}
 ${req.inspirationSites ? `- Inspiration sites: ${req.inspirationSites}` : ''}
 
 ## Target Audience

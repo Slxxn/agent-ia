@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, CheckCircle, XCircle, Rocket, Calendar, DollarSign, Tag, RotateCcw, Trash2 } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, Rocket, Calendar, DollarSign, Tag, RotateCcw, Trash2, Pencil } from 'lucide-react';
 import { ClientRequest, RequestStatus } from '@/types/clientRequest';
 
 const STATUS_CONFIG: Record<RequestStatus, { label: string; color: string; bg: string; border: string }> = {
@@ -23,11 +23,12 @@ interface Props {
   onReject: (id: string) => Promise<void>;
   onLaunch: (r: ClientRequest) => void;
   onRegenerate: (r: ClientRequest) => void;
+  onEdit: (r: ClientRequest) => void;
   onDelete: (id: string) => void;
   deleting?: boolean;
 }
 
-export default function RequestCard({ request, index, onViewDetails, onValidate, onReject, onLaunch, onRegenerate, onDelete, deleting }: Props) {
+export default function RequestCard({ request, index, onViewDetails, onValidate, onReject, onLaunch, onRegenerate, onEdit, onDelete, deleting }: Props) {
   const [acting, setActing] = useState(false);
   const status = STATUS_CONFIG[request.status];
 
@@ -97,11 +98,10 @@ export default function RequestCard({ request, index, onViewDetails, onValidate,
       </div>
 
       {/* Color palette + style */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 18, height: 18, borderRadius: 99, background: request.primaryColor,
-          border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
-        }} title={request.primaryColor} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {(request.colors?.length ? request.colors : [request.primaryColor]).slice(0, 4).map((c, i) => (
+          <div key={i} style={{ width: 16, height: 16, borderRadius: 99, background: c, border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }} title={c} />
+        ))}
         <span style={{ fontSize: 11, color: 'var(--muted2)', fontStyle: 'italic' }}>{request.visualStyle.replace(/_/g, ' ')}</span>
       </div>
 
@@ -121,6 +121,7 @@ export default function RequestCard({ request, index, onViewDetails, onValidate,
       {/* Actions */}
       <div style={{ display: 'flex', gap: 6, borderTop: '1px solid var(--bd)', paddingTop: 14 }}>
         <ActionBtn icon={<Eye size={12} />} label="Détails" onClick={() => onViewDetails(request)} />
+        <ActionBtn icon={<Pencil size={12} />} label="Modifier" onClick={() => onEdit(request)} />
         <div style={{ marginLeft: 'auto' }}>
           <ActionBtn
             icon={<Trash2 size={12} />} label={deleting ? '…' : 'Supprimer'} color="#EF4444"

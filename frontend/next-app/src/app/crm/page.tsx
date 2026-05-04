@@ -9,6 +9,7 @@ import { ClientRequest, RequestStatus } from '@/types/clientRequest';
 import RequestCard from '@/components/crm/RequestCard';
 import RequestDetailModal from '@/components/crm/RequestDetailModal';
 import LaunchProjectModal from '@/components/crm/LaunchProjectModal';
+import EditRequestModal from '@/components/crm/EditRequestModal';
 
 const TABS: { key: RequestStatus | 'all'; label: string; icon: React.ReactNode }[] = [
   { key: 'all',        label: 'Toutes',      icon: <Users size={13} /> },
@@ -25,6 +26,7 @@ export default function CRMPage() {
   const [tab, setTab]               = useState<RequestStatus | 'all'>('all');
   const [detailRequest, setDetailRequest]   = useState<ClientRequest | null>(null);
   const [launchRequest, setLaunchRequest]   = useState<ClientRequest | null>(null);
+  const [editRequest, setEditRequest]       = useState<ClientRequest | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
@@ -164,6 +166,7 @@ export default function CRMPage() {
               request={r}
               index={i}
               onViewDetails={(req) => setDetailRequest(req)}
+              onEdit={(req) => setEditRequest(req)}
               onValidate={(id) => updateStatus(id, 'validated')}
               onReject={(id) => updateStatus(id, 'rejected')}
               onLaunch={(req) => setLaunchRequest(req)}
@@ -179,6 +182,11 @@ export default function CRMPage() {
       <RequestDetailModal
         request={detailRequest}
         onClose={() => setDetailRequest(null)}
+      />
+      <EditRequestModal
+        request={editRequest}
+        onClose={() => setEditRequest(null)}
+        onSaved={() => setEditRequest(null)}
       />
       <LaunchProjectModal
         request={launchRequest}
