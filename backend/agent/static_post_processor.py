@@ -255,18 +255,39 @@ class StaticPostProcessor:
     # ── NEW: package.json build script ───────────────────────────────────────
 
     async def _fix_package_build_script(self, project_id: int) -> None:
-        """Change 'tsc && vite build' to 'vite build' to skip broken type checking."""
+        """
+        Ensure package.json always has a valid build script.
+        - Add scripts section if missing entirely
+        - Replace 'tsc && vite build' with 'vite build' (skip broken type checking)
+        """
         pkg_path = os.path.join(self.workspace_path, "package.json")
         if not os.path.exists(pkg_path):
             return
-        with open(pkg_path, encoding="utf-8") as f:
-            pkg = json.load(f)
-        build_cmd = pkg.get("scripts", {}).get("build", "")
-        if "tsc &&" in build_cmd:
-            pkg["scripts"]["build"] = build_cmd.replace("tsc && ", "").replace("tsc&& ", "")
+        try:
+            with open(pkg_path, encoding="utf-8") as f:
+                pkg = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return
+
+        changed = False
+        scripts = pkg.get("scripts", {})
+
+        # Inject full scripts block if missing or incomplete
+        if not scripts.get("build"):
+            scripts.setdefault("dev",     "vite")
+            scripts["build"]    = "vite build"
+            scripts.setdefault("preview", "vite preview")
+            pkg["scripts"] = scripts
+            changed = True
+            await add_log(project_id, "✅ Build script : scripts manquants injectés (vite build).", "info")
+        elif "tsc &&" in scripts["build"] or "tsc&&" in scripts["build"]:
+            pkg["scripts"]["build"] = scripts["build"].replace("tsc && ", "").replace("tsc&& ", "")
+            changed = True
+            await add_log(project_id, "✅ Build script : tsc supprimé (vite build seul).", "info")
+
+        if changed:
             with open(pkg_path, "w", encoding="utf-8") as f:
                 json.dump(pkg, f, indent=2)
-            await add_log(project_id, "✅ Build script : tsc supprimé (vite build seul).", "info")
 
     # ── NEW: vite.config.ts @ alias ───────────────────────────────────────────
 
