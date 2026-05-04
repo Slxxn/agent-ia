@@ -1842,8 +1842,9 @@ JSON:
   "improved_code": null
 }}"""
 
-        result = await self._call_gemini_flash(
-            prompt, system_prompt=system, temperature=0.15
+        result = await self.call_ollama(
+            prompt, system_prompt=system, temperature=0.15,
+            model_override=GEMINI_MODEL,
         )
         content = result.get("content", "").strip()
         try:
