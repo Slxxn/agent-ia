@@ -62,9 +62,9 @@ GEMINI_TIMEOUT  = 60
 # Router LLM — noms des modèles par tier
 # deepseek-chat = V3 standard (flash/cheap) ; deepseek-reasoner = R1 raisonnement
 # deepseek-v4-pro : à renseigner si disponible, fallback sur deepseek-chat sinon
-DEEPSEEK_MODEL_FLASH    = os.getenv("DEEPSEEK_MODEL_FLASH",    "deepseek-chat")
+DEEPSEEK_MODEL_FLASH    = os.getenv("DEEPSEEK_MODEL_FLASH",    "deepseek-v4-flash")
 DEEPSEEK_MODEL_REASONER = os.getenv("DEEPSEEK_MODEL_REASONER", "deepseek-reasoner")
-DEEPSEEK_MODEL_PRO      = os.getenv("DEEPSEEK_MODEL_PRO",      "deepseek-chat")  # deepseek-v4-pro quand dispo
+DEEPSEEK_MODEL_PRO      = os.getenv("DEEPSEEK_MODEL_PRO",      "deepseek-v4-pro")
 LLM_BUDGET_MODE         = os.getenv("LLM_BUDGET_MODE", "balanced")  # economy | balanced | quality
 
 
