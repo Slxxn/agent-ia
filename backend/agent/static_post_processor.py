@@ -55,6 +55,10 @@ class StaticPostProcessor:
         except Exception as e:
             await add_log(project_id, f"⚠️ Post-processor button href : {e}", "debug")
         try:
+            await self._fix_missing_default_export(project_id)
+        except Exception as e:
+            await add_log(project_id, f"⚠️ Post-processor missing default export : {e}", "debug")
+        try:
             await self._fix_named_default_imports(project_id)
         except Exception as e:
             await add_log(project_id, f"⚠️ Post-processor named imports : {e}", "debug")
@@ -403,6 +407,47 @@ class StaticPostProcessor:
             await add_log(project_id, f"✅ Imports : named→default corrigé dans {fixed} fichier(s).", "info")
             from backend.agent.project_memory import ProjectMemory
             await ProjectMemory.record_fix("named_default_imports")
+
+    # ── NEW: missing default export fixer ────────────────────────────────────
+
+    async def _fix_missing_default_export(self, project_id: int) -> None:
+        """
+        Every React component file that has `export const/function Foo` (PascalCase)
+        but no `export default` gets `export default Foo;` appended.
+        Skips index files, type-only files, and files with multiple components.
+        """
+        src_dir = os.path.join(self.workspace_path, "src")
+        if not os.path.exists(src_dir):
+            return
+        fixed = []
+        for root, _dirs, files in os.walk(src_dir):
+            if "node_modules" in root:
+                continue
+            for fname in files:
+                if not fname.endswith((".tsx", ".ts")) or fname.startswith("index"):
+                    continue
+                fpath = os.path.join(root, fname)
+                with open(fpath, encoding="utf-8") as f:
+                    content = f.read()
+                if "export default" in content:
+                    continue
+                # Find all named PascalCase exports
+                names = re.findall(
+                    r'^export\s+(?:const|function|class)\s+([A-Z]\w+)',
+                    content, re.MULTILINE
+                )
+                if len(names) != 1:
+                    continue
+                name = names[0]
+                # Only patch component files (name matches filename stem)
+                stem = fname.rsplit(".", 1)[0]
+                if name != stem:
+                    continue
+                with open(fpath, "a", encoding="utf-8") as f:
+                    f.write(f"\nexport default {name};\n")
+                fixed.append(fname)
+        if fixed:
+            await add_log(project_id, f"✅ Default exports ajoutés : {', '.join(fixed)}", "info")
 
     # ── NEW: CSS opacity arbitrary var fixer ──────────────────────────────────
 
