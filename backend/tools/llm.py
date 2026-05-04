@@ -751,6 +751,121 @@ const item = {{ hidden: {{ opacity: 0, y: 32, filter: 'blur(4px)' }}, show: {{ o
 ```
 """
 
+_MOD_3D_DEPTH = """
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 3D / IMMERSIVE EXPERIENCE — MANDATORY RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This project is a 3D immersive React/Vite experience. Apply every rule below without exception.
+
+▸ STACK
+- Three.js via @react-three/fiber (Canvas) + @react-three/drei helpers
+- package.json MUST include: three, @react-three/fiber, @react-three/drei, @types/three
+- Smooth scroll: @studio-freight/lenis OR framer-motion scroll — pick one, stay consistent
+- Animations: framer-motion (priority) + GSAP for complex scroll timelines if needed
+
+▸ HERO CANVAS
+```tsx
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Stars, Environment } from '@react-three/drei';
+import { Suspense } from 'react';
+
+// Hero must wrap Canvas in Suspense with a dark CSS fallback for mobile/no-WebGL:
+<section className="relative w-full h-screen bg-[var(--bg)]">
+  <Suspense fallback={<div className="absolute inset-0 bg-[var(--bg)]" />}>
+    <Canvas camera={{ position: [0, 0, 5], fov: 60 }} dpr={[1, 2]}>
+      <ambientLight intensity={0.3} />
+      <pointLight position={[10, 10, 10]} intensity={1.5} color="var(--primary)" />
+      <Stars radius={100} depth={50} count={3000} factor={4} fade />
+      <Environment preset="night" />
+      {/* scene mesh or model here */}
+    </Canvas>
+  </Suspense>
+  {/* overlay text on top of canvas */}
+  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+    {/* headline, subline, CTA */}
+  </div>
+</section>
+```
+
+▸ PARTICLE SYSTEM (instanced, GPU-friendly)
+```tsx
+import { useRef, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+
+function Particles({ count = 2000 }) {
+  const mesh = useRef<THREE.InstancedMesh>(null!);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const positions = useMemo(() => {
+    return Array.from({ length: count }, () => [
+      (Math.random() - 0.5) * 20,
+      (Math.random() - 0.5) * 20,
+      (Math.random() - 0.5) * 20,
+    ]);
+  }, [count]);
+  useFrame(({ clock }) => {
+    positions.forEach(([x, y, z], i) => {
+      dummy.position.set(x, y + Math.sin(clock.elapsedTime * 0.3 + i) * 0.1, z);
+      dummy.updateMatrix();
+      mesh.current.setMatrixAt(i, dummy.matrix);
+    });
+    mesh.current.instanceMatrix.needsUpdate = true;
+  });
+  return (
+    <instancedMesh ref={mesh} args={[undefined, undefined, count]}>
+      <sphereGeometry args={[0.015, 8, 8]} />
+      <meshBasicMaterial color="var(--primary)" transparent opacity={0.7} />
+    </instancedMesh>
+  );
+}
+```
+
+▸ SCROLL PARALLAX (framer-motion)
+```tsx
+import { useScroll, useTransform, motion } from 'framer-motion';
+const { scrollYProgress } = useScroll();
+const y = useTransform(scrollYProgress, [0, 1], ['0%', '-30%']);
+const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+// <motion.div style={{ y, opacity }}> ... </motion.div>
+```
+
+▸ CUSTOM CURSOR
+```tsx
+// Track mouse position, render a div via React portal — no CSS cursor override
+const [pos, setPos] = useState({ x: 0, y: 0 });
+useEffect(() => {
+  const update = (e: MouseEvent) => setPos({ x: e.clientX, y: e.clientY });
+  window.addEventListener('mousemove', update);
+  return () => window.removeEventListener('mousemove', update);
+}, []);
+// Portal: <div style={{ left: pos.x, top: pos.y }} className="custom-cursor" />
+// globals.css: body { cursor: none; } .custom-cursor { position: fixed; pointer-events: none; ... }
+```
+
+▸ COLOR SYSTEM (3D dark theme)
+CSS --bg must be very dark (≈ #05050f – #0a0a0a). Use:
+- --bg: #05050f (deep space) or client-provided dark tone
+- --surface: #0e0e1a
+- --primary: client accent (bright, saturated — it must pop on dark bg)
+- --text: #e8e8f0
+- All gradients: from-[var(--primary)]/20 to-transparent — subtle, not garish
+
+▸ MOBILE FALLBACK
+Wrap heavy Canvas scenes:
+```tsx
+const isMobile = /Mobi/i.test(navigator.userAgent);
+// If isMobile, render a styled CSS fallback instead of Canvas
+```
+Or use Suspense + an ErrorBoundary that falls back to a CSS gradient hero.
+
+▸ PERFORMANCE
+- dpr={[1, 2]} on Canvas — caps pixel ratio
+- Use instancedMesh for particle systems, never spawn hundreds of individual meshes
+- Lazy-load 3D components: React.lazy + Suspense
+- Keep polygon count < 50k total for the hero scene
+"""
+
 # ─── Module registry & assembly ────────────────────────────────────────────────
 
 _ALL_MODULES = {
@@ -765,6 +880,7 @@ _ALL_MODULES = {
     "copywriting":    _MOD_COPYWRITING,
     "tech_arch":      _MOD_TECH_ARCH,
     "fewshot":        _MOD_FEWSHOT,
+    "3d_depth":       _MOD_3D_DEPTH,
 }
 
 # Which modules each task type receives (ordered, subset of _ALL_MODULES)
@@ -840,14 +956,18 @@ def get_system_prompt(
     brief: dict | None = None,
     task: dict | None = None,
     design_system: dict | None = None,
+    is_3d: bool = False,
 ) -> str:
     """
     Assemble the system prompt from only the modules relevant to this task type.
     If design_system is provided, replaces the generic design_system module with
     client-specific tokens. For section tasks with a brief, appends brand context.
+    If is_3d, prepends the 3D/immersive module.
     """
     modules = _TASK_MODULES.get(task_type, list(_ALL_MODULES.keys()))
     parts = [_PROMPT_HEADER, "\n", ANTI_TRUNCATE_RULES, "\n", REACT_EXPORT_RULES]
+    if is_3d:
+        parts.append(_MOD_3D_DEPTH)
     for mod_key in modules:
         if mod_key == "design_system" and design_system:
             parts.append(_build_design_tokens_module(design_system))
@@ -1550,6 +1670,7 @@ Format:
         brief: Optional[Dict[str, Any]] = None,
         task: Optional[Dict[str, Any]] = None,
         design_system: Optional[Dict[str, Any]] = None,
+        is_3d: bool = False,
     ) -> Dict[str, Any]:
         """Générer du code pour une tâche donnée, avec anti-troncature.
 
@@ -1574,7 +1695,7 @@ Format:
         if model_override is None:
             model_override = route_model(task_type=task_type, phase=phase)
 
-        system = get_system_prompt(task_type, brief=brief, task=task, design_system=design_system)
+        system = get_system_prompt(task_type, brief=brief, task=task, design_system=design_system, is_3d=is_3d)
 
         return await self.call_ollama(
             prompt,

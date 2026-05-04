@@ -153,6 +153,8 @@ class AgentRunner:
                 ds = memory.get("design_system")
                 if ds and not getattr(executor, "_design_system", None):
                     executor._design_system = ds
+                if memory.get("is_3d") and not getattr(executor, "_is_3d", False):
+                    executor._is_3d = True
         except Exception:
             pass
 
@@ -264,6 +266,15 @@ class AgentRunner:
 
             # ── ÉTAPE 2b : Enrichissement Gemini ──
             await add_log(project_id, "═══ PHASE 2b : ENRICHISSEMENT GEMINI ═══", "info")
+
+            # ── Detect 3D / immersive project ────────────────────────────
+            _3d_keywords = ("3d/immersive", "[3d/immersive", "three.js", "react three fiber",
+                            "@react-three", "sitetype: '3d'", "site type: expérience 3d",
+                            "immersive", "webgl", "three js")
+            _obj_lower = planning_objective.lower()
+            if any(kw in _obj_lower for kw in _3d_keywords):
+                executor._is_3d = True
+                await add_log(project_id, "🌐 Mode 3D/Immersive détecté — module Three.js activé.", "info")
 
             # ── Design System client (Phase Design Thinking) ──────────────
             # Generate a client-specific palette + typography from the brief
@@ -586,11 +597,13 @@ class AgentRunner:
             try:
                 from backend.agent.project_memory import ProjectMemory
                 all_tasks = [await task_manager.get(tid) for tid in task_ids]
-                # Merge design_system into brief for memory persistence
+                # Merge design_system + is_3d into brief for memory persistence
                 _brief_for_memory = saved_brief or {}
                 _ds = getattr(executor, "_design_system", None)
                 if _ds:
                     _brief_for_memory = {**_brief_for_memory, "design_system": _ds}
+                if getattr(executor, "_is_3d", False):
+                    _brief_for_memory = {**_brief_for_memory, "is_3d": True}
                 await ProjectMemory.save(
                     project_id,
                     workspace_path,

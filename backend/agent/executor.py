@@ -297,6 +297,7 @@ class AgentExecutor:
         self._current_phase  = 0   # mis à jour par runner.py
         self._current_brief: dict | None = None  # brief projet injecté par runner.py
         self._design_system: dict | None = None  # design system client (palette + fonts)
+        self._is_3d: bool = False  # 3D/immersive project flag
         self._syntax_issues: dict[str, list[str]] = {}  # populated by per-file validation
         self._types_content: str | None = None  # set when src/types/index.ts is written
 
@@ -349,6 +350,7 @@ class AgentExecutor:
             phase=phase,
             brief=brief,
             design_system=getattr(self, "_design_system", None),
+            is_3d=getattr(self, "_is_3d", False),
         )
 
         # Tracker les tokens consommés
@@ -458,6 +460,7 @@ class AgentExecutor:
             phase=phase,
             brief=brief,
             design_system=getattr(self, "_design_system", None),
+            is_3d=getattr(self, "_is_3d", False),
         )
         tokens = (result.get("prompt_tokens", 0) or 0) + (result.get("completion_tokens", 0) or 0)
         if tokens > 0:

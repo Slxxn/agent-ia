@@ -1,9 +1,11 @@
 export type RequestStatus = 'pending' | 'validated' | 'in_progress' | 'completed' | 'rejected';
+export type SiteType = 'standard' | '3d';
 
 export interface ClientRequest {
   id: string;
   createdAt: Date;
   status: RequestStatus;
+  siteType: SiteType;
   businessName: string;
   sector: string;
   siteGoal: string;
@@ -22,6 +24,21 @@ export interface ClientRequest {
   budget: string;
   notes: string;
 }
+
+export const SITE_TYPES: { key: SiteType; label: string; desc: string; icon: string }[] = [
+  {
+    key: 'standard',
+    label: 'Site Web Standard',
+    desc: 'Design moderne, animations fluides, sections élégantes — idéal pour la majorité des projets.',
+    icon: '🖥️',
+  },
+  {
+    key: '3d',
+    label: 'Expérience 3D / Immersive',
+    desc: 'Scènes Three.js, parallax profond, WebGL — pour des projets qui marquent les esprits.',
+    icon: '🌐',
+  },
+];
 
 export const SITE_GOALS: { key: string; label: string; desc: string }[] = [
   { key: 'bookings',  label: 'Réservations / RDV',    desc: 'Permettre aux clients de réserver ou prendre RDV en ligne' },
@@ -59,6 +76,79 @@ export const VISUAL_STYLES: { key: string; label: string; desc: string }[] = [
   { key: 'warm_natural',   label: 'Naturel & Chaleureux', desc: 'Tons terre, textures organiques, ambiance douce' },
   { key: 'colorful_vivid', label: 'Coloré & Vibrant',     desc: 'Palette vive, énergique, pop' },
   { key: 'corporate_pro',  label: 'Professionnel',        desc: 'Sobre, structuré, inspire confiance' },
+];
+
+export const VISUAL_STYLES_3D: { key: string; label: string; desc: string }[] = [
+  { key: 'immersive_dark',  label: 'Immersif & Sombre',   desc: 'Scènes 3D profondes, volumétrie, lumières dynamiques' },
+  { key: 'spatial_minimal', label: 'Spatial Minimal',     desc: 'Géométries flottantes, espace infini, épuré et impactant' },
+  { key: 'holographic',     label: 'Holographique',       desc: 'Effets néon, scanlines, glassmorphisme cyber' },
+  { key: 'organic_3d',      label: 'Organique 3D',        desc: 'Formes fluides, blobs animés, morphing doux' },
+  { key: 'cinematic',       label: 'Cinématique',         desc: 'Séquences filmic, slow-motion, storytelling visuel' },
+  { key: 'futuristic_ui',   label: 'Futuriste / HUD',     desc: "Interface futuriste, particules, effets tech sci-fi" },
+];
+
+export const COLOR_THEMES_3D: { key: string; label: string; desc: string; preview: string }[] = [
+  { key: 'deep_space',   label: 'Cosmos',       desc: 'Quasi-noir, accents lumineux stellaires', preview: '#05050f' },
+  { key: 'neon_dark',    label: 'Néon Sombre',  desc: 'Noir profond, accents néon vifs',          preview: '#0a0a0a' },
+  { key: 'midnight',     label: 'Minuit',        desc: 'Bleu nuit profond, teintes froides',       preview: '#060818' },
+  { key: 'vantablack',   label: 'Pure Black',    desc: 'Fond pur noir, contraste maximal',         preview: '#000000' },
+];
+
+export const FEATURE_GROUPS_3D: { label: string; items: { key: string; label: string }[] }[] = [
+  {
+    label: 'Scène 3D & WebGL',
+    items: [
+      { key: 'hero_threejs',   label: 'Scène Three.js / R3F en hero' },
+      { key: 'particles',      label: 'Système de particules animé' },
+      { key: 'model_3d',       label: 'Modèle 3D custom (GLTF/GLB)' },
+      { key: 'scroll_scene',   label: 'Scroll storytelling 3D' },
+    ],
+  },
+  {
+    label: 'Interactions & UX',
+    items: [
+      { key: 'custom_cursor',  label: 'Curseur custom animé' },
+      { key: 'parallax_deep',  label: 'Parallax multi-couches avancé' },
+      { key: 'morph_transition',label: 'Transitions morphing entre pages' },
+      { key: 'tilt_hover',     label: 'Effet tilt au survol (react-tilt)' },
+    ],
+  },
+  {
+    label: 'Médias Immersifs',
+    items: [
+      { key: 'gallery_3d',     label: 'Galerie 3D interactive' },
+      { key: 'video_bg',       label: 'Vidéo plein-écran en fond' },
+      { key: 'lottie_anim',    label: 'Animations Lottie / SVG avancées' },
+      { key: 'audio_reactive', label: 'Visuels réactifs au son' },
+    ],
+  },
+  {
+    label: 'Navigation & Structure',
+    items: [
+      { key: 'loading_screen', label: 'Loading screen animé' },
+      { key: 'smooth_scroll',  label: 'Smooth scroll (Lenis/GSAP)' },
+      { key: 'page_transitions',label: 'Transitions de pages cinématiques' },
+      { key: 'fullscreen_nav', label: 'Navigation plein écran' },
+    ],
+  },
+  {
+    label: 'Contact & Conversion',
+    items: [
+      { key: 'contact',        label: 'Formulaire de contact stylisé' },
+      { key: 'newsletter',     label: 'Newsletter' },
+      { key: 'whatsapp',       label: 'Bouton WhatsApp' },
+      { key: 'cta_immersive',  label: 'CTA avec scène 3D intégrée' },
+    ],
+  },
+  {
+    label: 'Performance & Technique',
+    items: [
+      { key: 'webgl_fallback', label: 'Fallback mobile (sans WebGL)' },
+      { key: 'seo',            label: 'Optimisation SEO' },
+      { key: 'analytics',      label: 'Google Analytics' },
+      { key: 'pwa',            label: 'PWA (appli installable)' },
+    ],
+  },
 ];
 
 export const FEATURE_GROUPS: { label: string; items: { key: string; label: string }[] }[] = [

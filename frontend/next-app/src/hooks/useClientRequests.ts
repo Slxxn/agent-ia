@@ -33,6 +33,7 @@ export function useClientRequests(): UseClientRequestsReturn {
             id:               d.id,
             createdAt:        raw.createdAt instanceof Timestamp ? raw.createdAt.toDate() : new Date(),
             status:           raw.status ?? 'pending',
+            siteType:         raw.siteType ?? 'standard',
             businessName:     raw.businessName ?? '',
             sector:           raw.sector ?? '',
             siteGoal:         raw.siteGoal ?? '',

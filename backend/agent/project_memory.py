@@ -219,6 +219,9 @@ class ProjectMemory:
             # Persist full design system for future chat tasks
             if ds:
                 data["design_system"] = ds
+            # Persist 3D flag
+            if brief.get("is_3d"):
+                data["is_3d"] = True
 
         # ── Types content ─────────────────────────────────────────────────
         if executor and getattr(executor, "_types_content", None):

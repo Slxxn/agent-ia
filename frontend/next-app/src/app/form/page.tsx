@@ -7,12 +7,17 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { db, storage } from '@/lib/firebase';
 import {
   SITE_GOALS,
+  SITE_TYPES,
   SECTORS,
   COLOR_THEMES,
+  COLOR_THEMES_3D,
   VISUAL_STYLES,
+  VISUAL_STYLES_3D,
   FEATURE_GROUPS,
+  FEATURE_GROUPS_3D,
   PAGE_OPTIONS,
   BUDGETS,
+  type SiteType,
 } from '@/types/clientRequest';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -40,6 +45,7 @@ const CheckIcon = () => (
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FormData {
   // Step 1 — Projet
+  siteType: SiteType;
   businessName: string;
   sector: string;
   siteGoal: string;
@@ -64,6 +70,7 @@ interface FormData {
 }
 
 const INITIAL: FormData = {
+  siteType: 'standard',
   businessName: '', sector: '', siteGoal: '', tagline: '', description: '',
   targetAudience: '', uniqueValue: '', competitors: '',
   logoFile: null, colors: ['#6366f1'], colorTheme: 'light', visualStyle: '', inspirationSites: '',
@@ -92,6 +99,9 @@ export default function FormPage() {
 
   const set = (field: keyof FormData, value: unknown) =>
     setForm(f => ({ ...f, [field]: value }));
+
+  const setSiteType = (t: SiteType) =>
+    setForm(f => ({ ...f, siteType: t, visualStyle: '', colorTheme: t === '3d' ? 'deep_space' : 'light', features: [] }));
 
   const toggleArr = (field: 'pages' | 'features', key: string) =>
     setForm(f => ({
@@ -128,6 +138,7 @@ export default function FormPage() {
       await addDoc(collection(db, 'client_requests'), {
         status: 'pending',
         createdAt: serverTimestamp(),
+        siteType: form.siteType,
         businessName: form.businessName,
         sector: form.sector,
         siteGoal: form.siteGoal,
@@ -218,7 +229,7 @@ export default function FormPage() {
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.2 }}
           >
-            {step === 1 && <Step1 form={form} set={set} />}
+            {step === 1 && <Step1 form={form} set={set} setSiteType={setSiteType} />}
             {step === 2 && <Step2 form={form} set={set} />}
             {step === 3 && (
               <Step3
@@ -269,13 +280,40 @@ export default function FormPage() {
 }
 
 // ─── Step 1: Projet ───────────────────────────────────────────────────────────
-function Step1({ form, set }: { form: FormData; set: (f: keyof FormData, v: unknown) => void }) {
+function Step1({
+  form, set, setSiteType,
+}: {
+  form: FormData;
+  set: (f: keyof FormData, v: unknown) => void;
+  setSiteType: (t: SiteType) => void;
+}) {
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-xl font-semibold mb-1">Votre projet</h2>
         <p className="text-gray-400 text-sm">Les bases de votre future présence en ligne.</p>
       </div>
+
+      <Field label="Type d'expérience *">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {SITE_TYPES.map(t => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setSiteType(t.key)}
+              className={`text-left p-4 rounded-xl border-2 transition-all ${
+                form.siteType === t.key
+                  ? 'border-indigo-500 bg-indigo-600/20'
+                  : 'border-gray-700 bg-gray-900 hover:border-gray-500'
+              }`}
+            >
+              <div className="text-2xl mb-2">{t.icon}</div>
+              <div className="font-semibold text-white text-sm">{t.label}</div>
+              <div className="text-xs text-gray-400 mt-1 leading-snug">{t.desc}</div>
+            </button>
+          ))}
+        </div>
+      </Field>
 
       <Field label="Nom de votre entreprise *">
         <input
@@ -492,7 +530,7 @@ function Step3({
       {/* Color theme */}
       <Field label="Thème général *">
         <div className="grid grid-cols-3 gap-3">
-          {COLOR_THEMES.map(t => (
+          {(form.siteType === '3d' ? COLOR_THEMES_3D : COLOR_THEMES).map(t => (
             <button
               key={t.key}
               type="button"
@@ -517,7 +555,7 @@ function Step3({
       {/* Visual style */}
       <Field label="Style visuel *">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {VISUAL_STYLES.map(s => (
+          {(form.siteType === '3d' ? VISUAL_STYLES_3D : VISUAL_STYLES).map(s => (
             <button
               key={s.key}
               type="button"
@@ -585,7 +623,7 @@ function Step4({
 
       <Field label="Fonctionnalités" hint="Sélectionnez tout ce dont vous avez besoin">
         <div className="space-y-4">
-          {FEATURE_GROUPS.map(group => (
+          {(form.siteType === '3d' ? FEATURE_GROUPS_3D : FEATURE_GROUPS).map(group => (
             <div key={group.label}>
               <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                 {group.label}
@@ -710,10 +748,13 @@ function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unkn
       {/* Summary */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-2 text-sm">
         <div className="font-semibold text-white mb-3">Récapitulatif</div>
+        <Row label="Type" value={SITE_TYPES.find(t => t.key === form.siteType)?.label} />
         <Row label="Entreprise" value={form.businessName} />
         <Row label="Secteur" value={SECTORS.find(s => s.key === form.sector)?.label} />
         <Row label="Objectif" value={SITE_GOALS.find(g => g.key === form.siteGoal)?.label} />
-        <Row label="Style" value={VISUAL_STYLES.find(s => s.key === form.visualStyle)?.label} />
+        <Row label="Style" value={
+          (form.siteType === '3d' ? VISUAL_STYLES_3D : VISUAL_STYLES).find(s => s.key === form.visualStyle)?.label
+        } />
         <Row label="Pages" value={`${form.pages.length} page(s)`} />
         <Row label="Fonctionnalités" value={`${form.features.length} sélectionnée(s)`} />
         <Row label="Budget" value={form.budget} />
