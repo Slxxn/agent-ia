@@ -1999,8 +1999,8 @@ Use EXACTLY these values in the theme object.
             "- GalleryGrid: image grid with lightbox. Props: badge?, headline, headlineAccent?, sub?, images[{url,alt?,caption?}], columns?(2|3|4)\n"
             + three_blocks +
             "\nRULES:\n"
-            "1. Use real Unsplash URLs for images: https://images.unsplash.com/photo-XXXXXX?auto=format&fit=crop&w=1200&q=80\n"
-            "2. Choose relevant heroic images that match the brand/sector\n"
+            "1. For images use picsum with a descriptive seed: https://picsum.photos/seed/{descriptive-english-word}/1200/800 (e.g. /seed/swimwear/1200/800, /seed/fashion-model/1200/800). Never invent Unsplash photo IDs.\n"
+            "2. Choose seeds that match the brand/sector visually\n"
             + hero_rule + "\n"
             "4. Create 4-6 pages minimum: Home (most blocks), + 2-4 other pages\n"
             "5. All text must be in French unless the brief specifies otherwise\n"

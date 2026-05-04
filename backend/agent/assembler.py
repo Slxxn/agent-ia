@@ -68,8 +68,40 @@ class Assembler:
     def __init__(self, workspace_path: str):
         self.workspace = Path(workspace_path)
 
+    def _fix_navbar_links(self, spec: dict) -> None:
+        """Ensure all navbar links point to existing page paths."""
+        pages = spec.get("pages", [])
+        page_paths = {p["path"] for p in pages}
+        # Build a label→path map for fuzzy matching
+        label_to_path: dict[str, str] = {}
+        for p in pages:
+            name = p.get("name", p.get("file", "")).lower()
+            label_to_path[name] = p["path"]
+
+        navbar = spec.get("navbar", {})
+        links = navbar.get("links", [])
+        fixed = []
+        for link in links:
+            href = link.get("href", "/")
+            if href in page_paths:
+                fixed.append(link)
+                continue
+            # Try to match by label
+            label_key = link.get("label", "").lower()
+            match = label_to_path.get(label_key)
+            if match:
+                fixed.append({**link, "href": match})
+            else:
+                # Drop the link — no matching page
+                pass
+        navbar["links"] = fixed
+        spec["navbar"] = navbar
+
     async def run(self, spec: dict, project_id: int) -> None:
         await add_log(project_id, "═══ ASSEMBLAGE DU SITE ═══", "info")
+
+        # 0. Validate and fix navbar link/page consistency
+        self._fix_navbar_links(spec)
 
         # 1. Copy base template
         await add_log(project_id, "📁 Copie du template de base...", "info")
@@ -119,18 +151,36 @@ class Assembler:
             shutil.rmtree(self.workspace)
         shutil.copytree(TEMPLATE_DIR, self.workspace)
 
+    @staticmethod
+    def _luminance(hex_color: str) -> float:
+        h = hex_color.lstrip("#")
+        if len(h) == 3:
+            h = "".join(c * 2 for c in h)
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        return 0.299 * r + 0.587 * g + 0.114 * b
+
     def _apply_theme(self, theme: dict) -> None:
         css_path = self.workspace / "src" / "index.css"
         if not css_path.exists() or not theme:
             return
+
+        bg = theme.get("bg", "#0f0f12")
+        surface = theme.get("surface", "#1a1a1f")
+
+        # Enforce dark backgrounds — components are dark-mode only
+        if bg and self._luminance(bg) > 80:
+            bg = "#0f0f12"
+        if surface and self._luminance(surface) > 80:
+            surface = "#1a1a1f"
+
         css = css_path.read_text(encoding="utf-8")
         replacements = {
             "--primary:": theme.get("primary"),
             "--primary-hover:": theme.get("primaryHover") or theme.get("primary"),
             "--accent:": theme.get("accent"),
             "--accent2:": theme.get("accent2"),
-            "--bg:": theme.get("bg"),
-            "--surface:": theme.get("surface"),
+            "--bg:": bg,
+            "--surface:": surface,
         }
         for token, value in replacements.items():
             if value:
@@ -221,6 +271,10 @@ export default function {file_name}() {{
         return " ".join(parts)
 
     def _write_app(self, pages: list[dict], spec: dict) -> None:
+        # Build a map of page paths for validation
+        page_paths = {p["path"] for p in pages}
+        home_file = pages[0]["file"] if pages else "Home"
+
         imports = "\n".join(
             f"import {p['file']} from '@/pages/{p['file']}';"
             for p in pages
@@ -229,6 +283,9 @@ export default function {file_name}() {{
             f'<Route path="{p["path"]}" element={{<{p["file"]} />}} />'
             for p in pages
         )
+
+        # Catch-all: redirect unknown paths to home
+        catch_all = f'<Route path="*" element={{<{home_file} />}} />'
 
         app = f"""import React from 'react';
 import {{ Routes, Route }} from 'react-router-dom';
@@ -244,6 +301,7 @@ function App() {{
       <main>
         <Routes>
           {routes}
+          {catch_all}
         </Routes>
       </main>
       <Footer config={{SITE_CONFIG.footer}} />
