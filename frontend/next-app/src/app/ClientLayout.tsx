@@ -17,7 +17,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen flex flex-col">
+      <div className="h-screen flex flex-col overflow-hidden">
         <header
           style={{
             background: "rgba(8,8,12,0.92)",
