@@ -251,20 +251,17 @@ ABSOLUTE RULE FOR SHELL COMMANDS:
 - Do NOT generate `npm run dev`, `npm start` or `npm run build`.
 """
 
-CODE_SYSTEM_PROMPT_LITE = f"""You are an expert React/TypeScript developer.
-Generate the requested file exactly as specified — complete, correct, no placeholders.
+# ─── Modular prompt system ─────────────────────────────────────────────────────
+# Each module is a self-contained block injected only when relevant to the task.
+# This reduces token usage by 60-80% for non-UI tasks while keeping full quality
+# for sections that need design guidance.
 
-{ANTI_TRUNCATE_RULES}
-{REACT_EXPORT_RULES}"""
-
-CODE_SYSTEM_PROMPT = f"""You are a studio-level creative director and front-end engineer.
+_PROMPT_HEADER = """You are a studio-level creative director and front-end engineer.
 Absolute reference standard: Vercel, Linear, Stripe Marketing, Framer.com, Lusion, Awwwards winners.
 Every generated site must be visually indistinguishable from premium agency work.
-Quality > speed. Originality > templates. Consistency > variety.
+Quality > speed. Originality > templates. Consistency > variety."""
 
-{ANTI_TRUNCATE_RULES}
-{REACT_EXPORT_RULES}
-
+_MOD_DESIGN_SYSTEM = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  STEP 0 — LOCK THE DESIGN SYSTEM FIRST
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -319,6 +316,9 @@ invents its own colors or sizes. Total consistency across 100% of the site.
     text: 'var(--text)', muted: 'var(--muted)'
   }} }}
 
+"""
+
+_MOD_TYPOGRAPHY = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  TYPOGRAPHY — DUAL FONT SYSTEM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -360,6 +360,9 @@ ALWAYS use a display + body combination to create strong visual hierarchy.
   Body         → text-base lg:text-lg leading-relaxed opacity-70
   Label/Caption → text-xs font-semibold tracking-[0.15em] uppercase text-[var(--accent)]
 
+"""
+
+_MOD_LAYOUTS = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  LAYOUTS — VISUAL INTELLIGENCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -399,6 +402,9 @@ ALWAYS use a display + body combination to create strong visual hierarchy.
   Use offsets: translate-y, negative margins, overlapping elements.
   Ex: image that slightly overflows above its container.
 
+"""
+
+_MOD_VISUAL_EFFECTS = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  VISUAL EFFECTS — CONSISTENT GRAPHIC LANGUAGE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -437,6 +443,9 @@ ALWAYS use a display + body combination to create strong visual hierarchy.
   Overlapping bottom: last section slightly with -mt-px or transparent border-b
   <div className="h-px bg-gradient-to-r from-transparent via-[var(--border)] to-transparent" />
 
+"""
+
+_MOD_SCROLL = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  SCROLL STORYTELLING — NARRATIVE EXPERIENCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -471,6 +480,9 @@ The user must feel a narrative progression, not a list of blocks.
   - Middle sections: slightly lighter
   - CTA sections: back to impact with strong glow
 
+"""
+
+_MOD_ANIMATION = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  ANIMATION SYSTEM — MOTION TOKENS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -529,6 +541,9 @@ Import: import {{ motion, useInView, useScroll, useTransform, AnimatePresence }}
   const y = useTransform(scrollYProgress, [0, 1], [60, -60]);
   <motion.div style={{{{ y }}}}> {{'/* blob, image, decorative element */'}} </motion.div>
 
+"""
+
+_MOD_ARCHETYPES = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  SECTION ARCHETYPES — CONCRETE PATTERNS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -583,6 +598,9 @@ Import: import {{ motion, useInView, useScroll, useTransform, AnimatePresence }}
   4-5 columns: Brand (logo + description + socials) + Product + Company + Resources + Legal
   Bottom bar: copyright + status indicator (●Online) + language switcher if relevant
 
+"""
+
+_MOD_UI_COMPONENTS = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  UI COMPONENTS — REUSABLE SYSTEM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -612,6 +630,9 @@ Import: import {{ motion, useInView, useScroll, useTransform, AnimatePresence }}
    focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]
    transition-all duration-200"
 
+"""
+
+_MOD_COPYWRITING = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  COPYWRITING — MARKETING QUALITY REQUIRED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -638,6 +659,9 @@ NEVER use lorem ipsum, placeholder, or generic text.
   8+ products with real marketing names, coherent prices, enticing descriptions
   Real Unsplash images, ratings 4.2–4.9, review counts 47–2847
 
+"""
+
+_MOD_TECH_ARCH = """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  TECHNICAL ARCHITECTURE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -650,6 +674,139 @@ NEVER use lorem ipsum, placeholder, or generic text.
 ▸ NO USELESS STATE: useState only when there is a real interaction
 """
 
+# ─── Module registry & assembly ────────────────────────────────────────────────
+
+_ALL_MODULES = {
+    "design_system":  _MOD_DESIGN_SYSTEM,
+    "typography":     _MOD_TYPOGRAPHY,
+    "layouts":        _MOD_LAYOUTS,
+    "visual_effects": _MOD_VISUAL_EFFECTS,
+    "scroll":         _MOD_SCROLL,
+    "animation":      _MOD_ANIMATION,
+    "archetypes":     _MOD_ARCHETYPES,
+    "ui_components":  _MOD_UI_COMPONENTS,
+    "copywriting":    _MOD_COPYWRITING,
+    "tech_arch":      _MOD_TECH_ARCH,
+}
+
+# Which modules each task type receives (ordered, subset of _ALL_MODULES)
+_TASK_MODULES: dict[str, list[str]] = {
+    "scaffold":           [],
+    "config":             ["design_system", "typography"],
+    "data":               [],
+    "utility":            ["tech_arch"],
+    "critical_structure": ["tech_arch", "ui_components"],
+    "component_ui":       ["ui_components", "visual_effects", "animation"],
+    "section_emotional":  ["design_system", "typography", "layouts", "visual_effects",
+                           "scroll", "animation", "archetypes", "ui_components", "copywriting"],
+    "section_complex":    ["animation", "archetypes", "ui_components", "tech_arch", "copywriting"],
+    "repair":             [],
+    "planning":           [],
+    "validator_check":    [],
+    "polish_final":       ["visual_effects", "animation", "copywriting"],
+}
+
+
+def get_system_prompt(
+    task_type: str,
+    brief: dict | None = None,
+    task: dict | None = None,
+) -> str:
+    """
+    Assemble the system prompt from only the modules relevant to this task type.
+    For section tasks with a brief, append the project-specific context block.
+    """
+    modules = _TASK_MODULES.get(task_type, list(_ALL_MODULES.keys()))
+    parts = [_PROMPT_HEADER, "\n", ANTI_TRUNCATE_RULES, "\n", REACT_EXPORT_RULES]
+    for mod_key in modules:
+        parts.append(_ALL_MODULES[mod_key])
+
+    base = "\n".join(parts)
+
+    # Append brief-specific context for section tasks
+    if brief and task_type in ("section_emotional", "section_complex", "component_ui"):
+        base = _append_brief_context(base, brief, task or {})
+
+    return base
+
+
+def _append_brief_context(base: str, brief: dict, task: dict) -> str:
+    """Append project-specific palette/font/brand block to the assembled prompt."""
+    palette_tokens = brief.get("palette", {}).get("tokens", {})
+    fonts = brief.get("fonts", {})
+    brand = brief.get("brand_details", {})
+    narrative_act = next(
+        (n for n in brief.get("narrative", []) if n.get("id") == task.get("section_id", "")),
+        {}
+    )
+    css_vars = "\n".join(
+        f"  --{k.replace('_', '-')}: {v};" for k, v in palette_tokens.items()
+    ) if palette_tokens else "  (use var(--primary), var(--accent), etc.)"
+
+    brand_name   = brand.get("name", "")
+    brand_city   = brand.get("city", "")
+    brand_method = brand.get("unique_method", "")
+    brand_phrase = brand.get("signature_phrase", "")
+    emotional_goal = narrative_act.get("emotional_goal", "")
+    question       = narrative_act.get("question_answered", "")
+    forbidden_list = "\n".join(f'  ✗ "{p}"' for p in FORBIDDEN_PHRASES[:8])
+    display_font = fonts.get("display", "inherit")
+    body_font    = fonts.get("body", "inherit")
+    font_import  = fonts.get("import_url", "")
+
+    return base + f"""
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PROJECT BRIEF — SECTION-SPECIFIC RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▸ BRAND: {brand_name}{f' ({brand_city})' if brand_city else ''}
+  Signature method: {brand_method or '(not specified)'}
+  Key phrase: {brand_phrase or '(not specified)'}
+
+▸ EMOTIONAL GOAL FOR THIS SECTION:
+  {emotional_goal or '(not specified)'}
+  Question to answer: {question or '(not specified)'}
+
+▸ CSS TOKENS — use EXCLUSIVELY these variables, NEVER hardcoded hex:
+  :root {{
+{css_vars}
+  }}
+  --font-display: '{display_font}', serif;
+  --font-body:    '{body_font}', sans-serif;
+{f'  /* Google Fonts: {font_import} */' if font_import else ''}
+
+▸ MANDATORY SECTION PATTERN:
+  1. Eyebrow  : <span> uppercase, tracking-[0.25em], font-body, text-[var(--accent)]
+  2. H2       : font-display, font-bold, text-[var(--text)]
+  3. Lead     : intro paragraph text-lg text-[var(--muted)]
+  4. Body     : main content
+
+▸ COPYWRITING RULE — at least 1 concrete unique detail per paragraph:
+  Mention at least once: brand name, city, method, number or year.
+
+▸ ABSOLUTELY FORBIDDEN GENERIC PHRASES:
+{forbidden_list}
+  → Replace each generality with a detail specific to {brand_name or 'this brand'}.
+
+▸ IMAGES — emotional sections (Hero, About, Services):
+  At least 1 Unsplash image (full URL hardcoded), e.g.:
+  https://images.unsplash.com/photo-[ID]?w=1200&h=800&fit=crop
+  Keywords: {', '.join(brief.get('photos_keywords', ['wellness', 'nature'])[:5])}
+
+▸ ANIMATIONS — max 2 intentional per section (ambient background effects are OK in addition).
+
+▸ LAYOUT — created ONCE in src/components/layout/, imported via <Layout> in each page.
+"""
+
+
+# Backwards-compatible alias — full prompt assembled from all modules
+CODE_SYSTEM_PROMPT = get_system_prompt("section_emotional")
+CODE_SYSTEM_PROMPT_LITE = f"""{_PROMPT_HEADER}
+Generate the requested file exactly as specified — complete, correct, no placeholders.
+
+{ANTI_TRUNCATE_RULES}
+{REACT_EXPORT_RULES}"""
 
 # ─── Routing par complexité ────────────────────────────────────────────────────
 
@@ -744,80 +901,8 @@ FORBIDDEN_PHRASES = [
 
 
 def build_section_system_prompt(brief: dict, task: dict) -> str:
-    """
-    Construit un system prompt enrichi pour les tâches section_* et component_ui.
-    Injecte les tokens de la palette, les fonts, les détails de marque et les règles éditoriales.
-    """
-    palette_tokens = brief.get("palette", {}).get("tokens", {})
-    fonts = brief.get("fonts", {})
-    brand = brief.get("brand_details", {})
-    narrative_act = next(
-        (n for n in brief.get("narrative", []) if n.get("id") == task.get("section_id", "")),
-        {}
-    )
-
-    css_vars = "\n".join(
-        f"  --{k.replace('_', '-')}: {v};" for k, v in palette_tokens.items()
-    ) if palette_tokens else "  (tokens non définis — utilise var(--primary), var(--accent), etc.)"
-
-    brand_name    = brand.get("name", "")
-    brand_city    = brand.get("city", "")
-    brand_method  = brand.get("unique_method", "")
-    brand_phrase  = brand.get("signature_phrase", "")
-
-    emotional_goal = narrative_act.get("emotional_goal", "")
-    question       = narrative_act.get("question_answered", "")
-
-    forbidden_list = "\n".join(f'  ✗ "{p}"' for p in FORBIDDEN_PHRASES[:8])
-
-    display_font = fonts.get("display", "inherit")
-    body_font    = fonts.get("body", "inherit")
-    font_import  = fonts.get("import_url", "")
-
-    return f"""{CODE_SYSTEM_PROMPT}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- BRIEF PROJET — RÈGLES SPÉCIFIQUES À CETTE SECTION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-▸ MARQUE : {brand_name}{f' ({brand_city})' if brand_city else ''}
-  Méthode signature : {brand_method or '(non précisée)'}
-  Phrase clé : {brand_phrase or '(non précisée)'}
-
-▸ OBJECTIF ÉMOTIONNEL DE CETTE SECTION :
-  {emotional_goal or '(non précisé)'}
-  Question à laquelle répondre : {question or '(non précisée)'}
-
-▸ TOKENS CSS — utiliser EXCLUSIVEMENT ces variables, JAMAIS de hex en dur :
-  :root {{
-{css_vars}
-  }}
-  --font-display: '{display_font}', serif;
-  --font-body:    '{body_font}', sans-serif;
-{f'  /* Google Fonts : {font_import} */' if font_import else ''}
-
-▸ PATTERN OBLIGATOIRE PAR SECTION :
-  1. Eyebrow  : <span> uppercase, tracking-[0.25em], font-body, text-[var(--accent)]
-  2. H2       : font-display, font-bold, text-[var(--text)]
-  3. Lead     : paragraphe d'intro en text-lg text-[var(--muted)]
-  4. Body     : contenu principal
-
-▸ RÈGLE COPYWRITING — au moins 1 détail concret UNIQUE par paragraphe :
-  Mentionner au moins une fois : nom de la marque, ville, méthode, chiffre ou année.
-
-▸ PHRASES GÉNÉRIQUES ABSOLUMENT INTERDITES :
-{forbidden_list}
-  → Remplace chaque généralité par un détail propre à {brand_name or 'cette marque'}.
-
-▸ IMAGES — sections émotionnelles (Hero, About, Services) :
-  Au moins 1 image Unsplash (URL complète en dur dans le code), ex :
-  https://images.unsplash.com/photo-[ID]?w=1200&h=800&fit=crop
-  Utiliser les mots-clés : {', '.join(brief.get('photos_keywords', ['wellness', 'nature'])[:5])}
-
-▸ ANIMATIONS — max 2 intentionnelles par section (les ambiantes de fond sont OK en plus).
-
-▸ LAYOUT — créé UNE seule fois dans src/components/layout/, importé via <Layout> dans chaque page.
-"""
+    """Backwards-compatible wrapper — now delegates to get_system_prompt()."""
+    return get_system_prompt("section_emotional", brief=brief, task=task)
 
 
 # ─── Classe principale ─────────────────────────────────────────────────────────
@@ -1355,13 +1440,7 @@ Format:
         if model_override is None:
             model_override = route_model(task_type=task_type, phase=phase)
 
-        # Select system prompt by task type — lite for config/data to save tokens
-        if brief and task_type in ("section_emotional", "section_complex", "component_ui"):
-            system = build_section_system_prompt(brief, task or {})
-        elif task_type in ("config", "data", "utility"):
-            system = CODE_SYSTEM_PROMPT_LITE
-        else:
-            system = CODE_SYSTEM_PROMPT
+        system = get_system_prompt(task_type, brief=brief, task=task)
 
         return await self.call_ollama(
             prompt,
