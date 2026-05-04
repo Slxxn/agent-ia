@@ -204,28 +204,19 @@ export function streamLogs(
 export function streamProjects(
   onUpdate: (projects: Project[]) => void
 ): () => void {
-  let eventSource: EventSource | null = null;
   let stopped = false;
+  let timer: ReturnType<typeof setTimeout>;
 
-  const connect = () => {
+  const poll = () => {
     if (stopped) return;
-    eventSource = new EventSource(`${getSSEBase()}/projects/stream`);
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data) as Project[];
-        onUpdate(data);
-      } catch (e) {
-        console.error("Erreur parsing projects:", e);
-      }
-    };
-    eventSource.onerror = () => {
-      eventSource?.close();
-      if (!stopped) setTimeout(connect, 2000);
-    };
+    getProjects()
+      .then(projects => { if (!stopped) onUpdate(projects); })
+      .catch(() => {})
+      .finally(() => { if (!stopped) timer = setTimeout(poll, 3000); });
   };
 
-  connect();
-  return () => { stopped = true; eventSource?.close(); };
+  poll();
+  return () => { stopped = true; clearTimeout(timer); };
 }
 
 // ─── SSE pour un projet précis ───────────────────────────────────────────
