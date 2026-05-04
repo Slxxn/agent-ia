@@ -204,9 +204,10 @@ class AgentRunner:
 
             # ── PHASE 1 : Design system ──────────────────────────────────
             await add_log(project_id, "═══ PHASE 1 : DESIGN SYSTEM ═══", "info")
+            await project_manager.update_progress(project_id, 5.0)
             design_system = None
             try:
-                design_system = await llm.generate_design_system(objective)
+                design_system = await llm.generate_design_system(objective, project_id=project_id)
                 if design_system and design_system.get("palette", {}).get("tokens"):
                     palette_name = design_system.get("palette", {}).get("name", "custom")
                     fonts = design_system.get("fonts", {})
@@ -231,6 +232,7 @@ class AgentRunner:
 
             # ── PHASE 2 : Génération du spec JSON ────────────────────────
             await add_log(project_id, "═══ PHASE 2 : GÉNÉRATION DU SPEC ═══", "info")
+            await project_manager.update_progress(project_id, 15.0)
             _3d_keywords = ("3d/immersive", "three.js", "react three fiber", "immersive",
                             "webgl", "sitetype: '3d'", "expérience 3d", "site 3d")
             is_3d = any(kw in full_objective.lower() for kw in _3d_keywords)
@@ -244,7 +246,7 @@ class AgentRunner:
                 r'## (Absolute Technical Rules|Homepage Structure Rules)[\s\S]*?(?=## |\Z)',
                 '', full_objective
             ).strip()
-            site_spec = await llm.generate_site_spec(spec_objective, design_system, is_3d=is_3d)
+            site_spec = await llm.generate_site_spec(spec_objective, design_system, is_3d=is_3d, project_id=project_id)
 
             if not site_spec or not site_spec.get("pages"):
                 await add_log(project_id, "❌ Spec JSON invalide ou vide.", "error")
@@ -255,6 +257,7 @@ class AgentRunner:
 
             # ── PHASE 3 : Assemblage ─────────────────────────────────────
             await add_log(project_id, "═══ PHASE 3 : ASSEMBLAGE ═══", "info")
+            await project_manager.update_progress(project_id, 35.0)
             assembler = Assembler(workspace_path)
             await assembler.run(site_spec, project_id)
 
@@ -268,16 +271,19 @@ class AgentRunner:
 
             # ── PHASE 4 : Installation dépendances ───────────────────────
             await add_log(project_id, "═══ PHASE 4 : NPM INSTALL ═══", "info")
+            await project_manager.update_progress(project_id, 55.0)
             t_install = TerminalTool(workspace_path)
             install_r = await t_install.run_command("npm install --legacy-peer-deps", timeout=300)
             if not install_r.get("success"):
                 await add_log(project_id, f"⚠️ npm install : {install_r.get('stderr','')[:300]}", "warning")
 
             # ── PHASE 5 : Déploiement Firebase ───────────────────────────
+            await project_manager.update_progress(project_id, 75.0)
             deploy_url = await cls._deploy_firebase(project_id, workspace_path)
             if deploy_url:
                 await update_project(project_id, deploy_url=deploy_url)
 
+            await project_manager.update_progress(project_id, 100.0)
             await project_manager.update_status(project_id, "done")
             total_tokens = await get_tokens_used(project_id)
             await add_log(project_id, f"═══ PROJET TERMINÉ — {total_tokens:,} tokens ═══", "info")

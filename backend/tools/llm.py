@@ -1915,7 +1915,7 @@ Response format:
         result = await self.call_ollama(prompt, system_prompt=system, temperature=0.2, model_override=model)
         return result.get("content", raw_objective)
 
-    async def generate_site_spec(self, objective: str, design_system: dict | None = None, is_3d: bool = False) -> dict | None:
+    async def generate_site_spec(self, objective: str, design_system: dict | None = None, is_3d: bool = False, project_id: int | None = None) -> dict | None:
         """
         Generate a structured JSON site spec from the client brief.
         Returns a dict matching the Assembler spec format, or None on failure.
@@ -2013,6 +2013,11 @@ Use EXACTLY these values in the theme object.
         prompt = f"Client brief:\n{objective}\n{ds_hint}\nGenerate the JSON site spec:"
         model = _gemini_or(DEEPSEEK_MODEL_PRO)
         result = await self.call_ollama(prompt, system_prompt=system, temperature=0.3, model_override=model)
+        if project_id:
+            _tok = result.get("prompt_tokens", 0) + result.get("completion_tokens", 0)
+            if _tok > 0:
+                from backend.db.database import add_tokens_used as _add_tok
+                await _add_tok(project_id, _tok)
         raw = result.get("content", "")
 
         import re as _re, json as _json, logging as _logging
@@ -2060,7 +2065,7 @@ Use EXACTLY these values in the theme object.
         _logging.warning(f"generate_site_spec: could not parse JSON. Raw[:400]: {raw[:400]}")
         return None
 
-    async def generate_design_system(self, objective: str) -> dict:
+    async def generate_design_system(self, objective: str, project_id: int | None = None) -> dict:
         """
         Generate a client-specific design system from the brief/objective text.
         Extracts explicit colors (#RRGGBB), visual style, sector, mood.
@@ -2121,6 +2126,11 @@ Generate this JSON exactly:
         result = await self.call_ollama(
             prompt, system_prompt=system, temperature=0.2, model_override=model
         )
+        if project_id:
+            _tok = result.get("prompt_tokens", 0) + result.get("completion_tokens", 0)
+            if _tok > 0:
+                from backend.db.database import add_tokens_used as _add_tok
+                await _add_tok(project_id, _tok)
         content = result.get("content", "").strip()
         try:
             content = _re.sub(r'^```[a-zA-Z]*\n?', '', content)
