@@ -1946,32 +1946,7 @@ Use EXACTLY these values in the theme object.
         hero_rule = "3. Every page must start with a Hero3D block" if is_3d else "3. Every page must start with a Hero block (HeroA, HeroB, or HeroC)"
         extra_3d_rule = "8. MANDATORY for 3D: use Hero3D on Home page, Scene3D and ParallaxSection on at least 1 other page each. Very dark bg (#060608 to #0a0a10)." if is_3d else ""
 
-        system = f"""You are a senior front-end architect. Given a client brief, produce a JSON site spec that assembles a website from pre-built React blocks.
-
-AVAILABLE BLOCKS:
-- HeroA: centered hero, gradient orbs. Props: badge?, headline, headlineAccent?, sub, cta{{label,href}}, ctaSecondary?{{label,href}}, showScrollIndicator?, stats?[{{value,label}}]
-- HeroB: split hero (text left, image right). Props: badge?, headline, headlineAccent?, sub, cta, ctaSecondary?, imageUrl, imageAlt?, trustText?, avatarUrls?[]
-- HeroC: full-bleed background image hero. Props: headline, headlineAccent?, sub, cta, ctaSecondary?, backgroundImageUrl, overlayOpacity?, showScrollIndicator?
-- FeaturesGrid: 3-col icon grid. Props: badge?, headline, headlineAccent?, sub?, features[{{icon,title,description}}], columns?(2|3|4)
-- FeaturesCards: numbered or alternating steps. Props: badge?, headline, headlineAccent?, sub?, items[{{icon?,title,description,imageUrl?}}], layout?("numbered"|"alternating")
-- TestimonialsGrid: masonry testimonials. Props: badge?, headline, headlineAccent?, items[{{quote,author,role?,company?,avatarUrl?,rating?}}]
-- PricingCards: 2-3 tier pricing. Props: badge?, headline, headlineAccent?, sub?, plans[{{name,price{{monthly,yearly}},description,features[],cta{{label,href}},highlighted?,badge?}}]
-- FaqAccordion: expandable FAQ. Props: badge?, headline, headlineAccent?, items[{{question,answer}}]
-- CtaBanner: call to action. Props: headline, headlineAccent?, sub?, cta{{label,href}}, ctaSecondary?, variant?("gradient"|"bordered"|"dark")
-- ContactForm: contact section with form. Props: badge?, headline, headlineAccent?, sub?, info?{{address?,email?,phone?}}, submitLabel?, successMessage?
-- GalleryGrid: image grid with lightbox. Props: badge?, headline, headlineAccent?, sub?, images[{{url,alt?,caption?}}], columns?(2|3|4)
-{three_blocks}
-RULES:
-1. Use real Unsplash URLs for images: https://images.unsplash.com/photo-XXXXXX?auto=format&fit=crop&w=1200&q=80
-2. Choose relevant heroic images that match the brand/sector
-{hero_rule}
-4. Create 4-6 pages minimum: Home (most blocks), + 2-4 other pages
-5. All text must be in French unless the brief specifies otherwise
-6. Theme colors must be dark: bg between #060608 and #141420
-7. Output ONLY valid JSON, no markdown, no explanation
-{extra_3d_rule}
-
-OUTPUT FORMAT (JSON):
+        _json_example = '''OUTPUT FORMAT (JSON):
 {
   "title": "Site Name",
   "brand": { "name": "BrandName", "tagline": "Short tagline", "logoUrl": null },
@@ -2006,7 +1981,34 @@ OUTPUT FORMAT (JSON):
       ]
     }
   ]
-}"""
+}'''
+
+        system = (
+            "You are a senior front-end architect. Given a client brief, produce a JSON site spec that assembles a website from pre-built React blocks.\n\n"
+            "AVAILABLE BLOCKS:\n"
+            "- HeroA: centered hero, gradient orbs. Props: badge?, headline, headlineAccent?, sub, cta{label,href}, ctaSecondary?{label,href}, showScrollIndicator?, stats?[{value,label}]\n"
+            "- HeroB: split hero (text left, image right). Props: badge?, headline, headlineAccent?, sub, cta, ctaSecondary?, imageUrl, imageAlt?, trustText?, avatarUrls?[]\n"
+            "- HeroC: full-bleed background image hero. Props: headline, headlineAccent?, sub, cta, ctaSecondary?, backgroundImageUrl, overlayOpacity?, showScrollIndicator?\n"
+            "- FeaturesGrid: 3-col icon grid. Props: badge?, headline, headlineAccent?, sub?, features[{icon,title,description}], columns?(2|3|4)\n"
+            "- FeaturesCards: numbered or alternating steps. Props: badge?, headline, headlineAccent?, sub?, items[{icon?,title,description,imageUrl?}], layout?(\"numbered\"|\"alternating\")\n"
+            "- TestimonialsGrid: masonry testimonials. Props: badge?, headline, headlineAccent?, items[{quote,author,role?,company?,avatarUrl?,rating?}]\n"
+            "- PricingCards: 2-3 tier pricing. Props: badge?, headline, headlineAccent?, sub?, plans[{name,price{monthly,yearly},description,features[],cta{label,href},highlighted?,badge?}]\n"
+            "- FaqAccordion: expandable FAQ. Props: badge?, headline, headlineAccent?, items[{question,answer}]\n"
+            "- CtaBanner: call to action. Props: headline, headlineAccent?, sub?, cta{label,href}, ctaSecondary?, variant?(\"gradient\"|\"bordered\"|\"dark\")\n"
+            "- ContactForm: contact section with form. Props: badge?, headline, headlineAccent?, sub?, info?{address?,email?,phone?}, submitLabel?, successMessage?\n"
+            "- GalleryGrid: image grid with lightbox. Props: badge?, headline, headlineAccent?, sub?, images[{url,alt?,caption?}], columns?(2|3|4)\n"
+            + three_blocks +
+            "\nRULES:\n"
+            "1. Use real Unsplash URLs for images: https://images.unsplash.com/photo-XXXXXX?auto=format&fit=crop&w=1200&q=80\n"
+            "2. Choose relevant heroic images that match the brand/sector\n"
+            + hero_rule + "\n"
+            "4. Create 4-6 pages minimum: Home (most blocks), + 2-4 other pages\n"
+            "5. All text must be in French unless the brief specifies otherwise\n"
+            "6. Theme colors must be dark: bg between #060608 and #141420\n"
+            "7. Output ONLY valid JSON, no markdown, no explanation\n"
+            + (extra_3d_rule + "\n" if extra_3d_rule else "") +
+            "\n" + _json_example
+        )
 
         prompt = f"Client brief:\n{objective}\n{ds_hint}\nGenerate the JSON site spec:"
         model = _gemini_or(DEEPSEEK_MODEL_FLASH)
