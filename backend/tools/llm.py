@@ -1998,6 +1998,16 @@ Use EXACTLY these values in the theme object.
             "- CtaBanner: call to action. Props: headline, headlineAccent?, sub?, cta{label,href}, ctaSecondary?, variant?(\"gradient\"|\"bordered\"|\"dark\")\n"
             "- ContactForm: contact section with form. Props: badge?, headline, headlineAccent?, sub?, info?{address?,email?,phone?}, submitLabel?, successMessage?\n"
             "- GalleryGrid: image grid with lightbox. Props: badge?, headline, headlineAccent?, sub?, images[{url,alt?,caption?}], columns?(2|3|4)\n"
+            "- LogoStrip: client/partner logos strip. Props: badge?, headline?, logos[{name,url?}]\n"
+            "- StatsRow: key metrics in a grid row. Props: badge?, headline?, stats[{value,label,description?}]\n"
+            "- TeamGrid: team member cards. Props: badge?, headline, headlineAccent?, sub?, members[{name,role,bio?,avatarUrl?}]\n"
+            "- Timeline: company history / roadmap. Props: badge?, headline, headlineAccent?, sub?, events[{year,title,description,icon?}]\n"
+            "- ReviewsCarousel: animated reviews carousel. Props: badge?, headline, headlineAccent?, reviews[{name,role?,company?,avatarUrl?,rating?,text}]\n"
+            "- BlogGrid: article/blog card grid with optional CTA. Props: badge?, headline, headlineAccent?, sub?, posts[{title,excerpt,category?,date?,author?,imageUrl?,href?}], ctaLabel?, ctaHref?\n"
+            "- NewsletterSignup: email subscription section. Props: badge?, headline, headlineAccent?, sub?, placeholder?, ctaLabel?, successMessage?\n"
+            "- VideoSection: video player with thumbnail. Props: badge?, headline, headlineAccent?, sub?, videoUrl, thumbnailUrl?, aspectRatio?(\"16/9\"|\"4/3\"|\"1/1\")\n"
+            "- BeforeAfter: interactive drag-to-compare slider. Props: badge?, headline, headlineAccent?, sub?, beforeImage, afterImage, beforeLabel?, afterLabel?\n"
+            "- ProductGrid: e-commerce product cards. Props: badge?, headline, headlineAccent?, sub?, products[{name,description?,price,priceOld?,badge?,imageUrl?,ctaLabel?,ctaHref?}]\n"
             + three_blocks +
             "\nRULES:\n"
             "1. For images use picsum with a descriptive seed: https://picsum.photos/seed/{descriptive-english-word}/1200/800 (e.g. /seed/swimwear/1200/800, /seed/fashion-model/1200/800). Never invent Unsplash photo IDs.\n"
@@ -2010,6 +2020,8 @@ Use EXACTLY these values in the theme object.
             "8. CONTENT UNIQUENESS: Every page must have DIFFERENT content from every other page. The 'about' page must NOT reuse the hero or features from the home page — it must show team, story, values, or mission-specific content. Never duplicate headlines, blocks, or text across pages.\n"
             "9. CTA LINKS: Any button/CTA labeled 'Démarrer', 'Commencer', 'Lancer', 'Devis', 'Essayer', 'Créer mon site' must link to href '/form'. Do NOT create a separate page for these — link directly to /form.\n"
             "10. PAGE BLOCKS VARIETY: Avoid repeating the same block type more than once per page. Each page should feel visually distinct.\n"
+            "11. TEXT QUALITY: Headlines must be benefit-driven (e.g. 'Doublez votre trafic en 30 jours' not 'Notre solution'). Sub-headlines must explain the benefit in 1-2 concrete sentences. CTAs must be action verbs with clear outcome ('Obtenir mon audit gratuit' not 'En savoir plus'). All copy must feel written by a senior copywriter — no generic filler.\n"
+            "12. BLOCK SELECTION: Match blocks to the project type. E-commerce sites → use ProductGrid. Agencies/studios → use BeforeAfter, GalleryGrid. SaaS → use StatsRow, FeaturesGrid, PricingCards. Local businesses → use ReviewsCarousel, ContactForm, StatsRow. Portfolio → use GalleryGrid, Timeline. Corporate/About page → use TeamGrid, Timeline, StatsRow, LogoStrip.\n"
             + (extra_3d_rule + "\n" if extra_3d_rule else "") +
             "\n" + _json_example
         )

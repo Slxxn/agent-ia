@@ -76,8 +76,9 @@ class VisualValidator:
         port: int = 5174,
         deployed_url: Optional[str] = None,
         force: bool = False,
+        page_paths: Optional[List[str]] = None,
     ) -> bool:
-        if not force and not VISUAL_VALIDATION:
+        if not force and not VISUAL_VALIDATION and not ANTHROPIC_API_KEY:
             return True
         if not ANTHROPIC_API_KEY:
             await add_log(project_id, "⚠️ ANTHROPIC_API_KEY absent — validation visuelle désactivée.", "debug")
@@ -86,42 +87,55 @@ class VisualValidator:
             await add_log(project_id, "⚠️ Playwright absent — installez-le avec: pip install playwright && playwright install chromium", "debug")
             return True
 
-        await add_log(project_id, "═══ PHASE 4.5 : VALIDATION VISUELLE ═══", "info")
+        await add_log(project_id, "═══ PHASE 5 : VALIDATION VISUELLE ═══", "info")
 
         server = None
+        base_url: str
         if deployed_url:
             await add_log(project_id, f"🌐 Capture du site déployé : {deployed_url}", "info")
-            tool = ScreenshotTool(url=deployed_url)
+            base_url = deployed_url.rstrip("/")
         else:
             server = await self._start_dev_server(project_id, workspace_path, port)
             if server is None:
                 await add_log(project_id, "⚠️ Serveur de dev non démarré — validation visuelle ignorée.", "warning")
                 return True
-            tool = ScreenshotTool(url=f"http://localhost:{port}")
+            base_url = f"http://localhost:{port}"
+
+        routes = page_paths or ["/"]
+        all_issues: List[VisualIssue] = []
 
         try:
             for iteration in range(1, MAX_FIX_ITERATIONS + 1):
-                await add_log(project_id, f"📸 Capture d'écran — itération {iteration}/{MAX_FIX_ITERATIONS}...", "info")
+                iter_issues: List[VisualIssue] = []
+                for route in routes:
+                    url = base_url + route
+                    await add_log(project_id, f"📸 Capture {url} (itération {iteration}/{MAX_FIX_ITERATIONS})...", "info")
 
-                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                    path = tmp.name
+                    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                        path = tmp.name
 
-                ok = await tool.capture(path)
-                if not ok:
-                    await add_log(project_id, "⚠️ Capture échouée — validation visuelle ignorée.", "warning")
-                    os.unlink(path)
-                    break
+                    tool = ScreenshotTool(url=url)
+                    ok = await tool.capture(path)
+                    if not ok:
+                        await add_log(project_id, f"⚠️ Capture échouée pour {route} — ignorée.", "warning")
+                        try:
+                            os.unlink(path)
+                        except OSError:
+                            pass
+                        continue
 
-                result = await self._analyze(project_id, path)
-                try:
-                    os.unlink(path)
-                except OSError:
-                    pass
+                    result = await self._analyze(project_id, path, route=route)
+                    try:
+                        os.unlink(path)
+                    except OSError:
+                        pass
+                    iter_issues.extend(result.issues)
 
-                criticals = [i for i in result.issues if i.severity == "critical"]
-                warnings  = [i for i in result.issues if i.severity == "warning"]
+                criticals = [i for i in iter_issues if i.severity == "critical"]
+                warnings  = [i for i in iter_issues if i.severity == "warning"]
+                all_issues = iter_issues
 
-                if not result.issues:
+                if not iter_issues:
                     await add_log(project_id, "✅ Validation visuelle : aucun problème détecté.", "info")
                     return True
 
@@ -132,15 +146,14 @@ class VisualValidator:
 
                 await add_log(
                     project_id,
-                    f"⚠️ {len(criticals)} critique(s), {len(warnings)} avertissement(s) détecté(s).",
+                    f"⚠️ {len(criticals)} critique(s), {len(warnings)} avertissement(s) sur {len(routes)} page(s).",
                     "warning",
                 )
 
                 if not criticals or self.executor is None or iteration == MAX_FIX_ITERATIONS:
                     break
 
-                await self._fix_issues(project_id, result.issues, workspace_path)
-                # Give Vite HMR time to reload
+                await self._fix_issues(project_id, criticals, workspace_path)
                 await asyncio.sleep(3)
 
             return True
@@ -198,12 +211,12 @@ class VisualValidator:
 
     # ── Vision analysis ────────────────────────────────────────────────────
 
-    async def _analyze(self, project_id: int, screenshot_path: str) -> VisualResult:
+    async def _analyze(self, project_id: int, screenshot_path: str, route: str = "/") -> VisualResult:
         with open(screenshot_path, "rb") as f:
             img_b64 = base64.standard_b64encode(f.read()).decode()
 
-        prompt = """\
-You are an expert UI/UX reviewer analyzing a website screenshot.
+        prompt = f"""\
+You are an expert UI/UX reviewer analyzing a screenshot of the page '{route}' of a website.
 
 Identify ONLY real technical visual problems — not stylistic preferences.
 Focus on:
@@ -214,14 +227,16 @@ Focus on:
 - Obvious misalignment (clearly off-grid elements)
 - Horizontal scrollbar on a desktop viewport (unwanted overflow)
 - Visible JS error messages or "undefined" text rendered on screen
+- Sections with placeholder text like "Lorem ipsum" or empty headings
 
-Respond ONLY with a valid JSON array (empty array [] if no issues):
+Respond ONLY with a valid JSON array (empty array [] if no issues).
+Prefix each description with the page route '{route}':
 [
-  {
+  {{
     "severity": "critical",
-    "description": "Short one-line description",
+    "description": "{route}: Short one-line description",
     "suggested_fix": "Specific Tailwind class or React code change to fix it"
-  }
+  }}
 ]"""
 
         try:
@@ -257,7 +272,7 @@ Respond ONLY with a valid JSON array (empty array [] if no issues):
                 )
 
             if r.status_code != 200:
-                await add_log(project_id, f"⚠️ API vision ({r.status_code}) — analyse ignorée.", "debug")
+                await add_log(project_id, f"⚠️ API vision ({r.status_code}) pour {route} — analyse ignorée.", "debug")
                 return VisualResult(passed=True)
 
             raw_text = r.json().get("content", [{}])[0].get("text", "[]")

@@ -48,11 +48,21 @@ BLOCK_IMPORTS: dict[str, str] = {
     "FeaturesGrid":     "import FeaturesGrid from '@/blocks/features/FeaturesGrid';",
     "FeaturesCards":    "import FeaturesCards from '@/blocks/features/FeaturesCards';",
     "TestimonialsGrid": "import TestimonialsGrid from '@/blocks/testimonials/TestimonialsGrid';",
+    "ReviewsCarousel":  "import ReviewsCarousel from '@/blocks/testimonials/ReviewsCarousel';",
     "PricingCards":     "import PricingCards from '@/blocks/pricing/PricingCards';",
     "FaqAccordion":     "import FaqAccordion from '@/blocks/faq/FaqAccordion';",
     "CtaBanner":        "import CtaBanner from '@/blocks/cta/CtaBanner';",
+    "NewsletterSignup": "import NewsletterSignup from '@/blocks/cta/NewsletterSignup';",
     "ContactForm":      "import ContactForm from '@/blocks/contact/ContactForm';",
     "GalleryGrid":      "import GalleryGrid from '@/blocks/gallery/GalleryGrid';",
+    "LogoStrip":        "import LogoStrip from '@/blocks/social/LogoStrip';",
+    "StatsRow":         "import StatsRow from '@/blocks/social/StatsRow';",
+    "TeamGrid":         "import TeamGrid from '@/blocks/about/TeamGrid';",
+    "Timeline":         "import Timeline from '@/blocks/about/Timeline';",
+    "BlogGrid":         "import BlogGrid from '@/blocks/blog/BlogGrid';",
+    "VideoSection":     "import VideoSection from '@/blocks/media/VideoSection';",
+    "BeforeAfter":      "import BeforeAfter from '@/blocks/media/BeforeAfter';",
+    "ProductGrid":      "import ProductGrid from '@/blocks/ecommerce/ProductGrid';",
 }
 
 THREE_BLOCKS = {"Hero3D", "Scene3D", "ParallaxSection"}

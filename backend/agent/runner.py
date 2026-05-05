@@ -277,11 +277,22 @@ class AgentRunner:
             if not install_r.get("success"):
                 await add_log(project_id, f"⚠️ npm install : {install_r.get('stderr','')[:300]}", "warning")
 
-            # ── PHASE 5 : Déploiement Firebase ───────────────────────────
+            # ── PHASE 4.5 : Déploiement Firebase ─────────────────────────
             await project_manager.update_progress(project_id, 75.0)
             deploy_url = await cls._deploy_firebase(project_id, workspace_path)
             if deploy_url:
                 await update_project(project_id, deploy_url=deploy_url)
+
+            # ── PHASE 5 : Validation visuelle ────────────────────────────
+            await project_manager.update_progress(project_id, 88.0)
+            page_paths = [p["path"] for p in site_spec.get("pages", [])] or ["/"]
+            visual = VisualValidator()
+            await visual.run_validation_loop(
+                project_id=project_id,
+                workspace_path=workspace_path,
+                deployed_url=deploy_url or None,
+                page_paths=page_paths,
+            )
 
             await project_manager.update_progress(project_id, 100.0)
             await project_manager.update_status(project_id, "done")
