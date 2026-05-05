@@ -1,5 +1,5 @@
 export type RequestStatus = 'pending' | 'validated' | 'in_progress' | 'completed' | 'rejected';
-export type SiteType = 'standard' | '3d';
+export type SiteType = 'standard' | '3d' | 'scrollytelling';
 
 export interface ClientRequest {
   id: string;
@@ -38,6 +38,12 @@ export const SITE_TYPES: { key: SiteType; label: string; desc: string; icon: str
     label: 'Expérience 3D / Immersive',
     desc: 'Scènes Three.js, parallax profond, WebGL — pour des projets qui marquent les esprits.',
     icon: '🌐',
+  },
+  {
+    key: 'scrollytelling',
+    label: 'Scrollytelling',
+    desc: 'Une seule page narrative — le contenu se révèle au scroll, comme un film interactif.',
+    icon: '📜',
   },
 ];
 
@@ -222,6 +228,61 @@ export const PAGE_OPTIONS: { key: string; label: string; desc: string }[] = [
   { key: 'faq',       label: 'FAQ',                    desc: 'Questions fréquentes' },
   { key: 'contact',   label: 'Contact',                desc: 'Formulaire et coordonnées' },
   { key: 'legal',     label: 'Mentions légales',       desc: 'CGU, confidentialité' },
+];
+
+export const COLOR_THEMES_SCROLLYTELLING: { key: string; label: string; desc: string; preview: string }[] = [
+  { key: 'deep_black',   label: 'Cinéma',       desc: 'Fond très sombre, révélations dramatiques',   preview: '#080808' },
+  { key: 'midnight',     label: 'Nuit Profonde', desc: 'Bleu nuit, teintes froides et poétiques',     preview: '#060818' },
+  { key: 'ink',          label: 'Encre',         desc: 'Noir chaud, contraste doux, style éditorial', preview: '#0c0a08' },
+  { key: 'neon_dark',    label: 'Néon',          desc: 'Fond noir, accents lumineux et électriques',  preview: '#0a0a0a' },
+];
+
+export const VISUAL_STYLES_SCROLLYTELLING: { key: string; label: string; desc: string }[] = [
+  { key: 'narrative_film',  label: 'Narratif / Film',   desc: 'Séquences cinématiques, texte dramatique, storytelling visuel' },
+  { key: 'editorial_bold',  label: 'Éditorial Audacieux', desc: 'Typographie XXL, sections en plein écran, style magazine' },
+  { key: 'poetic_minimal',  label: 'Poétique & Minimal', desc: 'Textes courts percutants, espace négatif, révélations douces' },
+  { key: 'immersive_3d',    label: 'Immersif 3D',        desc: 'Parallaxe profond, effets 3D, scroll lié à des animations WebGL' },
+  { key: 'brand_story',     label: 'Brand Story',        desc: "Raconter l'histoire de la marque : origines, valeurs, vision" },
+  { key: 'product_reveal',  label: 'Révélation Produit', desc: 'Présenter un produit ou service section par section, Apple-style' },
+];
+
+export const FEATURE_GROUPS_SCROLLYTELLING: { label: string; items: { key: string; label: string }[] }[] = [
+  {
+    label: 'Animations au scroll',
+    items: [
+      { key: 'parallax_sections', label: 'Sections parallaxe multi-couches' },
+      { key: 'text_reveal',       label: 'Révélation de texte au scroll' },
+      { key: 'image_parallax',    label: 'Images avec effet parallaxe' },
+      { key: 'counter_anim',      label: 'Compteurs animés (chiffres clés)' },
+    ],
+  },
+  {
+    label: 'Narration & Contenu',
+    items: [
+      { key: 'chapter_nav',    label: 'Navigation par chapitres' },
+      { key: 'timeline',       label: 'Frise chronologique animée' },
+      { key: 'before_after',   label: 'Comparateur avant / après' },
+      { key: 'video_bg',       label: 'Vidéo plein-écran en fond' },
+    ],
+  },
+  {
+    label: 'Contact & Conversion',
+    items: [
+      { key: 'contact',      label: 'Formulaire de contact' },
+      { key: 'newsletter',   label: 'Inscription newsletter' },
+      { key: 'whatsapp',     label: 'Bouton WhatsApp' },
+      { key: 'cta_final',    label: 'CTA final impactant' },
+    ],
+  },
+  {
+    label: 'Performance & UX',
+    items: [
+      { key: 'smooth_scroll', label: 'Smooth scroll optimisé' },
+      { key: 'loading_screen', label: 'Écran de chargement animé' },
+      { key: 'seo',           label: 'Optimisation SEO' },
+      { key: 'analytics',     label: 'Google Analytics' },
+    ],
+  },
 ];
 
 export const BUDGETS = ['< 500€', '500 – 1 500€', '1 500 – 3 000€', '3 000€+', 'À discuter'];

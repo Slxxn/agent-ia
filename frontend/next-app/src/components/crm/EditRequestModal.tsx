@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Loader2 } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ClientRequest, SECTORS, SITE_GOALS, VISUAL_STYLES, VISUAL_STYLES_3D, COLOR_THEMES, COLOR_THEMES_3D, PAGE_OPTIONS, BUDGETS } from '@/types/clientRequest';
+import { ClientRequest, SECTORS, SITE_GOALS, VISUAL_STYLES, VISUAL_STYLES_3D, VISUAL_STYLES_SCROLLYTELLING, COLOR_THEMES, COLOR_THEMES_3D, COLOR_THEMES_SCROLLYTELLING, PAGE_OPTIONS, BUDGETS } from '@/types/clientRequest';
 
 interface Props {
   request: ClientRequest | null;
@@ -55,8 +55,9 @@ export default function EditRequestModal({ request, onClose, onSaved }: Props) {
   };
 
   const is3d = form.siteType === '3d';
-  const visualStyles = is3d ? VISUAL_STYLES_3D : VISUAL_STYLES;
-  const colorThemes = is3d ? COLOR_THEMES_3D : COLOR_THEMES;
+  const isScrollytelling = form.siteType === 'scrollytelling';
+  const visualStyles = is3d ? VISUAL_STYLES_3D : isScrollytelling ? VISUAL_STYLES_SCROLLYTELLING : VISUAL_STYLES;
+  const colorThemes = is3d ? COLOR_THEMES_3D : isScrollytelling ? COLOR_THEMES_SCROLLYTELLING : COLOR_THEMES;
   const colors = (form.colors as string[] | undefined) ?? [form.primaryColor ?? '#6366f1'];
 
   return (

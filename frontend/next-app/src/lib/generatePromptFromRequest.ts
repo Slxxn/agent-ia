@@ -5,21 +5,32 @@ import {
   SECTORS,
   COLOR_THEMES,
   COLOR_THEMES_3D,
+  COLOR_THEMES_SCROLLYTELLING,
   VISUAL_STYLES,
   VISUAL_STYLES_3D,
+  VISUAL_STYLES_SCROLLYTELLING,
 } from '@/types/clientRequest';
 
 export function generatePromptFromRequest(req: ClientRequest): string {
   const is3d = req.siteType === '3d';
+  const isScrollytelling = req.siteType === 'scrollytelling';
   const siteTypeMeta = SITE_TYPES.find(t => t.key === req.siteType);
   const sector = SECTORS.find(s => s.key === req.sector);
   const goal = SITE_GOALS.find(g => g.key === req.siteGoal);
-  const theme = (is3d ? COLOR_THEMES_3D : COLOR_THEMES).find(t => t.key === req.colorTheme);
-  const style = (is3d ? VISUAL_STYLES_3D : VISUAL_STYLES).find(s => s.key === req.visualStyle);
+  const colorList = is3d ? COLOR_THEMES_3D : isScrollytelling ? COLOR_THEMES_SCROLLYTELLING : COLOR_THEMES;
+  const styleList = is3d ? VISUAL_STYLES_3D : isScrollytelling ? VISUAL_STYLES_SCROLLYTELLING : VISUAL_STYLES;
+  const theme = colorList.find(t => t.key === req.colorTheme);
+  const style = styleList.find(s => s.key === req.visualStyle);
+
+  const siteTypeTag = is3d
+    ? ' [3D/IMMERSIVE — use Three.js / React Three Fiber]'
+    : isScrollytelling
+      ? " [SCROLLYTELLING — sitetype: 'scrollytelling' — single page, scroll-driven narrative]"
+      : '';
 
   return `
 🎯 PROJECT: ${req.businessName}
-Site Type: ${siteTypeMeta ? siteTypeMeta.label : req.siteType}${is3d ? ' [3D/IMMERSIVE — use Three.js / React Three Fiber]' : ''}
+Site Type: ${siteTypeMeta ? siteTypeMeta.label : req.siteType}${siteTypeTag}
 Sector: ${sector ? `${sector.emoji} ${sector.label}` : req.sector}
 Primary Goal: ${goal ? `${goal.label} — ${goal.desc}` : req.siteGoal}
 
@@ -52,7 +63,7 @@ ${req.uniqueValue || 'Not specified'}
 ${req.competitors ? `## Competitors / Benchmarks\n${req.competitors}\n` : ''}
 
 ## Pages Required
-${req.pages.map(p => `- ${p}`).join('\n')}
+${isScrollytelling ? '- Single page scrollytelling experience (no routing)' : req.pages.map(p => `- ${p}`).join('\n')}
 
 ## Features Required
 ${req.features.length > 0 ? req.features.map(f => `- ${f}`).join('\n') : '- Basic contact form'}
@@ -61,7 +72,16 @@ ${req.features.length > 0 ? req.features.map(f => `- ${f}`).join('\n') : '- Basi
 ${req.budget || 'Not specified'}
 
 ${req.notes ? `## Additional Notes\n${req.notes}\n` : ''}
-
+${isScrollytelling ? `
+## Scrollytelling Rules (MANDATORY)
+- sitetype: 'scrollytelling' — single page only, no React Router, no multi-page navigation.
+- Structure: ScrollHero → 3–5 ScrollChapter sections → ScrollReveal → ScrollOutro
+- Every section must be full-viewport height or near it (min-height: 100vh).
+- Narrative must flow: open with impact (ScrollHero), build the story (ScrollChapter), list the proof (ScrollReveal), close with CTA (ScrollOutro).
+- Background must be very dark (${theme?.preview || '#080808'}) — scrollytelling is always dark-mode.
+- Use the visual style: ${style?.label || req.visualStyle} — ${style?.desc || ''}.
+- All animations must be scroll-linked via Framer Motion useScroll / useTransform.
+` : `
 ## Homepage Structure Rules (MANDATORY)
 - Max 6–7 sections on the homepage — no more.
 - Section order: Hero → Social proof / logos → Core value proposition → Key features (3) → CTA section → Footer
@@ -94,6 +114,6 @@ ${is3d ? `
 8. Particle systems: use @react-three/drei Points or simple instanced meshes — NOT canvas 2D.
 9. Custom cursor: implement via a React portal div tracking mousemove, not a DOM cursor override.
 10. GSAP (if used): register ScrollTrigger plugin. Prefer framer-motion for simple animations.
-` : ''}
+` : ''}`}
   `.trim();
 }

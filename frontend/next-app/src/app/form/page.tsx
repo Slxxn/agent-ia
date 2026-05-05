@@ -11,10 +11,13 @@ import {
   SECTORS,
   COLOR_THEMES,
   COLOR_THEMES_3D,
+  COLOR_THEMES_SCROLLYTELLING,
   VISUAL_STYLES,
   VISUAL_STYLES_3D,
+  VISUAL_STYLES_SCROLLYTELLING,
   FEATURE_GROUPS,
   FEATURE_GROUPS_3D,
+  FEATURE_GROUPS_SCROLLYTELLING,
   PAGE_OPTIONS,
   BUDGETS,
   type SiteType,
@@ -101,7 +104,14 @@ export default function FormPage() {
     setForm(f => ({ ...f, [field]: value }));
 
   const setSiteType = (t: SiteType) =>
-    setForm(f => ({ ...f, siteType: t, visualStyle: '', colorTheme: t === '3d' ? 'deep_space' : 'light', features: [] }));
+    setForm(f => ({
+      ...f,
+      siteType: t,
+      visualStyle: '',
+      colorTheme: t === '3d' ? 'deep_space' : t === 'scrollytelling' ? 'deep_black' : 'light',
+      features: [],
+      pages: t === 'scrollytelling' ? ['home'] : f.pages,
+    }));
 
   const toggleArr = (field: 'pages' | 'features', key: string) =>
     setForm(f => ({
@@ -120,7 +130,7 @@ export default function FormPage() {
     if (step === 1) return form.businessName.trim() && form.sector && form.siteGoal;
     if (step === 2) return form.targetAudience.trim() && form.uniqueValue.trim();
     if (step === 3) return form.visualStyle && form.colorTheme;
-    if (step === 4) return form.pages.length > 0;
+    if (step === 4) return form.siteType === 'scrollytelling' || form.pages.length > 0;
     return !!form.budget;
   };
 
@@ -295,7 +305,7 @@ function Step1({
       </div>
 
       <Field label="Type d'expérience *">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {SITE_TYPES.map(t => (
             <button
               key={t.key}
@@ -530,7 +540,7 @@ function Step3({
       {/* Color theme */}
       <Field label="Thème général *">
         <div className="grid grid-cols-3 gap-3">
-          {(form.siteType === '3d' ? COLOR_THEMES_3D : COLOR_THEMES).map(t => (
+          {(form.siteType === '3d' ? COLOR_THEMES_3D : form.siteType === 'scrollytelling' ? COLOR_THEMES_SCROLLYTELLING : COLOR_THEMES).map(t => (
             <button
               key={t.key}
               type="button"
@@ -555,7 +565,7 @@ function Step3({
       {/* Visual style */}
       <Field label="Style visuel *">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {(form.siteType === '3d' ? VISUAL_STYLES_3D : VISUAL_STYLES).map(s => (
+          {(form.siteType === '3d' ? VISUAL_STYLES_3D : form.siteType === 'scrollytelling' ? VISUAL_STYLES_SCROLLYTELLING : VISUAL_STYLES).map(s => (
             <button
               key={s.key}
               type="button"
@@ -593,37 +603,60 @@ function Step4({
   form: FormData;
   toggleArr: (field: 'pages' | 'features', key: string) => void;
 }) {
+  const isScrollytelling = form.siteType === 'scrollytelling';
+  const featureGroups = form.siteType === '3d'
+    ? FEATURE_GROUPS_3D
+    : isScrollytelling
+      ? FEATURE_GROUPS_SCROLLYTELLING
+      : FEATURE_GROUPS;
+
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-semibold mb-1">Structure & fonctionnalités</h2>
-        <p className="text-gray-400 text-sm">Quelles pages et quels outils votre site doit-il avoir ?</p>
+        <h2 className="text-xl font-semibold mb-1">
+          {isScrollytelling ? 'Contenu & fonctionnalités' : 'Structure & fonctionnalités'}
+        </h2>
+        <p className="text-gray-400 text-sm">
+          {isScrollytelling
+            ? 'Une seule page narrative — choisissez les éléments qui la composent.'
+            : 'Quelles pages et quels outils votre site doit-il avoir ?'}
+        </p>
       </div>
 
-      <Field label="Pages du site *" hint="La page Accueil est toujours incluse">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {PAGE_OPTIONS.map(p => (
-            <button
-              key={p.key}
-              type="button"
-              disabled={p.key === 'home'}
-              onClick={() => p.key !== 'home' && toggleArr('pages', p.key)}
-              className={`text-left px-3 py-2.5 rounded-xl border transition-all ${
-                form.pages.includes(p.key)
-                  ? 'border-indigo-500 bg-indigo-600/20'
-                  : 'border-gray-700 bg-gray-900 hover:border-gray-500'
-              } ${p.key === 'home' ? 'opacity-60 cursor-default' : ''}`}
-            >
-              <div className="font-medium text-white text-sm">{p.label}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{p.desc}</div>
-            </button>
-          ))}
+      {isScrollytelling ? (
+        <div className="flex items-center gap-3 bg-indigo-950/40 border border-indigo-500/30 rounded-xl px-4 py-3">
+          <span className="text-2xl">📜</span>
+          <div>
+            <div className="text-sm font-semibold text-indigo-300">Site une seule page</div>
+            <div className="text-xs text-gray-400 mt-0.5">Le scrollytelling est conçu comme une expérience narrative continue — pas de pages multiples.</div>
+          </div>
         </div>
-      </Field>
+      ) : (
+        <Field label="Pages du site *" hint="La page Accueil est toujours incluse">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {PAGE_OPTIONS.map(p => (
+              <button
+                key={p.key}
+                type="button"
+                disabled={p.key === 'home'}
+                onClick={() => p.key !== 'home' && toggleArr('pages', p.key)}
+                className={`text-left px-3 py-2.5 rounded-xl border transition-all ${
+                  form.pages.includes(p.key)
+                    ? 'border-indigo-500 bg-indigo-600/20'
+                    : 'border-gray-700 bg-gray-900 hover:border-gray-500'
+                } ${p.key === 'home' ? 'opacity-60 cursor-default' : ''}`}
+              >
+                <div className="font-medium text-white text-sm">{p.label}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{p.desc}</div>
+              </button>
+            ))}
+          </div>
+        </Field>
+      )}
 
       <Field label="Fonctionnalités" hint="Sélectionnez tout ce dont vous avez besoin">
         <div className="space-y-4">
-          {(form.siteType === '3d' ? FEATURE_GROUPS_3D : FEATURE_GROUPS).map(group => (
+          {featureGroups.map(group => (
             <div key={group.label}>
               <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                 {group.label}
@@ -753,9 +786,9 @@ function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unkn
         <Row label="Secteur" value={SECTORS.find(s => s.key === form.sector)?.label} />
         <Row label="Objectif" value={SITE_GOALS.find(g => g.key === form.siteGoal)?.label} />
         <Row label="Style" value={
-          (form.siteType === '3d' ? VISUAL_STYLES_3D : VISUAL_STYLES).find(s => s.key === form.visualStyle)?.label
+          (form.siteType === '3d' ? VISUAL_STYLES_3D : form.siteType === 'scrollytelling' ? VISUAL_STYLES_SCROLLYTELLING : VISUAL_STYLES).find(s => s.key === form.visualStyle)?.label
         } />
-        <Row label="Pages" value={`${form.pages.length} page(s)`} />
+        <Row label="Pages" value={form.siteType === 'scrollytelling' ? 'Une page (scrollytelling)' : `${form.pages.length} page(s)`} />
         <Row label="Fonctionnalités" value={`${form.features.length} sélectionnée(s)`} />
         <Row label="Budget" value={form.budget} />
       </div>
