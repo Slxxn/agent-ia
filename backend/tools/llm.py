@@ -2007,6 +2007,9 @@ Use EXACTLY these values in the theme object.
             "5. All text must be in French unless the brief specifies otherwise\n"
             "6. Theme colors must be dark: bg between #060608 and #141420\n"
             "7. Output ONLY valid JSON, no markdown, no explanation\n"
+            "8. CONTENT UNIQUENESS: Every page must have DIFFERENT content from every other page. The 'about' page must NOT reuse the hero or features from the home page — it must show team, story, values, or mission-specific content. Never duplicate headlines, blocks, or text across pages.\n"
+            "9. CTA LINKS: Any button/CTA labeled 'Démarrer', 'Commencer', 'Lancer', 'Devis', 'Essayer', 'Créer mon site' must link to href '/form'. Do NOT create a separate page for these — link directly to /form.\n"
+            "10. PAGE BLOCKS VARIETY: Avoid repeating the same block type more than once per page. Each page should feel visually distinct.\n"
             + (extra_3d_rule + "\n" if extra_3d_rule else "") +
             "\n" + _json_example
         )

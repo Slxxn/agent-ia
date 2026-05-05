@@ -113,9 +113,11 @@ class Assembler:
 
         # 2b. Inject Three.js deps if any 3D block is used
         all_blocks = {b["block"] for p in spec.get("pages", []) for b in p.get("blocks", [])}
-        if all_blocks & THREE_BLOCKS:
+        is_3d = bool(all_blocks & THREE_BLOCKS)
+        if is_3d:
             await add_log(project_id, "🌐 Blocs 3D détectés — injection des dépendances Three.js...", "info")
             self._inject_3d_deps()
+            self._apply_3d_theme_override(spec.get("theme", {}))
 
         # 3. Generate siteConfig.ts
         await add_log(project_id, "⚙️  Génération de la configuration...", "info")
@@ -190,6 +192,23 @@ class Assembler:
                     css,
                 )
         css_path.write_text(css, encoding="utf-8")
+
+    def _apply_3d_theme_override(self, theme: dict) -> None:
+        """For 3D/immersive projects, unify all section backgrounds to a single dark tone."""
+        css_path = self.workspace / "src" / "index.css"
+        if not css_path.exists():
+            return
+        bg = theme.get("bg", "#0a0a10")
+        if self._luminance(bg) > 80:
+            bg = "#0a0a10"
+        override = f"""
+/* 3D immersive mode — unified section backgrounds */
+section, [class*="section"], main > div, main > section {{
+  background-color: {bg} !important;
+}}
+"""
+        css = css_path.read_text(encoding="utf-8")
+        css_path.write_text(css + override, encoding="utf-8")
 
     def _write_site_config(self, spec: dict) -> None:
         brand = spec.get("brand", {})
