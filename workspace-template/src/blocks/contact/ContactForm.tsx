@@ -76,7 +76,6 @@ export default function ContactForm({ badge, headline, headlineAccent, sub, info
         </motion.div>
 
         <div className="grid lg:grid-cols-5 gap-10">
-          {/* Info sidebar */}
           {info && (
             <motion.div variants={slideLeft} initial="hidden" whileInView="show" viewport={VIEWPORT} className="lg:col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {[
@@ -97,7 +96,6 @@ export default function ContactForm({ badge, headline, headlineAccent, sub, info
             </motion.div>
           )}
 
-          {/* Form */}
           <motion.div variants={slideRight} initial="hidden" whileInView="show" viewport={VIEWPORT} className={info ? 'lg:col-span-3' : 'lg:col-span-5'}>
             {sent ? (
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ padding: '48px 32px', background: 'var(--surface)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>

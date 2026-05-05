@@ -273,7 +273,7 @@ class AgentRunner:
             await add_log(project_id, "═══ PHASE 4 : NPM INSTALL ═══", "info")
             await project_manager.update_progress(project_id, 55.0)
             t_install = TerminalTool(workspace_path)
-            install_r = await t_install.run_command("npm install --legacy-peer-deps", timeout=300)
+            install_r = await t_install.run_command("npm install --legacy-peer-deps", timeout=600)
             if not install_r.get("success"):
                 await add_log(project_id, f"⚠️ npm install : {install_r.get('stderr','')[:300]}", "warning")
 

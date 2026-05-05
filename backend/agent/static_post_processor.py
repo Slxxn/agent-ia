@@ -158,10 +158,9 @@ class StaticPostProcessor:
     def _get_imported_names(content: str, module: str) -> set[str]:
         """Return set of names already imported from `module`."""
         names: set[str] = set()
-        for m in re.finditer(
-            rf"import\s*\{{([^}}]*)\}}\s*from\s*['\"]{{module}}['\"]".replace("{module}", re.escape(module)),
-            content,
-        ):
+        # Matches both `import { X }` and `import Default, { X }` from module
+        pattern = rf"import\s+(?:\w+\s*,\s*)?\{{([^}}]*)\}}\s*from\s*['\"]{{module}}['\"]".replace("{module}", re.escape(module))
+        for m in re.finditer(pattern, content):
             for name in m.group(1).split(','):
                 stripped = name.strip().split(' as ')[0].strip()
                 if stripped:
@@ -199,15 +198,16 @@ class StaticPostProcessor:
 
                 if needed_react:
                     existing = re.search(
-                        r"import\s*\{([^}]*)\}\s*from\s*['\"]react['\"]",
+                        r"import\s+(?:(\w+)\s*,\s*)?\{([^}]*)\}\s*from\s*['\"]react['\"]",
                         content,
                     )
                     if existing:
-                        old_names = {n.strip() for n in existing.group(1).split(',') if n.strip()}
+                        default_part = (existing.group(1) + ', ') if existing.group(1) else ''
+                        old_names = {n.strip() for n in existing.group(2).split(',') if n.strip()}
                         all_names = sorted(old_names | needed_react)
                         content = content.replace(
                             existing.group(0),
-                            f"import {{ {', '.join(all_names)} }} from 'react';",
+                            f"import {default_part}{{ {', '.join(all_names)} }} from 'react';",
                         )
                     else:
                         new_line = f"import {{ {', '.join(sorted(needed_react))} }} from 'react';\n"
@@ -222,7 +222,7 @@ class StaticPostProcessor:
 
                 if needed_router:
                     existing = re.search(
-                        r"import\s*\{([^}]*)\}\s*from\s*['\"]react-router-dom['\"]",
+                        r"import\s+(?:\w+\s*,\s*)?\{([^}]*)\}\s*from\s*['\"]react-router-dom['\"]",
                         content,
                     )
                     if existing:
@@ -235,7 +235,7 @@ class StaticPostProcessor:
                     else:
                         new_line = f"import {{ {', '.join(sorted(needed_router))} }} from 'react-router-dom';\n"
                         # Insert after React import if present
-                        react_imp = re.search(r"(import\s*\{[^}]*\}\s*from\s*['\"]react['\"];?\n?)", content)
+                        react_imp = re.search(r"(import\s+(?:\w+\s*,\s*)?\{[^}]*\}\s*from\s*['\"]react['\"];?\n?)", content)
                         if react_imp:
                             pos = react_imp.end()
                             content = content[:pos] + new_line + content[pos:]
@@ -251,7 +251,7 @@ class StaticPostProcessor:
 
                 if needed_framer:
                     existing = re.search(
-                        r"import\s*\{([^}]*)\}\s*from\s*['\"]framer-motion['\"]",
+                        r"import\s+(?:\w+\s*,\s*)?\{([^}]*)\}\s*from\s*['\"]framer-motion['\"]",
                         content,
                     )
                     if existing:

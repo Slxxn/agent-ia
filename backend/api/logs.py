@@ -60,6 +60,8 @@ async def stream_project_logs(project_id: int, request: Request, since_id: int =
                 yield f"data: {log_data}\n\n"
                 last_id = max(last_id, log.get("id", 0))
 
+            # Heartbeat comment flushes nginx proxy buffer so events arrive instantly
+            yield ": keepalive\n\n"
             await asyncio.sleep(0.5)
 
     return StreamingResponse(
@@ -111,6 +113,7 @@ async def stream_all_projects(request: Request):
                 last_snapshot = snapshot
                 yield f"data: {json.dumps(projects, ensure_ascii=False)}\n\n"
 
+            yield ": keepalive\n\n"
             await asyncio.sleep(0.5)
 
     return StreamingResponse(
@@ -167,6 +170,7 @@ async def stream_project_status(project_id: int, request: Request):
                 last_snapshot = snapshot
                 yield f"data: {json.dumps(proj, ensure_ascii=False)}\n\n"
 
+            yield ": keepalive\n\n"
             await asyncio.sleep(0.5)
 
     return StreamingResponse(

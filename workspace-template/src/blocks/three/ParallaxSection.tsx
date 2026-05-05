@@ -37,7 +37,6 @@ export default function ParallaxSection({ badge, headline, headlineAccent, sub, 
         </motion.div>
       )}
 
-      {/* Floating orbs */}
       <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', y: y1 }} aria-hidden>
         <div style={{ position: 'absolute', top: '10%', left: '5%', width: 400, height: 400, background: accentColor, borderRadius: '50%', filter: 'blur(120px)', opacity: 0.08 }} />
         <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: 300, height: 300, background: '#38bdf8', borderRadius: '50%', filter: 'blur(100px)', opacity: 0.06 }} />

@@ -54,10 +54,11 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL    = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:7b")
 
 # Gemini Flash (tâches simples — ultra-rapide)
-GEMINI_API_KEY  = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL    = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-GEMINI_BASE_URL = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
-GEMINI_TIMEOUT  = 60
+GEMINI_API_KEY   = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL     = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL_FAST = os.getenv("GEMINI_MODEL_FAST", "gemini-2.0-flash")  # no thinking — for JSON-heavy tasks
+GEMINI_BASE_URL  = os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
+GEMINI_TIMEOUT   = 120
 
 # Router LLM — noms des modèles par tier
 # deepseek-chat = V3 standard (flash/cheap) ; deepseek-reasoner = R1 raisonnement
@@ -2011,7 +2012,8 @@ Use EXACTLY these values in the theme object.
         )
 
         prompt = f"Client brief:\n{objective}\n{ds_hint}\nGenerate the JSON site spec:"
-        model = _gemini_or(DEEPSEEK_MODEL_PRO)
+        # Use the fast (non-thinking) Gemini model — 2.5 Flash thinking burns 60s+ on large JSON
+        model = GEMINI_MODEL_FAST if GEMINI_API_KEY else DEEPSEEK_MODEL_PRO
         result = await self.call_ollama(prompt, system_prompt=system, temperature=0.3,
                                         max_tokens=16000, model_override=model)
         if project_id:

@@ -38,7 +38,6 @@ export default function PricingCards({ badge, headline, headlineAccent, sub, pla
           </motion.h2>
           {sub && <motion.p variants={fadeUp} style={{ fontSize: '1rem', color: 'var(--muted)', marginBottom: 28 }}>{sub}</motion.p>}
 
-          {/* Toggle */}
           <motion.div variants={fadeUp} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'var(--surface)', border: '1px solid var(--bd)', borderRadius: 999, padding: '5px 16px' }}>
             <button
               onClick={() => setYearly(false)}
