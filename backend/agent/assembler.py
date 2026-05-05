@@ -63,9 +63,17 @@ BLOCK_IMPORTS: dict[str, str] = {
     "VideoSection":     "import VideoSection from '@/blocks/media/VideoSection';",
     "BeforeAfter":      "import BeforeAfter from '@/blocks/media/BeforeAfter';",
     "ProductGrid":      "import ProductGrid from '@/blocks/ecommerce/ProductGrid';",
+    "WaveSection":      "import WaveSection from '@/blocks/three/WaveSection';",
+    "FloatingCards3D":  "import FloatingCards3D from '@/blocks/three/FloatingCards3D';",
+    "MorphBlob":        "import MorphBlob from '@/blocks/three/MorphBlob';",
+    "ScrollHero":       "import ScrollHero from '@/blocks/scrollytelling/ScrollHero';",
+    "ScrollChapter":    "import ScrollChapter from '@/blocks/scrollytelling/ScrollChapter';",
+    "ScrollReveal":     "import ScrollReveal from '@/blocks/scrollytelling/ScrollReveal';",
+    "ScrollOutro":      "import ScrollOutro from '@/blocks/scrollytelling/ScrollOutro';",
 }
 
-THREE_BLOCKS = {"Hero3D", "Scene3D", "ParallaxSection"}
+THREE_BLOCKS = {"Hero3D", "Scene3D", "ParallaxSection", "WaveSection", "MorphBlob"}
+SCROLLYTELLING_BLOCKS = {"ScrollHero", "ScrollChapter", "ScrollReveal", "ScrollOutro"}
 THREE_DEPS = {
     "@react-three/fiber": "^8.16.8",
     "@react-three/drei": "^9.109.2",
@@ -107,6 +115,10 @@ class Assembler:
         navbar["links"] = fixed
         spec["navbar"] = navbar
 
+    def _detect_scrollytelling(self, spec: dict) -> bool:
+        all_blocks = {b["block"] for p in spec.get("pages", []) for b in p.get("blocks", [])}
+        return bool(all_blocks & SCROLLYTELLING_BLOCKS)
+
     async def run(self, spec: dict, project_id: int) -> None:
         await add_log(project_id, "═══ ASSEMBLAGE DU SITE ═══", "info")
 
@@ -124,6 +136,7 @@ class Assembler:
         # 2b. Inject Three.js deps if any 3D block is used
         all_blocks = {b["block"] for p in spec.get("pages", []) for b in p.get("blocks", [])}
         is_3d = bool(all_blocks & THREE_BLOCKS)
+        is_scrollytelling = self._detect_scrollytelling(spec)
         if is_3d:
             await add_log(project_id, "🌐 Blocs 3D détectés — injection des dépendances Three.js...", "info")
             self._inject_3d_deps()
@@ -141,7 +154,11 @@ class Assembler:
 
         # 5. Generate App.tsx with all routes
         await add_log(project_id, "🔧 Génération de App.tsx...", "info")
-        self._write_app(pages, spec)
+        if is_scrollytelling:
+            await add_log(project_id, "📜 Mode scrollytelling — App.tsx single-page.", "info")
+            self._write_app_scrollytelling(pages, spec)
+        else:
+            self._write_app(pages, spec)
 
         # 6. Update index.html title
         self._write_index_html(spec.get("title", "Site"))
@@ -332,6 +349,31 @@ function App() {{
           {routes}
           {catch_all}
         </Routes>
+      </main>
+      <Footer config={{SITE_CONFIG.footer}} />
+    </>
+  );
+}}
+
+export default App;
+"""
+        (self.workspace / "src" / "App.tsx").write_text(app, encoding="utf-8")
+
+    def _write_app_scrollytelling(self, pages: list[dict], spec: dict) -> None:
+        """Single-page scrollytelling: no router, just render the first (and only) page."""
+        home = pages[0] if pages else {"file": "Home"}
+        app = f"""import React from 'react';
+import Navbar from '@/blocks/layout/Navbar';
+import Footer from '@/blocks/layout/Footer';
+import {{ SITE_CONFIG }} from '@/siteConfig';
+import {home['file']} from '@/pages/{home['file']}';
+
+function App() {{
+  return (
+    <>
+      <Navbar config={{SITE_CONFIG.navbar}} transparent />
+      <main>
+        <{home['file']} />
       </main>
       <Footer config={{SITE_CONFIG.footer}} />
     </>

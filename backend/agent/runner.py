@@ -235,18 +235,21 @@ class AgentRunner:
             await project_manager.update_progress(project_id, 15.0)
             _3d_keywords = ("3d/immersive", "three.js", "react three fiber", "immersive",
                             "webgl", "sitetype: '3d'", "expérience 3d", "site 3d")
+            _scroll_keywords = ("scrollytelling", "one page", "onepage", "one-page", "single page",
+                                "single-page", "une page", "site scrollytelling", "sitetype: 'scrollytelling'")
             is_3d = any(kw in full_objective.lower() for kw in _3d_keywords)
+            is_scrollytelling = any(kw in full_objective.lower() for kw in _scroll_keywords)
             if is_3d:
                 await add_log(project_id, "🌐 Mode 3D détecté — blocs Three.js activés.", "info")
+            if is_scrollytelling:
+                await add_log(project_id, "📜 Mode scrollytelling détecté — site une page.", "info")
 
-            # Strip verbose technical rules before sending to spec generator
-            # (they were for the old code-gen pipeline, not needed for block assembly)
             import re as _re_strip
             spec_objective = _re_strip.sub(
                 r'## (Absolute Technical Rules|Homepage Structure Rules)[\s\S]*?(?=## |\Z)',
                 '', full_objective
             ).strip()
-            site_spec = await llm.generate_site_spec(spec_objective, design_system, is_3d=is_3d, project_id=project_id)
+            site_spec = await llm.generate_site_spec(spec_objective, design_system, is_3d=is_3d, is_scrollytelling=is_scrollytelling, project_id=project_id)
 
             if not site_spec or not site_spec.get("pages"):
                 await add_log(project_id, "❌ Spec JSON invalide ou vide.", "error")

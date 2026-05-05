@@ -1916,7 +1916,7 @@ Response format:
         result = await self.call_ollama(prompt, system_prompt=system, temperature=0.2, model_override=model)
         return result.get("content", raw_objective)
 
-    async def generate_site_spec(self, objective: str, design_system: dict | None = None, is_3d: bool = False, project_id: int | None = None) -> dict | None:
+    async def generate_site_spec(self, objective: str, design_system: dict | None = None, is_3d: bool = False, is_scrollytelling: bool = False, project_id: int | None = None) -> dict | None:
         """
         Generate a structured JSON site spec from the client brief.
         Returns a dict matching the Assembler spec format, or None on failure.
@@ -1942,10 +1942,30 @@ Use EXACTLY these values in the theme object.
 - Hero3D: Three.js particle field hero. Props: badge?, headline, headlineAccent?, sub, cta{label,href}, ctaSecondary?, particleColor?, particleCount?
 - Scene3D: Interactive 3D objects + feature list side by side. Props: badge?, headline, headlineAccent?, sub?, features[{icon,title,description}], accentColor?
 - ParallaxSection: Deep parallax scroll with floating layers. Props: badge?, headline, headlineAccent?, sub?, backgroundImageUrl?, accentColor?, items?[{icon,title,description}]
-""" if is_3d else ""
+- WaveSection: Animated Three.js wire-frame wave in background with centered text + optional feature grid. Props: badge?, headline, headlineAccent?, sub?, cta?, ctaSecondary?, waveColor?, features?[{icon,title,description}]
+- MorphBlob: Morphing 3D blob (WebGL) side-by-side with text + stats. Props: badge?, headline, headlineAccent?, sub?, cta?, ctaSecondary?, blobColor?, blobColor2?, stats?[{value,label}]
+- FloatingCards3D: Cards with mouse-tracked 3D tilt effect (no Three.js). Props: badge?, headline, headlineAccent?, sub?, cards[{icon,title,description,accentColor?}]
+""" if is_3d else """
+- FloatingCards3D: Cards with mouse-tracked 3D tilt effect. Props: badge?, headline, headlineAccent?, sub?, cards[{icon,title,description,accentColor?}]
+"""
 
-        hero_rule = "3. Every page must start with a Hero3D block" if is_3d else "3. Every page must start with a Hero block (HeroA, HeroB, or HeroC)"
-        extra_3d_rule = "8. MANDATORY for 3D: use Hero3D on Home page, Scene3D and ParallaxSection on at least 1 other page each. Very dark bg (#060608 to #0a0a10)." if is_3d else ""
+        scrollytelling_blocks = """
+SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no routing):
+- ScrollHero: Full-viewport parallax hero with scroll-linked fade. Props: badge?, headline, headlineAccent?, sub?, cta?, backgroundImageUrl?, overlayColor?
+- ScrollChapter: Alternating text + parallax image sections for storytelling. Props: chapterNumber?, headline, headlineAccent?, body, imageUrl?, imageAlt?, reverse?, accentColor?
+- ScrollReveal: Animated vertical timeline/steps revealed as user scrolls. Props: badge?, headline, headlineAccent?, items[{icon?,title,description}], accentColor?
+- ScrollOutro: Full-screen scroll-scaled final CTA. Props: headline, headlineAccent?, sub?, cta{label,href}, ctaSecondary?, accentColor?
+""" if is_scrollytelling else ""
+
+        if is_scrollytelling:
+            hero_rule = "3. This is a SCROLLYTELLING site: ONE page only (path '/'), start with ScrollHero, use ScrollChapter + ScrollReveal for the body, end with ScrollOutro. No other pages."
+            extra_3d_rule = ""
+        elif is_3d:
+            hero_rule = "3. Every page must start with a Hero3D block"
+            extra_3d_rule = "8. MANDATORY for 3D: use Hero3D on Home page, WaveSection or MorphBlob on at least 1 other page, Scene3D and ParallaxSection spread across pages. Very dark bg (#060608 to #0a0a10)."
+        else:
+            hero_rule = "3. Every page must start with a Hero block (HeroA, HeroB, or HeroC)"
+            extra_3d_rule = ""
 
         _json_example = '''OUTPUT FORMAT (JSON):
 {
@@ -2008,7 +2028,8 @@ Use EXACTLY these values in the theme object.
             "- VideoSection: video player with thumbnail. Props: badge?, headline, headlineAccent?, sub?, videoUrl, thumbnailUrl?, aspectRatio?(\"16/9\"|\"4/3\"|\"1/1\")\n"
             "- BeforeAfter: interactive drag-to-compare slider. Props: badge?, headline, headlineAccent?, sub?, beforeImage, afterImage, beforeLabel?, afterLabel?\n"
             "- ProductGrid: e-commerce product cards. Props: badge?, headline, headlineAccent?, sub?, products[{name,description?,price,priceOld?,badge?,imageUrl?,ctaLabel?,ctaHref?}]\n"
-            + three_blocks +
+            + three_blocks
+            + scrollytelling_blocks +
             "\nRULES:\n"
             "1. For images use picsum with a descriptive seed: https://picsum.photos/seed/{descriptive-english-word}/1200/800 (e.g. /seed/swimwear/1200/800, /seed/fashion-model/1200/800). Never invent Unsplash photo IDs.\n"
             "2. Choose seeds that match the brand/sector visually\n"
@@ -2021,7 +2042,9 @@ Use EXACTLY these values in the theme object.
             "9. CTA LINKS: Any button/CTA labeled 'Démarrer', 'Commencer', 'Lancer', 'Devis', 'Essayer', 'Créer mon site' must link to href '/form'. Do NOT create a separate page for these — link directly to /form.\n"
             "10. PAGE BLOCKS VARIETY: Avoid repeating the same block type more than once per page. Each page should feel visually distinct.\n"
             "11. TEXT QUALITY: Headlines must be benefit-driven (e.g. 'Doublez votre trafic en 30 jours' not 'Notre solution'). Sub-headlines must explain the benefit in 1-2 concrete sentences. CTAs must be action verbs with clear outcome ('Obtenir mon audit gratuit' not 'En savoir plus'). All copy must feel written by a senior copywriter — no generic filler.\n"
-            "12. BLOCK SELECTION: Match blocks to the project type. E-commerce sites → use ProductGrid. Agencies/studios → use BeforeAfter, GalleryGrid. SaaS → use StatsRow, FeaturesGrid, PricingCards. Local businesses → use ReviewsCarousel, ContactForm, StatsRow. Portfolio → use GalleryGrid, Timeline. Corporate/About page → use TeamGrid, Timeline, StatsRow, LogoStrip.\n"
+            "12. BLOCK SELECTION: Match blocks to the project type. E-commerce sites → use ProductGrid. Agencies/studios → use BeforeAfter, GalleryGrid, FloatingCards3D. SaaS → use StatsRow, FeaturesGrid, PricingCards, MorphBlob. Local businesses → use ReviewsCarousel, ContactForm, StatsRow. Portfolio → use GalleryGrid, Timeline. Corporate/About page → use TeamGrid, Timeline, StatsRow, LogoStrip.\n"
+            "13. VISUAL STYLE SEED: Pick ONE distinct visual direction and apply it consistently. Options: (A) Brutalist — raw typography, stark contrast; (B) Glassmorphism — frosted glass cards, blur effects; (C) Editorial — magazine layout, strong hierarchy; (D) Neon Cyber — bright neons on deep black; (E) Organic — soft shapes, warm tones; (F) Corporate Premium — clean, authoritative; (G) Playful Bold — bold colors, rounded shapes; (H) Minimal Luxury — negative space, refined. Encode the chosen direction as a comment in 'brand.tagline' like '(style: Neon Cyber)' so it is visible in config.\n"
+            "14. ANTI-REPETITION: Never use the same block twice on the same page. Never use the same hero variant (HeroA/B/C) on more than one page. Rotate image seeds — every imageUrl must have a unique seed word.\n"
             + (extra_3d_rule + "\n" if extra_3d_rule else "") +
             "\n" + _json_example
         )
