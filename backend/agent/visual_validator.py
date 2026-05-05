@@ -34,11 +34,16 @@ if TYPE_CHECKING:
 # ── Configuration ──────────────────────────────────────────────────────────────
 
 ANTHROPIC_API_KEY    = os.getenv("ANTHROPIC_API_KEY", "")
+GEMINI_API_KEY       = os.getenv("GEMINI_API_KEY", "")
 VISION_MODEL         = os.getenv("VISION_MODEL", "claude-sonnet-4-6")
+GEMINI_VISION_MODEL  = "gemini-2.0-flash"
 VISUAL_VALIDATION    = os.getenv("VISUAL_VALIDATION", "0") == "1"
 MAX_FIX_ITERATIONS   = int(os.getenv("VISUAL_MAX_ITERATIONS", "2"))
 SERVER_POLL_INTERVAL = 0.5   # seconds between readiness polls
 SERVER_MAX_WAIT      = 20    # seconds total wait for dev server
+
+def _has_vision_key() -> bool:
+    return bool(ANTHROPIC_API_KEY or GEMINI_API_KEY)
 
 
 # ── Data structures ────────────────────────────────────────────────────────────
@@ -78,10 +83,10 @@ class VisualValidator:
         force: bool = False,
         page_paths: Optional[List[str]] = None,
     ) -> bool:
-        if not force and not VISUAL_VALIDATION and not ANTHROPIC_API_KEY:
+        if not force and not VISUAL_VALIDATION and not _has_vision_key():
             return True
-        if not ANTHROPIC_API_KEY:
-            await add_log(project_id, "⚠️ ANTHROPIC_API_KEY absent — validation visuelle désactivée.", "debug")
+        if not _has_vision_key():
+            await add_log(project_id, "⚠️ Aucune clé vision (ANTHROPIC_API_KEY / GEMINI_API_KEY) — validation visuelle désactivée.", "debug")
             return True
         if not ScreenshotTool.is_available():
             await add_log(project_id, "⚠️ Playwright absent — installez-le avec: pip install playwright && playwright install chromium", "debug")
@@ -242,42 +247,14 @@ Prefix each description with the page route '{route}':
 ]"""
 
         try:
-            headers = {
-                "x-api-key": ANTHROPIC_API_KEY,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            }
-            payload = {
-                "model": VISION_MODEL,
-                "max_tokens": 1024,
-                "messages": [{
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": "image/png",
-                                "data": img_b64,
-                            },
-                        },
-                        {"type": "text", "text": prompt},
-                    ],
-                }],
-            }
+            if ANTHROPIC_API_KEY:
+                raw_text = await self._analyze_anthropic(img_b64, prompt, project_id, route)
+            else:
+                raw_text = await self._analyze_gemini(img_b64, prompt, project_id, route)
 
-            async with httpx.AsyncClient(timeout=40) as client:
-                r = await client.post(
-                    "https://api.anthropic.com/v1/messages",
-                    headers=headers,
-                    json=payload,
-                )
-
-            if r.status_code != 200:
-                await add_log(project_id, f"⚠️ API vision ({r.status_code}) pour {route} — analyse ignorée.", "debug")
+            if raw_text is None:
                 return VisualResult(passed=True)
 
-            raw_text = r.json().get("content", [{}])[0].get("text", "[]")
             m = re.search(r'\[.*\]', raw_text, re.DOTALL)
             if not m:
                 return VisualResult(passed=True)
@@ -298,6 +275,51 @@ Prefix each description with the page route '{route}':
         except Exception as exc:
             await add_log(project_id, f"⚠️ Erreur analyse visuelle : {exc}", "debug")
             return VisualResult(passed=True)
+
+    async def _analyze_anthropic(self, img_b64: str, prompt: str, project_id: int, route: str) -> Optional[str]:
+        headers = {
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+        payload = {
+            "model": VISION_MODEL,
+            "max_tokens": 1024,
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img_b64}},
+                    {"type": "text", "text": prompt},
+                ],
+            }],
+        }
+        async with httpx.AsyncClient(timeout=40) as client:
+            r = await client.post("https://api.anthropic.com/v1/messages", headers=headers, json=payload)
+        if r.status_code != 200:
+            await add_log(project_id, f"⚠️ Anthropic vision ({r.status_code}) pour {route} — ignorée.", "debug")
+            return None
+        return r.json().get("content", [{}])[0].get("text", "[]")
+
+    async def _analyze_gemini(self, img_b64: str, prompt: str, project_id: int, route: str) -> Optional[str]:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_VISION_MODEL}:generateContent?key={GEMINI_API_KEY}"
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"inline_data": {"mime_type": "image/png", "data": img_b64}},
+                    {"text": prompt},
+                ]
+            }],
+            "generationConfig": {"maxOutputTokens": 1024, "temperature": 0.1},
+        }
+        async with httpx.AsyncClient(timeout=40) as client:
+            r = await client.post(url, json=payload)
+        if r.status_code != 200:
+            await add_log(project_id, f"⚠️ Gemini vision ({r.status_code}) pour {route} — ignorée.", "debug")
+            return None
+        candidates = r.json().get("candidates", [])
+        if not candidates:
+            return None
+        return candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "[]")
 
     # ── Auto-fix ───────────────────────────────────────────────────────────
 
