@@ -2012,7 +2012,8 @@ Use EXACTLY these values in the theme object.
 
         prompt = f"Client brief:\n{objective}\n{ds_hint}\nGenerate the JSON site spec:"
         model = _gemini_or(DEEPSEEK_MODEL_PRO)
-        result = await self.call_ollama(prompt, system_prompt=system, temperature=0.3, model_override=model)
+        result = await self.call_ollama(prompt, system_prompt=system, temperature=0.3,
+                                        max_tokens=16000, model_override=model)
         if project_id:
             _tok = result.get("prompt_tokens", 0) + result.get("completion_tokens", 0)
             if _tok > 0:
@@ -2046,20 +2047,46 @@ Use EXACTLY these values in the theme object.
             if result:
                 return result
 
-            # 3. Truncated JSON repair: find last complete page entry and close the JSON
+            # 3. String-aware truncation repair
             chunk = json_match.group(0)
-            # Find last valid closing of a page block "}]}" pattern going backwards
-            for end in range(len(chunk), len(chunk) // 2, -1):
-                candidate = chunk[:end]
-                # Count open braces/brackets to determine needed closing chars
-                opens = candidate.count('{') - candidate.count('}')
-                arr_opens = candidate.count('[') - candidate.count(']')
-                if opens < 0 or arr_opens < 0:
-                    continue
+
+            # Pass 1: find last position where the top-level object is fully closed
+            best = None
+            depth_b = depth_a = 0
+            in_str = esc = False
+            for i, ch in enumerate(chunk):
+                if esc:            esc = False; continue
+                if ch == '\\' and in_str: esc = True; continue
+                if ch == '"':      in_str = not in_str; continue
+                if in_str:         continue
+                if   ch == '{':    depth_b += 1
+                elif ch == '}':
+                    depth_b -= 1
+                    if depth_b == 0: best = i + 1
+                elif ch == '[':    depth_a += 1
+                elif ch == ']':    depth_a -= 1
+            if best:
+                result = _try_parse(chunk[:best])
+                if result:
+                    _logging.info("generate_site_spec: repaired — found last complete top-level object")
+                    return result
+
+            # Pass 2: find last character that is NOT inside a string, close open brackets
+            safe_end = 0
+            in_str = esc = False
+            for i, ch in enumerate(chunk):
+                if esc:            esc = False; continue
+                if ch == '\\' and in_str: esc = True; continue
+                if ch == '"':      in_str = not in_str; continue
+                if not in_str:     safe_end = i + 1
+            candidate = chunk[:safe_end]
+            opens     = candidate.count('{') - candidate.count('}')
+            arr_opens = candidate.count('[') - candidate.count(']')
+            if opens >= 0 and arr_opens >= 0:
                 repaired = candidate + (']' * arr_opens) + ('}' * opens)
                 result = _try_parse(repaired)
                 if result:
-                    _logging.info(f"generate_site_spec: repaired truncated JSON (trimmed {len(chunk)-end} chars)")
+                    _logging.info("generate_site_spec: repaired via string-safe bracket closing")
                     return result
 
         _logging.warning(f"generate_site_spec: could not parse JSON. Raw[:400]: {raw[:400]}")
