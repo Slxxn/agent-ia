@@ -434,7 +434,7 @@ VITE_DEMO_PASSWORD=preview
         # npm run build — cap Node.js heap to avoid OOM on low-RAM VPS
         await add_log(project_id, "🔨 Build de production (npm run build)...", "info")
         build_r = await t.run_command(
-            "NODE_OPTIONS=--max-old-space-size=512 npm run build", timeout=360
+            "NODE_OPTIONS=--max-old-space-size=1536 npm run build", timeout=420
         )
         if not build_r["success"]:
             err = (build_r.get("stderr", "") or build_r.get("stdout", ""))[:400]
