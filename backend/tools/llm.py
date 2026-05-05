@@ -2012,10 +2012,17 @@ Use EXACTLY these values in the theme object.
         )
 
         prompt = f"Client brief:\n{objective}\n{ds_hint}\nGenerate the JSON site spec:"
-        # Use the fast (non-thinking) Gemini model — 2.5 Flash thinking burns 60s+ on large JSON
+        import logging as _logging
+        # Try fast model first, fall back to standard Gemini if it fails
         model = GEMINI_MODEL_FAST if GEMINI_API_KEY else DEEPSEEK_MODEL_PRO
         result = await self.call_ollama(prompt, system_prompt=system, temperature=0.3,
                                         max_tokens=16000, model_override=model)
+        if not result.get("success") and GEMINI_API_KEY and model != GEMINI_MODEL:
+            _logging.warning(f"generate_site_spec: fast model {model!r} failed ({result.get('error','')}), retrying with {GEMINI_MODEL}")
+            result = await self.call_ollama(prompt, system_prompt=system, temperature=0.3,
+                                            max_tokens=16000, model_override=GEMINI_MODEL)
+        if not result.get("success"):
+            _logging.error(f"generate_site_spec: LLM error — {result.get('error','unknown')}")
         if project_id:
             _tok = result.get("prompt_tokens", 0) + result.get("completion_tokens", 0)
             if _tok > 0:
@@ -2023,7 +2030,7 @@ Use EXACTLY these values in the theme object.
                 await _add_tok(project_id, _tok)
         raw = result.get("content", "")
 
-        import re as _re, json as _json, logging as _logging
+        import re as _re, json as _json
 
         # Strip markdown code fences
         raw = _re.sub(r'^```(?:json)?\s*', '', raw.strip(), flags=_re.MULTILINE)
