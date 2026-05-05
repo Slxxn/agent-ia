@@ -286,13 +286,22 @@ class AgentRunner:
             # ── PHASE 5 : Validation visuelle ────────────────────────────
             await project_manager.update_progress(project_id, 88.0)
             page_paths = [p["path"] for p in site_spec.get("pages", [])] or ["/"]
-            visual = VisualValidator()
-            await visual.run_validation_loop(
+            _fs = FilesystemTool(workspace_path)
+            _term = TerminalTool(workspace_path)
+            _executor = AgentExecutor(_fs, _term, llm)
+            visual = VisualValidator(executor=_executor)
+            visual_ok = await visual.run_validation_loop(
                 project_id=project_id,
                 workspace_path=workspace_path,
-                deployed_url=deploy_url or None,
                 page_paths=page_paths,
             )
+            # If fixes were applied and site was deployed, rebuild + redeploy
+            if not visual_ok and deploy_url:
+                await add_log(project_id, "🔄 Corrections appliquées — rebuild et redéploiement...", "info")
+                new_url = await cls._deploy_firebase(project_id, workspace_path)
+                if new_url:
+                    deploy_url = new_url
+                    await update_project(project_id, deploy_url=new_url)
 
             await project_manager.update_progress(project_id, 100.0)
             await project_manager.update_status(project_id, "done")

@@ -156,7 +156,9 @@ class VisualValidator:
                 await self._fix_issues(project_id, criticals, workspace_path)
                 await asyncio.sleep(3)
 
-            return True
+            # Return False if critical issues were fixed (signals caller to redeploy)
+            fixed = bool(all_issues) and self.executor is not None and any(i.severity == "critical" for i in all_issues)
+            return not fixed
 
         finally:
             if server is not None:
