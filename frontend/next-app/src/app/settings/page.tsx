@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Save, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2,
-  Settings, Cpu, Zap, CreditCard, Flame, X,
+  Settings, Cpu, Zap, CreditCard, Flame, X, Bot,
 } from "lucide-react";
 import { Setting, getSettings, saveSetting } from "@/lib/api";
 
@@ -366,6 +366,14 @@ const SECTIONS = [
     icon: <Cpu size={14} />,
     color: "#7C3AED",
     keys: ["DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL"],
+  },
+  {
+    key: "claude",
+    title: "Claude (Anthropic)",
+    description: "Génération qualité maximale (mode quality)",
+    icon: <Bot size={14} />,
+    color: "#D97706",
+    keys: ["ANTHROPIC_API_KEY"],
   },
   {
     key: "gemini",

@@ -5,6 +5,7 @@ Décrivez votre projet via le formulaire client, l'agent planifie, structure, co
 
 ## Fonctionnalités
 
+- **3 types de sites** : Standard (React/Vite), Immersif 3D (Three.js/WebGL), Scrollytelling (narration scroll)
 - **Génération full-stack** : React/Vite + Tailwind CSS, animations Framer Motion, composants UI complets
 - **Pipeline IA hybride** : Gemini Flash (planification, repair, validation) + DeepSeek Chat/Reasoner (génération de code)
 - **Structuration automatique du brief** : Gemini transforme la demande client en spec technique avant génération
@@ -29,7 +30,8 @@ Décrivez votre projet via le formulaire client, l'agent planifie, structure, co
 | IA génération | DeepSeek Chat (sections) / DeepSeek Reasoner (fichiers critiques) |
 | IA rapide | Gemini Flash 2.0 (planification, repair, validation, copilote) |
 | Projets générés | React + Vite + Tailwind + Framer Motion |
-| Déploiement | Oracle Cloud VPS, Cloudflare Tunnel, pm2 |
+| Frontend hosting | Firebase Hosting (builderz.shop), export statique Next.js |
+| Déploiement backend | Oracle Cloud VPS, Cloudflare Tunnel (`api.builderz.shop`), pm2 |
 
 ## Architecture
 
@@ -156,23 +158,36 @@ uvicorn backend.main:app --reload --port 8000
 cd frontend/next-app && npm run dev
 ```
 
-## Déploiement VPS (production)
+## Déploiement
 
-Oracle Cloud Free Tier (Ubuntu 22.04, 1 CPU, 1 GB RAM + 1 GB swap) avec Cloudflare Tunnel.
+### Frontend — Firebase Hosting
+
+Le dashboard Next.js est exporté en statique et hébergé sur Firebase Hosting (`builderz.shop`).
+
+```bash
+cd frontend/next-app
+npm run build                        # génère out/
+firebase deploy --only hosting       # publie sur Firebase
+```
+
+Les appels API en production pointent vers `https://api.builderz.shop` via `NEXT_PUBLIC_API_URL` dans `.env.production`.
+
+### Backend — VPS Oracle Cloud
+
+Oracle Cloud Free Tier (Ubuntu 22.04, 1 CPU, 1 GB RAM + 1 GB swap).  
+L'API est exposée via Cloudflare Tunnel sur `api.builderz.shop`.
 
 ```bash
 # Première fois
 pm2 start 'venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000' --name backend
-pm2 start npm --name frontend --cwd frontend/next-app -- start
 pm2 start 'cloudflared tunnel run builderz' --name tunnel
 pm2 save
 ```
 
-Mise à jour :
+Mise à jour backend :
 
 ```bash
-cd ~/agent-platform && git pull origin master
-cd frontend/next-app && npm run build && pm2 restart all
+cd ~/agent-platform && git pull origin master && pm2 restart backend
 ```
 
 ## API notable
@@ -181,8 +196,10 @@ cd frontend/next-app && npm run build && pm2 restart all
 |----------|-------------|
 | `GET /api/stats/fixes` | Fréquence des corrections automatiques par type |
 | `GET /api/projects` | Liste des projets |
-| `POST /api/projects/{id}/run` | Lancer la génération |
-| `GET /api/logs/{id}/stream` | SSE — logs en temps réel |
+| `POST /api/projects/{id}/start` | Lancer la génération |
+| `GET /api/projects/{id}/logs/stream` | SSE — logs en temps réel |
+| `POST /api/projects/{id}/deploy` | Déploiement Firebase |
+| `GET /api/settings` | Clés API (chiffrées) |
 
 ## Licence
 

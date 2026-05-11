@@ -1,434 +1,324 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  FolderOpen, Plus, Search, CheckCircle2, AlertCircle,
-  Loader2, LayoutGrid, List, SlidersHorizontal, X, ChevronDown,
-  Trash2, ArrowRight, Users, Clock, Play,
-} from "lucide-react";
-import ProjectCard from "@/components/ProjectCard";
-import Modal from "@/components/ui/Modal";
-import StatusBadge from "@/components/ui/StatusBadge";
-import { SkeletonCard } from "@/components/ui/Skeleton";
-import { Project, getProjects, createProject, deleteProject, startProject, streamProjects } from "@/lib/api";
-import { useClientRequests } from "@/hooks/useClientRequests";
+import { useEffect, useRef, useState } from "react";
 
-type SortKey = "newest" | "oldest" | "progress";
-type FilterStatus = "all" | "running" | "done" | "error" | "idle" | "paused";
-type ViewMode = "grid" | "list";
+const SITE_TYPES = [
+  {
+    name: "Site Vitrine",
+    emoji: "✦",
+    price: "450",
+    color: "#6366F1",
+    glow: "rgba(99,102,241,0.25)",
+    description: "Landing page professionnelle avec animations fluides, design moderne et conversion optimisée.",
+    features: ["Hero animé", "Sections témoignages", "Formulaire de contact", "100% responsive"],
+  },
+  {
+    name: "Site 3D / WebGL",
+    emoji: "◈",
+    price: "650",
+    color: "#8B5CF6",
+    glow: "rgba(139,92,246,0.25)",
+    description: "Expérience immersive avec Three.js, shaders GLSL et interactions 3D qui impressionnent vos visiteurs.",
+    features: ["Scènes Three.js", "Animations GPU", "Effets de particules", "Interactions souris"],
+  },
+  {
+    name: "Scrollytelling",
+    emoji: "◎",
+    price: "550",
+    color: "#06B6D4",
+    glow: "rgba(6,182,212,0.25)",
+    description: "Narration visuelle déclenchée par le scroll — idéal pour raconter une histoire ou présenter un produit.",
+    features: ["Animations au scroll", "Pinning de sections", "Transitions cinématiques", "GSAP + Lenis"],
+  },
+];
 
-/* ── List view row ── */
-function ProjectRow({ project, onDelete, index }: { project: Project; onDelete: (id: number) => void; index: number }) {
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const color =
-    project.status === "error"  ? "var(--error)"
-    : project.status === "done"   ? "var(--success)"
-    : project.status === "paused" ? "var(--warning)"
-    : "var(--running)";
-  return (
-    <>
-      <motion.div
-        initial={{ opacity: 0, x: -8 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.2, delay: index * 0.03 }}
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 100px 150px 80px 80px",
-          alignItems: "center", gap: 12,
-          padding: "9px 14px",
-          borderBottom: "1px solid var(--bd)",
-        }}
-        whileHover={{ backgroundColor: "rgba(19,19,28,0.6)" }}
-      >
-        <a href={`/project?id=${project.id}`} style={{ textDecoration: "none", minWidth: 0 }}>
-          <div style={{ fontWeight: 500, fontSize: 13, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {project.name}
-          </div>
-          {project.description && (
-            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {project.description}
-            </div>
-          )}
-        </a>
-        <StatusBadge status={project.status as any} size="sm" />
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--muted)", marginBottom: 4 }}>
-            <span>Progression</span>
-            <span style={{ color, fontWeight: 600 }}>{Math.round(project.progress)}%</span>
-          </div>
-          <div style={{ height: 3, background: "var(--surface3)", borderRadius: 99, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${project.progress}%`, background: color, borderRadius: 99, transition: "width 0.6s" }} />
-          </div>
-        </div>
-        <div style={{ fontSize: 11, color: "var(--muted2)" }}>
-          {new Date(project.created_at).toLocaleDateString("fr-FR")}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <a href={`/project?id=${project.id}`} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 500, color: "var(--accent)", textDecoration: "none", padding: "4px 8px", borderRadius: 6 }}>
-            Voir <ArrowRight size={10} />
-          </a>
-          {project.status !== "running" && (
-            <button onClick={() => setDeleteOpen(true)} style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: "var(--muted2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Trash2 size={11} />
-            </button>
-          )}
-        </div>
-      </motion.div>
-      <Modal
-        open={deleteOpen}
-        title="Supprimer le projet"
-        description={`Voulez-vous vraiment supprimer "${project.name}" ?`}
-        confirmLabel="Supprimer"
-        variant="danger"
-        onConfirm={() => { setDeleteOpen(false); onDelete(project.id); }}
-        onCancel={() => setDeleteOpen(false)}
-      />
-    </>
-  );
-}
+const STEPS = [
+  { n: "01", title: "Remplissez le formulaire", desc: "Décrivez votre activité, vos préférences visuelles et choisissez votre type de site." },
+  { n: "02", title: "L'IA génère votre site", desc: "Notre agent IA produit un site complet avec code React, animations et contenu adapté à votre secteur." },
+  { n: "03", title: "Livraison en 72h", desc: "Vous recevez votre site déployé, hébergé et prêt à convertir vos visiteurs en clients." },
+];
 
-/* ── Create panel ── */
-function CreatePanel({ open, onClose, onCreate }: {
-  open: boolean; onClose: () => void;
-  onCreate: (name: string, desc: string, objective: string) => Promise<void>;
-}) {
-  const [name, setName] = useState("");
-  const [desc, setDesc] = useState("");
-  const [objective, setObjective] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
-  const reset = () => { setName(""); setDesc(""); setObjective(""); setErr(""); };
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) { setErr("Le nom est requis."); return; }
-    setLoading(true); setErr("");
-    try { await onCreate(name.trim(), desc.trim(), objective.trim()); reset(); onClose(); }
-    catch (ex) { setErr(ex instanceof Error ? ex.message : "Erreur lors de la création."); }
-    finally { setLoading(false); }
-  };
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => { onClose(); reset(); }}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", zIndex: 40 }}
-          />
-          <motion.div
-            initial={{ opacity: 0, x: 340 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 340 }}
-            transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.38 }}
-            style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 380, background: "var(--surface)", borderLeft: "1px solid var(--bd-bright)", zIndex: 41, display: "flex", flexDirection: "column", boxShadow: "-24px 0 80px rgba(0,0,0,0.6)" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: "1px solid var(--bd)" }}>
-              <div>
-                <h2 style={{ fontWeight: 600, fontSize: 14, color: "var(--text)" }}>Nouveau projet</h2>
-                <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>L'agent génèrera votre projet automatiquement</p>
-              </div>
-              <button onClick={() => { onClose(); reset(); }} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid var(--bd-bright)", background: "var(--surface3)", color: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <X size={13} />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16, flex: 1, overflowY: "auto" }}>
-              {[
-                { label: "Nom du projet *", value: name, onChange: setName, type: "text", placeholder: "Ex : Mon application React", rows: undefined },
-                { label: "Description (optionnel)", value: desc, onChange: setDesc, type: "textarea", placeholder: "Décrivez brièvement…", rows: 2 },
-              ].map(({ label, value, onChange, type, placeholder, rows }) => (
-                <div key={label}>
-                  <label style={{ fontSize: 12, fontWeight: 500, color: "var(--text2)", display: "block", marginBottom: 5 }}>{label}</label>
-                  {type === "textarea" ? (
-                    <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows}
-                      style={{ width: "100%", padding: "8px 11px", borderRadius: 8, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--text)", fontSize: 13, outline: "none", resize: "none", fontFamily: "inherit", lineHeight: 1.5 }}
-                      onFocus={(e) => { e.target.style.borderColor = "var(--primary)"; }} onBlur={(e) => { e.target.style.borderColor = "var(--bd-bright)"; }}
-                    />
-                  ) : (
-                    <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} autoFocus
-                      style={{ width: "100%", padding: "8px 11px", borderRadius: 8, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--text)", fontSize: 13, outline: "none", fontFamily: "inherit" }}
-                      onFocus={(e) => { e.target.style.borderColor = "var(--primary)"; }} onBlur={(e) => { e.target.style.borderColor = "var(--bd-bright)"; }}
-                    />
-                  )}
-                </div>
-              ))}
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: "var(--text2)", display: "block", marginBottom: 5 }}>
-                  Objectif de l'agent{" "}
-                  <span style={{ color: "var(--muted2)", fontWeight: 400 }}>(démarre automatiquement)</span>
-                </label>
-                <textarea value={objective} onChange={(e) => setObjective(e.target.value)}
-                  placeholder="Ex : Crée une landing page SaaS premium…"
-                  rows={5}
-                  style={{ width: "100%", padding: "8px 11px", borderRadius: 8, border: `1px solid ${objective ? "var(--primary-border)" : "var(--bd-bright)"}`, background: objective ? "rgba(99,102,241,0.04)" : "var(--surface2)", color: "var(--text)", fontSize: 13, outline: "none", resize: "none", lineHeight: 1.55, fontFamily: "inherit", transition: "border-color 0.15s" }}
-                  onFocus={(e) => { e.target.style.borderColor = "var(--primary)"; }} onBlur={(e) => { e.target.style.borderColor = objective ? "var(--primary-border)" : "var(--bd-bright)"; }}
-                />
-                {objective && <p style={{ fontSize: 11, color: "var(--primary)", marginTop: 4 }}>⚡ L'agent démarrera automatiquement</p>}
-              </div>
-              {err && <div style={{ fontSize: 12, color: "var(--error)", padding: "7px 11px", background: "var(--error-bg)", border: "1px solid var(--error-border)", borderRadius: 7 }}>{err}</div>}
-              <div style={{ marginTop: "auto", display: "flex", gap: 8 }}>
-                <button type="button" onClick={() => { onClose(); reset(); }}
-                  style={{ flex: 1, height: 36, borderRadius: 8, border: "1px solid var(--bd-bright)", background: "var(--surface3)", color: "var(--text2)", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
-                  Annuler
-                </button>
-                <button type="submit" disabled={loading || !name.trim()}
-                  style={{ flex: 2, height: 36, borderRadius: 8, border: "none", background: !name.trim() ? "var(--surface3)" : "var(--primary)", color: !name.trim() ? "var(--muted)" : "white", fontSize: 13, fontWeight: 600, cursor: loading || !name.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "inherit" }}>
-                  {loading ? <><Loader2 size={13} className="animate-spin" />{objective ? "Création…" : "Création…"}</> : <><Plus size={13} />{objective ? "Créer & démarrer" : "Créer"}</>}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
-/* ══════════════════════════════════════════════
-   Main dashboard
-══════════════════════════════════════════════ */
-export default function Home() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
-  const [sort, setSort] = useState<SortKey>("newest");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
+export default function LandingPage() {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    getProjects().then(setProjects).catch(() => {}).finally(() => setLoading(false));
-    const unsub = streamProjects((data) => setProjects(data));
-    return () => { if (typeof unsub === "function") unsub(); };
+    const hero = heroRef.current;
+    if (!hero) return;
+    const onMove = (e: MouseEvent) => {
+      const rect = hero.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      hero.style.setProperty("--mx", `${x}%`);
+      hero.style.setProperty("--my", `${y}%`);
+    };
+    hero.addEventListener("mousemove", onMove);
+    return () => hero.removeEventListener("mousemove", onMove);
   }, []);
 
-  const handleCreate = async (name: string, desc: string, objective: string) => {
-    const p = await createProject(name, desc);
-    setProjects((prev) => [p, ...prev]);
-    if (objective) { try { await startProject(p.id, objective); } catch {} }
-  };
-
-  const handleDelete = async (id: number) => {
-    await deleteProject(id);
-    setProjects((prev) => prev.filter((p) => p.id !== id));
-  };
-
-  const stats = useMemo(() => ({
-    total:  projects.length,
-    active: projects.filter((p) => p.status === "running" || p.status === "paused").length,
-    done:   projects.filter((p) => p.status === "done").length,
-    error:  projects.filter((p) => p.status === "error").length,
-  }), [projects]);
-
-  const filtered = useMemo(() => {
-    let list = [...projects];
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q));
-    }
-    if (filterStatus !== "all") list = list.filter((p) => p.status === filterStatus);
-    list.sort((a, b) => {
-      if (sort === "newest")   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (sort === "oldest")   return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      if (sort === "progress") return b.progress - a.progress;
-      return 0;
-    });
-    return list;
-  }, [projects, search, filterStatus, sort]);
-
-  const filterLabels: Record<FilterStatus, string> = {
-    all: "Tous", running: "En cours", done: "Terminés",
-    error: "Erreurs", idle: "Inactifs", paused: "En pause",
-  };
-  const sortLabels: Record<SortKey, string> = {
-    newest: "Récents", oldest: "Anciens", progress: "Progression",
-  };
-
-  const { requests: crmRequests } = useClientRequests();
-  const pendingRequests = useMemo(() => crmRequests.filter((r) => r.status === "pending"), [crmRequests]);
-
-  // Pill stat component
-  const StatPill = ({ value, label, color }: { value: number; label: string; color: string }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 99, background: "var(--surface2)", border: "1px solid var(--bd-bright)" }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
-      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{value}</span>
-      <span style={{ fontSize: 11, color: "var(--muted)" }}>{label}</span>
-    </div>
-  );
-
-  // Dropdown button
-  const DropBtn = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
-    <button onClick={onClick}
-      style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 32, padding: "0 10px", borderRadius: 7, border: `1px solid ${active ? "var(--primary-border)" : "var(--bd-bright)"}`, background: active ? "var(--primary-muted)" : "var(--surface)", color: active ? "var(--accent)" : "var(--text2)", fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
-      {label} <ChevronDown size={10} style={{ opacity: 0.6 }} />
-    </button>
-  );
-
   return (
-    <>
-      {/* Full-height flex column, no page scroll */}
-      <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0, paddingTop: 16, paddingBottom: 12 }}>
+    <div style={{ minHeight: "100vh", background: "#08080C", color: "#E2E2EA", overflowX: "hidden", fontFamily: "inherit" }}>
 
-        {/* ── Row 1: Header ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexShrink: 0 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.02em", marginRight: 4 }}>
-            Dashboard
-          </h1>
-
-          {/* Stat pills */}
-          {!loading && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <StatPill value={stats.total}  label="projets"  color="var(--muted2)" />
-              <StatPill value={stats.active} label="actifs"   color="var(--running)" />
-              <StatPill value={stats.done}   label="terminés" color="var(--success)" />
-              {stats.error > 0 && <StatPill value={stats.error} label="erreurs" color="var(--error)" />}
+      {/* ── Nav ── */}
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
+        background: "rgba(8,8,12,0.88)", backdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 30, height: 30,
+              background: "linear-gradient(135deg, #6366F1 0%, #818CF8 100%)",
+              borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 0 18px rgba(99,102,241,0.35)",
+            }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1L12.5 4V10L7 13L1.5 10V4L7 1Z" stroke="white" strokeWidth="1.4" strokeLinejoin="round"/>
+                <circle cx="7" cy="7" r="1.8" fill="white"/>
+              </svg>
             </div>
-          )}
-
-          {/* CRM pending badge — compact inline */}
-          {pendingRequests.length > 0 && (
-            <a href="/crm" style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 99, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", textDecoration: "none", marginLeft: 4 }}>
-              <Users size={11} color="#F59E0B" />
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#F59E0B" }}>
-                {pendingRequests.length} demande{pendingRequests.length !== 1 ? "s" : ""} en attente
-              </span>
+            <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: "-0.02em", color: "#fff" }}>Builderz</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <a href="/login" style={{ fontSize: 13, color: "rgba(226,226,234,0.6)", textDecoration: "none", padding: "6px 12px", borderRadius: 7 }}>
+              Connexion
             </a>
-          )}
+            <a href="/form" style={{
+              fontSize: 13, fontWeight: 600, color: "#fff", textDecoration: "none",
+              padding: "7px 16px", borderRadius: 8,
+              background: "linear-gradient(135deg, #6366F1, #818CF8)",
+              boxShadow: "0 0 16px rgba(99,102,241,0.4)",
+            }}>
+              Commander mon site
+            </a>
+          </div>
+        </div>
+      </nav>
 
-          {/* Spacer */}
-          <div style={{ flex: 1 }} />
-
-          {/* New project button */}
-          <button onClick={() => setPanelOpen(true)}
-            style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 13px", borderRadius: 8, background: "var(--primary)", color: "white", fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", flexShrink: 0, boxShadow: "0 0 18px var(--primary-glow)" }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--primary-hover)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--primary)"; }}>
-            <Plus size={13} /> Nouveau projet
-          </button>
+      {/* ── Hero ── */}
+      <div
+        ref={heroRef}
+        style={{
+          position: "relative", paddingTop: 160, paddingBottom: 120,
+          display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
+          padding: "160px 24px 120px",
+          background: `radial-gradient(ellipse 60% 50% at var(--mx, 50%) var(--my, 40%), rgba(99,102,241,0.12) 0%, transparent 70%), #08080C`,
+        }}
+      >
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 7,
+          padding: "5px 14px", borderRadius: 99,
+          background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)",
+          fontSize: 12, fontWeight: 600, color: "#818CF8",
+          marginBottom: 28, letterSpacing: "0.02em",
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#6EE7B7", display: "inline-block", boxShadow: "0 0 6px #6EE7B7" }} />
+          Livraison garantie en 72h
         </div>
 
-        {/* ── Row 2: Toolbar ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexShrink: 0 }}>
-          {/* Search */}
-          <div style={{ position: "relative", flex: "1 1 180px", minWidth: 120 }}>
-            <Search size={12} style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "var(--muted)", pointerEvents: "none" }} />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher…"
-              style={{ width: "100%", height: 32, paddingLeft: 28, paddingRight: search ? 26 : 8, borderRadius: 7, border: "1px solid var(--bd-bright)", background: "var(--surface)", color: "var(--text)", fontSize: 12, outline: "none", fontFamily: "inherit" }}
-              onFocus={(e) => { e.target.style.borderColor = "var(--primary)"; }} onBlur={(e) => { e.target.style.borderColor = "var(--bd-bright)"; }}
-            />
-            {search && (
-              <button onClick={() => setSearch("")} style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, borderRadius: 99, border: "none", background: "var(--surface3)", color: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <X size={9} />
-              </button>
-            )}
-          </div>
+        <h1 style={{
+          fontSize: "clamp(36px, 6vw, 72px)",
+          fontWeight: 800, lineHeight: 1.08, letterSpacing: "-0.04em",
+          color: "#fff", maxWidth: 820, marginBottom: 22,
+        }}>
+          Votre site web pro,{" "}
+          <span style={{
+            background: "linear-gradient(135deg, #6366F1 0%, #818CF8 50%, #C4B5FD 100%)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+          }}>
+            généré par l'IA
+          </span>
+        </h1>
 
-          {/* Filter */}
-          <div style={{ position: "relative" }}>
-            <DropBtn label={filterLabels[filterStatus]} active={filterStatus !== "all"} onClick={() => { setFilterOpen((v) => !v); setSortOpen(false); }} />
-            {filterOpen && (
-              <>
-                <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setFilterOpen(false)} />
-                <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20, background: "var(--surface2)", border: "1px solid var(--bd-bright)", borderRadius: 9, padding: 4, minWidth: 150, boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
-                  {(["all","running","paused","done","error","idle"] as FilterStatus[]).map((s) => (
-                    <div key={s} onClick={() => { setFilterStatus(s); setFilterOpen(false); }}
-                      style={{ padding: "6px 10px", borderRadius: 6, fontSize: 12, cursor: "pointer", color: filterStatus === s ? "var(--primary)" : "var(--text2)", background: filterStatus === s ? "var(--primary-muted)" : "transparent" }}
-                      onMouseEnter={(e) => { if (filterStatus !== s) (e.currentTarget as HTMLElement).style.background = "var(--surface3)"; }}
-                      onMouseLeave={(e) => { if (filterStatus !== s) (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                      {filterLabels[s]}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+        <p style={{
+          fontSize: "clamp(15px, 2vw, 18px)", color: "rgba(226,226,234,0.55)",
+          maxWidth: 560, lineHeight: 1.7, marginBottom: 40,
+        }}>
+          Nous créons des sites React premium — vitrine, 3D ou scrollytelling — adaptés à votre activité. Zéro template, 100% sur mesure.
+        </p>
 
-          {/* Sort */}
-          <div style={{ position: "relative" }}>
-            <DropBtn label={sortLabels[sort]} active={false} onClick={() => { setSortOpen((v) => !v); setFilterOpen(false); }} />
-            {sortOpen && (
-              <>
-                <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setSortOpen(false)} />
-                <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20, background: "var(--surface2)", border: "1px solid var(--bd-bright)", borderRadius: 9, padding: 4, minWidth: 140, boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
-                  {(["newest","oldest","progress"] as SortKey[]).map((s) => (
-                    <div key={s} onClick={() => { setSort(s); setSortOpen(false); }}
-                      style={{ padding: "6px 10px", borderRadius: 6, fontSize: 12, cursor: "pointer", color: sort === s ? "var(--primary)" : "var(--text2)", background: sort === s ? "var(--primary-muted)" : "transparent" }}
-                      onMouseEnter={(e) => { if (sort !== s) (e.currentTarget as HTMLElement).style.background = "var(--surface3)"; }}
-                      onMouseLeave={(e) => { if (sort !== s) (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                      {sortLabels[s]}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* View toggle */}
-          <div style={{ display: "flex", border: "1px solid var(--bd-bright)", borderRadius: 7, overflow: "hidden", background: "var(--surface)" }}>
-            {(["grid","list"] as ViewMode[]).map((m) => (
-              <button key={m} onClick={() => setViewMode(m)}
-                style={{ width: 32, height: 32, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: viewMode === m ? "var(--primary-muted)" : "transparent", color: viewMode === m ? "var(--primary)" : "var(--muted)", transition: "all 0.15s" }}>
-                {m === "grid" ? <LayoutGrid size={13} /> : <List size={13} />}
-              </button>
-            ))}
-          </div>
-
-          {!loading && (
-            <span style={{ fontSize: 11, color: "var(--muted2)", whiteSpace: "nowrap", marginLeft: 2 }}>
-              {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
-            </span>
-          )}
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+          <a href="/form" style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "14px 28px", borderRadius: 10,
+            background: "linear-gradient(135deg, #6366F1, #818CF8)",
+            color: "#fff", fontWeight: 700, fontSize: 15, textDecoration: "none",
+            boxShadow: "0 0 32px rgba(99,102,241,0.45)",
+            transition: "transform 0.15s, box-shadow 0.15s",
+          }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 40px rgba(99,102,241,0.6)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = "0 0 32px rgba(99,102,241,0.45)"; }}
+          >
+            Démarrer mon projet
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </a>
+          <a href="#tarifs" style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "14px 28px", borderRadius: 10,
+            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+            color: "rgba(226,226,234,0.8)", fontWeight: 600, fontSize: 15, textDecoration: "none",
+          }}>
+            Voir les tarifs
+          </a>
         </div>
 
-        {/* ── Row 3: Content — fills remaining height, scrolls internally ── */}
-        <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-          {loading ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10, overflowY: "auto", height: "100%", paddingRight: 4, alignContent: "start" }}>
-              {[0,1,2,3,4,5].map((i) => <SkeletonCard key={i} />)}
+        {/* Stats row */}
+        <div style={{ display: "flex", gap: 40, marginTop: 64, flexWrap: "wrap", justifyContent: "center" }}>
+          {[
+            { v: "72h", l: "Délai de livraison" },
+            { v: "3", l: "Types de sites" },
+            { v: "100%", l: "Code sur mesure" },
+          ].map(({ v, l }) => (
+            <div key={l} style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>{v}</div>
+              <div style={{ fontSize: 12, color: "rgba(226,226,234,0.4)", marginTop: 3 }}>{l}</div>
             </div>
-          ) : projects.length === 0 ? (
-            /* Empty state */
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", background: "var(--surface)", border: "1px dashed var(--bd-bright)", borderRadius: 14 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "var(--primary-muted)", border: "1px solid var(--primary-border)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, color: "var(--primary)" }}>
-                <FolderOpen size={20} />
-              </div>
-              <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 5 }}>Aucun projet</h3>
-              <p style={{ fontSize: 13, color: "var(--muted)", maxWidth: 260, lineHeight: 1.6, marginBottom: 20 }}>
-                Créez votre premier projet et laissez l'agent IA générer le code.
-              </p>
-              <button onClick={() => setPanelOpen(true)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 8, background: "var(--primary)", color: "white", fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", boxShadow: "0 0 20px var(--primary-glow)" }}>
-                <Plus size={13} /> Créer un projet
-              </button>
-            </motion.div>
-          ) : filtered.length === 0 ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", background: "var(--surface)", border: "1px solid var(--bd)", borderRadius: 12, color: "var(--muted)", gap: 8 }}>
-              <Search size={20} style={{ opacity: 0.4 }} />
-              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text2)" }}>Aucun résultat</p>
-              <p style={{ fontSize: 12, color: "var(--muted)" }}>Modifiez vos critères de recherche ou de filtre.</p>
-            </motion.div>
-          ) : viewMode === "grid" ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10, overflowY: "auto", height: "100%", paddingRight: 4, alignContent: "start", paddingBottom: 8 }}>
-              {filtered.map((p, i) => <ProjectCard key={p.id} project={p} onDelete={handleDelete} index={i} />)}
-            </div>
-          ) : (
-            <div style={{ background: "var(--surface)", border: "1px solid var(--bd)", borderRadius: 12, overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 150px 80px 80px", gap: 12, padding: "8px 14px", background: "var(--surface2)", borderBottom: "1px solid var(--bd)", flexShrink: 0 }}>
-                {["Projet", "Statut", "Progression", "Créé", ""].map((h, i) => (
-                  <span key={i} style={{ fontSize: 10, fontWeight: 500, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
-                ))}
-              </div>
-              <div style={{ overflowY: "auto", flex: 1 }}>
-                {filtered.map((p, i) => <ProjectRow key={p.id} project={p} onDelete={handleDelete} index={i} />)}
-              </div>
-            </div>
-          )}
+          ))}
         </div>
-
       </div>
 
-      <CreatePanel open={panelOpen} onClose={() => setPanelOpen(false)} onCreate={handleCreate} />
-    </>
+      {/* ── Comment ça marche ── */}
+      <section style={{ padding: "96px 24px", maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#6366F1", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>Processus</div>
+          <h2 style={{ fontSize: "clamp(24px, 4vw, 40px)", fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>Comment ça marche ?</h2>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+          {STEPS.map((step) => (
+            <div key={step.n} style={{
+              background: "rgba(19,19,28,0.8)", border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 16, padding: "28px 26px",
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#6366F1", letterSpacing: "0.08em", marginBottom: 14 }}>{step.n}</div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 10 }}>{step.title}</h3>
+              <p style={{ fontSize: 13, color: "rgba(226,226,234,0.5)", lineHeight: 1.7 }}>{step.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Tarifs ── */}
+      <section id="tarifs" style={{ padding: "96px 24px", background: "rgba(10,10,18,0.6)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#6366F1", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>Tarifs</div>
+            <h2 style={{ fontSize: "clamp(24px, 4vw, 40px)", fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>Choisissez votre site</h2>
+            <p style={{ fontSize: 14, color: "rgba(226,226,234,0.45)", marginTop: 12, maxWidth: 460, marginLeft: "auto", marginRight: "auto", lineHeight: 1.7 }}>
+              Prix fixe, pas de surprise. Hébergement Firebase inclus la première année.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
+            {SITE_TYPES.map((type, i) => (
+              <div
+                key={type.name}
+                onMouseEnter={() => setHovered(i)}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  background: hovered === i ? `rgba(19,19,28,0.95)` : "rgba(14,14,22,0.8)",
+                  border: `1px solid ${hovered === i ? type.color + "55" : "rgba(255,255,255,0.07)"}`,
+                  borderRadius: 18, padding: "32px 28px",
+                  transition: "all 0.25s ease",
+                  boxShadow: hovered === i ? `0 0 40px ${type.glow}` : "none",
+                  cursor: "default",
+                  position: "relative", overflow: "hidden",
+                }}
+              >
+                {hovered === i && (
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, height: 2,
+                    background: `linear-gradient(90deg, transparent, ${type.color}, transparent)`,
+                  }} />
+                )}
+
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 11,
+                    background: `${type.color}18`, border: `1px solid ${type.color}30`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 18, color: type.color,
+                  }}>
+                    {type.emoji}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>{type.name}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: type.color, letterSpacing: "-0.03em" }}>
+                      {type.price}<span style={{ fontSize: 14, fontWeight: 600, color: "rgba(226,226,234,0.5)" }}> €</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p style={{ fontSize: 13, color: "rgba(226,226,234,0.5)", lineHeight: 1.7, marginBottom: 20 }}>{type.description}</p>
+
+                <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px 0", display: "flex", flexDirection: "column", gap: 8 }}>
+                  {type.features.map((f) => (
+                    <li key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(226,226,234,0.7)" }}>
+                      <span style={{ width: 16, height: 16, borderRadius: "50%", background: `${type.color}20`, border: `1px solid ${type.color}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3" stroke={type.color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <a href="/form" style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  padding: "11px 16px", borderRadius: 9, width: "100%",
+                  background: hovered === i ? type.color : "rgba(255,255,255,0.05)",
+                  border: `1px solid ${hovered === i ? "transparent" : "rgba(255,255,255,0.1)"}`,
+                  color: "#fff", fontWeight: 600, fontSize: 13, textDecoration: "none",
+                  transition: "all 0.2s ease",
+                  boxShadow: hovered === i ? `0 0 20px ${type.glow}` : "none",
+                }}>
+                  Démarrer ce projet
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6h7M7 3.5l2.5 2.5L7 8.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA final ── */}
+      <section style={{ padding: "96px 24px", textAlign: "center" }}>
+        <div style={{ maxWidth: 600, margin: "0 auto" }}>
+          <h2 style={{ fontSize: "clamp(24px, 4vw, 44px)", fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", marginBottom: 18 }}>
+            Prêt à avoir un site qui convertit ?
+          </h2>
+          <p style={{ fontSize: 15, color: "rgba(226,226,234,0.5)", lineHeight: 1.7, marginBottom: 36 }}>
+            Remplissez le formulaire en 5 minutes. L'IA s'occupe du reste.
+          </p>
+          <a href="/form" style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "15px 32px", borderRadius: 10,
+            background: "linear-gradient(135deg, #6366F1, #818CF8)",
+            color: "#fff", fontWeight: 700, fontSize: 16, textDecoration: "none",
+            boxShadow: "0 0 40px rgba(99,102,241,0.5)",
+          }}>
+            Commander mon site maintenant
+          </a>
+          <div style={{ marginTop: 20, fontSize: 12, color: "rgba(226,226,234,0.3)" }}>
+            Paiement sécurisé · Livraison en 72h · Satisfaction garantie
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "28px 24px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 22, height: 22, background: "linear-gradient(135deg, #6366F1, #818CF8)", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1L12.5 4V10L7 13L1.5 10V4L7 1Z" stroke="white" strokeWidth="1.6" strokeLinejoin="round"/>
+                <circle cx="7" cy="7" r="1.8" fill="white"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(226,226,234,0.6)" }}>Builderz</span>
+          </div>
+          <span style={{ fontSize: 12, color: "rgba(226,226,234,0.25)" }}>© 2025 Builderz · builderz.shop</span>
+        </div>
+      </footer>
+    </div>
   );
 }

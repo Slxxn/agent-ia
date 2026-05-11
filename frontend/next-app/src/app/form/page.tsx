@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -68,6 +69,8 @@ interface FormData {
   pages: string[];
   features: string[];
   // Step 5 — Finir
+  clientEmail: string;
+  clientPhone: string;
   budget: string;
   notes: string;
 }
@@ -78,6 +81,7 @@ const INITIAL: FormData = {
   targetAudience: '', uniqueValue: '', competitors: '',
   logoFile: null, colors: ['#6366f1'], colorTheme: 'light', visualStyle: '', inspirationSites: '',
   pages: ['home'], features: [],
+  clientEmail: '', clientPhone: '',
   budget: '', notes: '',
 };
 
@@ -89,7 +93,12 @@ const STEPS = [
   { id: 5, label: 'Finir',    short: '5' },
 ];
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+  : "http://localhost:8000/api";
+
 export default function FormPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL);
   const [submitting, setSubmitting] = useState(false);
@@ -131,7 +140,7 @@ export default function FormPage() {
     if (step === 2) return form.targetAudience.trim() && form.uniqueValue.trim();
     if (step === 3) return form.visualStyle && form.colorTheme;
     if (step === 4) return form.siteType === 'scrollytelling' || form.pages.length > 0;
-    return !!form.budget;
+    return !!form.budget && !!form.clientEmail.trim();
   };
 
   const handleSubmit = async () => {
@@ -145,7 +154,7 @@ export default function FormPage() {
         logoUrl = await getDownloadURL(snap.ref);
       }
 
-      await addDoc(collection(db, 'client_requests'), {
+      const docRef = await addDoc(collection(db, 'client_requests'), {
         status: 'pending',
         createdAt: serverTimestamp(),
         siteType: form.siteType,
@@ -166,9 +175,41 @@ export default function FormPage() {
         features: form.features,
         budget: form.budget,
         notes: form.notes,
+        clientEmail: form.clientEmail,
+        clientPhone: form.clientPhone,
       });
 
-      setDone(true);
+      const portalRes = await fetch(`${API_BASE}/portal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firestore_id: docRef.id,
+          client_email: form.clientEmail,
+          client_phone: form.clientPhone,
+          business_name: form.businessName,
+          site_type: form.siteType,
+        }),
+      });
+      if (!portalRes.ok) { setDone(true); return; }
+      const { token } = await portalRes.json();
+
+      const checkoutRes = await fetch(`${API_BASE}/checkout/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          portal_token: token,
+          business_name: form.businessName,
+          site_type: form.siteType,
+          client_email: form.clientEmail,
+          origin: window.location.origin,
+        }),
+      });
+      if (checkoutRes.ok) {
+        const { url } = await checkoutRes.json();
+        window.location.href = url;
+      } else {
+        router.push(`/p/${token}`);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -701,7 +742,7 @@ interface GeminiSuggestions {
 }
 
 // ─── Step 5: Finir ────────────────────────────────────────────────────────────
-function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unknown) => void }) {
+function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unknown) => void; }) {
   const [geminiLoading, setGeminiLoading] = useState(false);
   const [geminiSuggestions, setGeminiSuggestions] = useState<GeminiSuggestions | null>(null);
   const [geminiError, setGeminiError] = useState('');
@@ -746,7 +787,28 @@ function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unkn
     <div className="space-y-8">
       <div>
         <h2 className="text-xl font-semibold mb-1">Derniers détails</h2>
-        <p className="text-gray-400 text-sm">Budget et informations complémentaires.</p>
+        <p className="text-gray-400 text-sm">Vos coordonnées, budget et informations complémentaires.</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Field label="Email *" hint="Pour recevoir votre lien de suivi">
+          <input
+            type="email"
+            placeholder="vous@exemple.fr"
+            value={form.clientEmail}
+            onChange={e => set('clientEmail', e.target.value)}
+            className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none transition-colors"
+          />
+        </Field>
+        <Field label="Téléphone" hint="Optionnel">
+          <input
+            type="tel"
+            placeholder="+33 6 00 00 00 00"
+            value={form.clientPhone}
+            onChange={e => set('clientPhone', e.target.value)}
+            className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none transition-colors"
+          />
+        </Field>
       </div>
 
       <Field label="Budget *">

@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) router.replace("/");
+    if (!loading && user) router.replace("/app");
   }, [user, loading, router]);
 
   async function handleGoogle() {
@@ -23,7 +23,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await signInWithPopup(auth, provider);
-      router.replace("/");
+      router.replace("/app");
     } catch {
       setError("Connexion annulée ou refusée.");
     } finally {

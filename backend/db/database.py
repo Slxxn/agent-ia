@@ -87,6 +87,25 @@ async def init_db():
         """)
         await db.commit()
 
+        await db.executescript("""
+            CREATE TABLE IF NOT EXISTS portal_orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                token TEXT UNIQUE NOT NULL,
+                firestore_id TEXT DEFAULT '',
+                client_email TEXT DEFAULT '',
+                client_phone TEXT DEFAULT '',
+                business_name TEXT DEFAULT '',
+                site_type TEXT DEFAULT 'standard',
+                status TEXT DEFAULT 'awaiting_payment',
+                payment_session_id TEXT DEFAULT '',
+                project_id INTEGER DEFAULT NULL,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_portal_token ON portal_orders(token);
+        """)
+        await db.commit()
+
         for migration in [
             "ALTER TABLE projects ADD COLUMN objective TEXT DEFAULT ''",
             "ALTER TABLE projects ADD COLUMN tokens_used INTEGER DEFAULT 0",

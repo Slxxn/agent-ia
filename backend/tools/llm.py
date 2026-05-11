@@ -53,6 +53,10 @@ DEEPSEEK_MODEL_POLISH = os.getenv("DEEPSEEK_MODEL_POLISH", "deepseek-reasoner")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL    = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:7b")
 
+# Anthropic Claude
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL   = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+
 # Gemini Flash (tâches simples — ultra-rapide)
 GEMINI_API_KEY   = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL     = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
@@ -66,6 +70,7 @@ GEMINI_TIMEOUT   = 120
 DEEPSEEK_MODEL_FLASH    = os.getenv("DEEPSEEK_MODEL_FLASH",    "deepseek-v4-flash")
 DEEPSEEK_MODEL_REASONER = os.getenv("DEEPSEEK_MODEL_REASONER", "deepseek-reasoner")
 DEEPSEEK_MODEL_PRO      = os.getenv("DEEPSEEK_MODEL_PRO",      "deepseek-v4-pro")
+CLAUDE_MODEL            = ANTHROPIC_MODEL
 LLM_BUDGET_MODE         = os.getenv("LLM_BUDGET_MODE", "balanced")  # economy | balanced | quality
 
 
@@ -80,6 +85,11 @@ def set_gemini_key(key: str) -> None:
     """Override GEMINI_API_KEY at runtime (called by runner after loading DB settings)."""
     global GEMINI_API_KEY
     GEMINI_API_KEY = key
+
+def set_anthropic_key(key: str) -> None:
+    """Override ANTHROPIC_API_KEY at runtime (called by runner after loading DB settings)."""
+    global ANTHROPIC_API_KEY, CLAUDE_MODEL
+    ANTHROPIC_API_KEY = key
 
 # Anti-troncature
 DEFAULT_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "8192"))
@@ -1173,13 +1183,13 @@ _ROUTE_TABLE: dict[str, dict[str, str]] = {
     "planning":          {"economy": _gemini_or(DEEPSEEK_MODEL_FLASH), "balanced": _gemini_or(DEEPSEEK_MODEL_FLASH),    "quality": DEEPSEEK_MODEL_REASONER},
     "scaffold":          {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_FLASH},
     "config":            {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_FLASH},
-    "component_ui":      {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_FLASH},
-    "critical_structure":{"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_REASONER, "quality": DEEPSEEK_MODEL_REASONER},
-    "section_emotional": {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_REASONER},
-    "section_complex":   {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_REASONER, "quality": DEEPSEEK_MODEL_REASONER},
+    "component_ui":      {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": CLAUDE_MODEL},
+    "critical_structure":{"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_REASONER, "quality": CLAUDE_MODEL},
+    "section_emotional": {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": CLAUDE_MODEL},
+    "section_complex":   {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_REASONER, "quality": CLAUDE_MODEL},
     "validator_check":   {"economy": _gemini_or(DEEPSEEK_MODEL_FLASH), "balanced": _gemini_or(DEEPSEEK_MODEL_FLASH),    "quality": _gemini_or(DEEPSEEK_MODEL_FLASH)},
-    "polish_final":      {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_PRO,      "quality": DEEPSEEK_MODEL_PRO},
-    "repair":            {"economy": _gemini_or(DEEPSEEK_MODEL_FLASH), "balanced": _gemini_or(DEEPSEEK_MODEL_FLASH),    "quality": _gemini_or(DEEPSEEK_MODEL_FLASH)},
+    "polish_final":      {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_PRO,      "quality": CLAUDE_MODEL},
+    "repair":            {"economy": _gemini_or(DEEPSEEK_MODEL_FLASH), "balanced": _gemini_or(DEEPSEEK_MODEL_FLASH),    "quality": CLAUDE_MODEL},
 }
 
 # Tâches section_emotional phase-4 : en balanced on force PRO pour le polish
@@ -1287,6 +1297,8 @@ class LLMTool:
             return await self._call_gemini_flash(
                 prompt, system_prompt, temperature, max_tokens, model_override
             )
+        if model_override and model_override.startswith("claude-"):
+            return await self._call_claude(prompt, system_prompt, max_tokens, model_override)
         if self.backend == "deepseek":
             return await self._call_deepseek_with_continuation(
                 prompt, system_prompt, temperature, max_tokens, model_override
@@ -1595,6 +1607,44 @@ class LLMTool:
             }
         except Exception as e:
             return {"success": False, "error": f"Erreur Gemini inattendue : {str(e)}"}
+
+    # ─── Backend Claude (Anthropic) ────────────────────────────────────────
+
+    async def _call_claude(
+        self,
+        prompt: str,
+        system_prompt: str,
+        max_tokens: int = 8192,
+        model_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Appelle Claude via le SDK Anthropic officiel."""
+        if not ANTHROPIC_API_KEY:
+            # Fallback vers DeepSeek si pas de clé
+            return await self._call_deepseek_with_continuation(
+                prompt, system_prompt, 0.4, max_tokens, None
+            )
+        try:
+            import anthropic as _anthropic
+            client = _anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+            model = model_override or ANTHROPIC_MODEL
+            message = await client.messages.create(
+                model=model,
+                max_tokens=max_tokens,
+                system=system_prompt or "You are an expert React/TypeScript developer.",
+                messages=[{"role": "user", "content": prompt}],
+            )
+            content = message.content[0].text if message.content else ""
+            return {
+                "success": True,
+                "content": content,
+                "model": model,
+                "backend": "claude",
+                "finish_reason": message.stop_reason or "stop",
+                "truncated": False,
+                "continuations": 0,
+            }
+        except Exception as e:
+            return {"success": False, "error": f"Erreur Claude inattendue : {str(e)}"}
 
     # ─── Méthodes de haut niveau ───────────────────────────────────────────
 

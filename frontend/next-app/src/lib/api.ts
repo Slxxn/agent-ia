@@ -1,4 +1,6 @@
-const API_BASE = "/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+  : "/api";
 
 // Les EventSource SSE se connectent directement au backend pour éviter le
 // buffering du proxy Next.js. Le hostname est détecté dynamiquement pour

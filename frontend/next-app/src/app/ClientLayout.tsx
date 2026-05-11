@@ -6,12 +6,13 @@ import { auth } from "@/lib/firebase";
 import { AuthProvider, useAuth } from "@/lib/authContext";
 import AuthGuard from "@/lib/AuthGuard";
 
-const PUBLIC_ROUTES = ["/form", "/login"];
+const PUBLIC_ROUTES = ["/form", "/login", "/p"];
+const PUBLIC_EXACT = ["/"];
 
 function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const isPublic = PUBLIC_ROUTES.some(r => pathname.startsWith(r));
+  const isPublic = PUBLIC_EXACT.includes(pathname) || PUBLIC_ROUTES.some(r => pathname.startsWith(r));
 
   if (isPublic) return <>{children}</>;
 
@@ -31,7 +32,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-[56px]">
-              <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
+              <a href="/app" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{
                   width: 30, height: 30,
                   background: "linear-gradient(135deg, #6366F1 0%, #818CF8 100%)",

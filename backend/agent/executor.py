@@ -5,12 +5,28 @@ Gère les retries, la validation et le logging.
 
 import os
 import re
+from pathlib import Path
 from typing import Dict, Any, Optional, List, Callable, TYPE_CHECKING
 from backend.tools.filesystem import FilesystemTool
 from backend.tools.terminal import TerminalTool
 from backend.tools.llm import LLMTool, get_model_for_complexity, route_model
 from backend.agent.task_classifier import classify_task, COMPLEXITY_LABELS
 from backend.db.database import add_log, add_tokens_used
+
+def _load_skill(skill_name: str) -> str:
+    """Charge un skill depuis skills/ à la racine du projet."""
+    skill_path = Path(__file__).parent.parent.parent / "skills" / f"{skill_name}.md"
+    if not skill_path.exists():
+        return ""
+    content = skill_path.read_text(encoding="utf-8")
+    if content.startswith("---"):
+        parts = content.split("---", 2)
+        content = parts[2].strip() if len(parts) >= 3 else content
+    return content
+
+_FRONTEND_SKILL = _load_skill("frontend-design")
+
+_UI_TASK_TYPES = {"component_ui", "section_emotional", "section_complex", "critical_structure", "polish_final"}
 
 if TYPE_CHECKING:
     from backend.agent.project_brain import ProjectBrain
@@ -342,6 +358,10 @@ class AgentExecutor:
         types_content = self._types_content
         if types_content:
             context = f"## TYPES DU PROJET (utilise UNIQUEMENT ces interfaces, ne jamais inventer de champs) :\n```typescript\n{types_content}\n```\n\n{context}"
+
+        # Injecter le skill frontend-design pour les tâches UI
+        if ttype in _UI_TASK_TYPES and _FRONTEND_SKILL:
+            context = f"## FRONTEND DESIGN RULES :\n{_FRONTEND_SKILL}\n\n{context}"
 
         result = await self.llm.generate_code(
             task_description, context,

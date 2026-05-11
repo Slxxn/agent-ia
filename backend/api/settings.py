@@ -16,6 +16,8 @@ KNOWN_SETTINGS = [
     # ── Gemini Flash (tâches courtes : planification, repair, validation) ──
     {"key": "GEMINI_API_KEY",        "label": "Gemini API Key",             "encrypted": True,  "placeholder": "AIza..."},
     {"key": "LLM_BUDGET_MODE",       "label": "Mode LLM",                   "encrypted": False, "placeholder": "balanced  (economy | balanced | quality)"},
+    # ── Claude (Anthropic) ──────────────────────────────────────────────────
+    {"key": "ANTHROPIC_API_KEY",     "label": "Anthropic API Key",          "encrypted": True,  "placeholder": "sk-ant-..."},
     # ── Intégrations ────────────────────────────────────────────────────────
     {"key": "STRIPE_SECRET_KEY",     "label": "Stripe Secret Key",          "encrypted": True,  "placeholder": "sk_live_..."},
     {"key": "STRIPE_PUBLIC_KEY",     "label": "Stripe Publishable Key",     "encrypted": False, "placeholder": "pk_live_..."},
