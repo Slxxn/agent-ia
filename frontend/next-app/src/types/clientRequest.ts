@@ -13,15 +13,14 @@ export interface ClientRequest {
   description: string;
   targetAudience: string;
   uniqueValue: string;
+  references: string;
   logoUrl: string;
   primaryColor: string;
   colors: string[];
   colorTheme: string;
   visualStyle: string;
-  inspirationSites: string;
   pages: string[];
   features: string[];
-  competitors: string;
   budget: string;
   notes: string;
 }
@@ -29,7 +28,7 @@ export interface ClientRequest {
 export const SITE_TYPES: { key: SiteType; label: string; desc: string; icon: string }[] = [
   {
     key: 'standard',
-    label: 'Site Web Standard',
+    label: 'Site Vitrine',
     desc: 'Design moderne, animations fluides, sections élégantes — idéal pour la majorité des projets.',
     icon: '🖥️',
   },
@@ -49,7 +48,7 @@ export const SITE_TYPES: { key: SiteType; label: string; desc: string; icon: str
 
 export const SITE_GOALS: { key: string; label: string; desc: string }[] = [
   { key: 'bookings',  label: 'Réservations / RDV',    desc: 'Permettre aux clients de réserver ou prendre RDV en ligne' },
-  { key: 'ecommerce', label: 'Vendre en ligne',         desc: 'Boutique avec panier et paiement intégré' },
+  { key: 'ecommerce', label: 'Vendre en ligne',         desc: 'Présenter un catalogue produits avec formulaire de commande' },
   { key: 'portfolio', label: 'Présenter mon portfolio', desc: 'Montrer mes réalisations et attirer des clients' },
   { key: 'leads',     label: 'Générer des prospects',   desc: 'Collecter des contacts qualifiés via formulaires' },
   { key: 'showcase',  label: 'Vitrine & information',   desc: 'Présenter mon activité, fidéliser ma clientèle' },
@@ -113,10 +112,10 @@ export const FEATURE_GROUPS_3D: { label: string; items: { key: string; label: st
   {
     label: 'Interactions & UX',
     items: [
-      { key: 'custom_cursor',   label: 'Curseur custom animé' },
-      { key: 'parallax_deep',   label: 'Parallax multi-couches avancé' },
+      { key: 'custom_cursor',    label: 'Curseur custom animé' },
+      { key: 'parallax_deep',    label: 'Parallax multi-couches avancé' },
       { key: 'morph_transition', label: 'Transitions morphing entre pages' },
-      { key: 'tilt_hover',      label: 'Effet tilt au survol' },
+      { key: 'tilt_hover',       label: 'Effet tilt au survol' },
     ],
   },
   {
@@ -156,34 +155,23 @@ export const FEATURE_GROUPS_3D: { label: string; items: { key: string; label: st
 
 export const FEATURE_GROUPS: { label: string; items: { key: string; label: string }[] }[] = [
   {
-    label: 'Boutique en ligne',
+    label: 'Boutique & Paiement',
     items: [
       { key: 'catalog',  label: 'Catalogue produits avec catégories' },
-      { key: 'cart',     label: "Panier d'achat" },
-      { key: 'stripe',   label: 'Paiement en ligne (Stripe)' },
+      { key: 'cart',     label: 'Panier d\'achat (UI)' },
+      { key: 'stripe',   label: 'Page de commande avec formulaire' },
     ],
   },
   {
     label: 'Réservation & RDV',
     items: [
-      { key: 'booking',     label: 'Prise de RDV (intégration Calendly)' },
-      { key: 'booking_pay', label: 'Paiement à la réservation (Stripe)' },
-    ],
-  },
-  {
-    label: 'Espace membres',
-    items: [
-      { key: 'auth',     label: 'Inscription & connexion' },
-      { key: 'profile',  label: 'Profil utilisateur' },
-      { key: 'history',  label: 'Historique & suivi' },
-      { key: 'wishlist', label: 'Liste de favoris' },
+      { key: 'booking', label: 'Prise de RDV (intégration Calendly)' },
     ],
   },
   {
     label: 'Contenu & Médias',
     items: [
       { key: 'gallery', label: 'Galerie photos / vidéos' },
-      { key: 'blog',    label: 'Blog / actualités' },
       { key: 'reviews', label: 'Témoignages clients' },
     ],
   },
@@ -201,7 +189,6 @@ export const FEATURE_GROUPS: { label: string; items: { key: string; label: strin
       { key: 'seo',      label: 'Optimisation SEO' },
       { key: 'analytics', label: 'Google Analytics' },
       { key: 'darkmode', label: 'Mode sombre / clair' },
-      { key: 'pwa',      label: 'PWA (appli installable)' },
     ],
   },
 ];
@@ -228,12 +215,12 @@ export const COLOR_THEMES_SCROLLYTELLING: { key: string; label: string; desc: st
 ];
 
 export const VISUAL_STYLES_SCROLLYTELLING: { key: string; label: string; desc: string }[] = [
-  { key: 'narrative_film',  label: 'Narratif / Film',   desc: 'Séquences cinématiques, texte dramatique, storytelling visuel' },
+  { key: 'narrative_film',  label: 'Narratif / Film',    desc: 'Séquences cinématiques, texte dramatique, storytelling visuel' },
   { key: 'editorial_bold',  label: 'Éditorial Audacieux', desc: 'Typographie XXL, sections en plein écran, style magazine' },
-  { key: 'poetic_minimal',  label: 'Poétique & Minimal', desc: 'Textes courts percutants, espace négatif, révélations douces' },
-  { key: 'immersive_3d',    label: 'Immersif 3D',        desc: 'Parallaxe profond, effets 3D, scroll lié à des animations WebGL' },
-  { key: 'brand_story',     label: 'Brand Story',        desc: "Raconter l'histoire de la marque : origines, valeurs, vision" },
-  { key: 'product_reveal',  label: 'Révélation Produit', desc: 'Présenter un produit ou service section par section, Apple-style' },
+  { key: 'poetic_minimal',  label: 'Poétique & Minimal',  desc: 'Textes courts percutants, espace négatif, révélations douces' },
+  { key: 'immersive_3d',    label: 'Immersif 3D',          desc: 'Parallaxe profond, effets 3D, scroll lié à des animations WebGL' },
+  { key: 'brand_story',     label: 'Brand Story',          desc: "Raconter l'histoire de la marque : origines, valeurs, vision" },
+  { key: 'product_reveal',  label: 'Révélation Produit',   desc: 'Présenter un produit ou service section par section, Apple-style' },
 ];
 
 export const FEATURE_GROUPS_SCROLLYTELLING: { label: string; items: { key: string; label: string }[] }[] = [
@@ -275,7 +262,7 @@ export const FEATURE_GROUPS_SCROLLYTELLING: { label: string; items: { key: strin
 ];
 
 export const SITE_TYPE_PRICES: Record<SiteType, { amount: number; label: string }> = {
-  standard:      { amount: 490,  label: '490€' },
+  standard:       { amount: 490, label: '490€' },
   scrollytelling: { amount: 690, label: '690€' },
-  '3d':          { amount: 990,  label: '990€' },
+  '3d':           { amount: 990, label: '990€' },
 };

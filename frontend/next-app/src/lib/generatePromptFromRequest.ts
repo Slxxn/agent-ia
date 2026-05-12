@@ -52,15 +52,13 @@ ${req.logoUrl
 - Style: ${style ? `${style.label} — ${style.desc}` : req.visualStyle}
 - Color theme: ${theme ? `${theme.label} (${theme.desc}, base: ${theme.preview})` : req.colorTheme}
 - Colors: ${(req.colors?.length ? req.colors : [req.primaryColor]).join(', ')}
-${req.inspirationSites ? `- Inspiration sites: ${req.inspirationSites}` : ''}
+${req.references ? `- References & inspiration: ${req.references}` : ''}
 
 ## Target Audience
 ${req.targetAudience || 'General public'}
 
 ## Unique Value Proposition
 ${req.uniqueValue || 'Not specified'}
-
-${req.competitors ? `## Competitors / Benchmarks\n${req.competitors}\n` : ''}
 
 ## Pages Required
 ${isScrollytelling ? '- Single page scrollytelling experience (no routing)' : req.pages.map(p => `- ${p}`).join('\n')}

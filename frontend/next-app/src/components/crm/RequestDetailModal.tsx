@@ -147,7 +147,7 @@ export default function RequestDetailModal({ request, onClose }: Props) {
                 </div>
                 <Grid>
                   <Field label="Style visuel" value={request.visualStyle.replace(/_/g, ' ')} />
-                  {request.inspirationSites && <Field label="Sites d'inspiration" value={request.inspirationSites} />}
+                  {request.references && <Field label="Références & inspirations" value={request.references} />}
                 </Grid>
               </Section>
 
@@ -177,10 +177,9 @@ export default function RequestDetailModal({ request, onClose }: Props) {
               </Section>
 
               {/* Additional info */}
-              {(request.targetAudience || request.competitors || request.notes) && (
+              {(request.targetAudience || request.notes) && (
                 <Section title="Informations complémentaires">
                   {request.targetAudience && <Field label="Public cible" value={request.targetAudience} />}
-                  {request.competitors && <Field label="Concurrents" value={request.competitors} />}
                   {request.notes && <Field label="Notes" value={request.notes} />}
                 </Section>
               )}

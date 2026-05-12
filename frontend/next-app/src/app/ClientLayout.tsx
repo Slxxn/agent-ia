@@ -18,7 +18,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthGuard>
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         <header
           style={{
             background: "rgba(8,8,12,0.92)",
@@ -78,9 +78,8 @@ function Shell({ children }: { children: React.ReactNode }) {
           maxWidth: 1380,
           margin: "0 auto",
           width: "100%",
-          padding: "0 24px",
-          height: "calc(100vh - 56px)",
-          overflow: "hidden",
+          padding: "24px 24px 48px",
+          overflowY: "auto",
           display: "flex",
           flexDirection: "column",
         }}>

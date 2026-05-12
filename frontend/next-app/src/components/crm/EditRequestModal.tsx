@@ -130,9 +130,6 @@ export default function EditRequestModal({ request, onClose, onSaved }: Props) {
                   <Row label="Avantage concurrentiel">
                     <Textarea value={form.uniqueValue ?? ''} onChange={v => set('uniqueValue', v)} rows={2} />
                   </Row>
-                  <Row label="Concurrents">
-                    <Input value={form.competitors ?? ''} onChange={v => set('competitors', v)} />
-                  </Row>
                 </Section>
 
                 {/* Visual */}
@@ -169,8 +166,8 @@ export default function EditRequestModal({ request, onClose, onSaved }: Props) {
                       ))}
                     </div>
                   </Row>
-                  <Row label="Sites d'inspiration">
-                    <Input value={form.inspirationSites ?? ''} onChange={v => set('inspirationSites', v)} placeholder="apple.com, linear.app…" />
+                  <Row label="Références & inspirations">
+                    <Input value={form.references ?? ''} onChange={v => set('references', v)} placeholder="apple.com, linear.app…" />
                   </Row>
                 </Section>
 
