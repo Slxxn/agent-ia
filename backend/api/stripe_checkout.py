@@ -88,7 +88,8 @@ async def verify_session(session_id: str):
     )
 
     paid = session.payment_status == "paid"
-    portal_token = session.metadata.get("portal_token") if session.metadata else None
+    metadata = dict(session.metadata) if session.metadata else {}
+    portal_token = metadata.get("portal_token")
 
     if paid and portal_token:
         db = await get_db()
