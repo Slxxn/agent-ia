@@ -258,7 +258,7 @@ export default function LandingPage() {
       </motion.nav>
 
       {/* ── hero ── */}
-      <section style={{ position: "relative", zIndex: 1, minHeight: "100svh", display: "flex", alignItems: "center", padding: isMobile ? "80px 18px 60px" : "100px 28px 80px", maxWidth: 1200, margin: "0 auto" }}>
+      <section style={{ position: "relative", zIndex: 1, minHeight: "100svh" }}>
 
         {hasVideos && (
           <div style={{ position: "absolute", inset: 0, zIndex: 0, overflow: "hidden" }}>
@@ -269,7 +269,8 @@ export default function LandingPage() {
           </div>
         )}
 
-        <div style={{ position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 0 : 60, alignItems: "center", width: "100%" }}>
+        <div style={{ position: "relative", zIndex: 1, maxWidth: 1200, margin: "0 auto", padding: isMobile ? "80px 18px 60px" : "100px 28px 80px", display: "flex", alignItems: "center", minHeight: "100svh" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 0 : 60, alignItems: "center", width: "100%" }}>
 
           <motion.div initial="hidden" animate="visible" variants={stagger(0.1)}>
             <motion.div variants={fadeUp} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px 5px 7px", borderRadius: 99, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.22)", marginBottom: 24, width: "fit-content" }}>
@@ -326,6 +327,7 @@ export default function LandingPage() {
             </motion.div>
           )}
         </div>
+        </div>
       </section>
 
       {/* marquee */}
@@ -370,90 +372,83 @@ export default function LandingPage() {
               </p>
             </motion.div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: isMobile ? "flex" : "grid", flexDirection: isMobile ? "column" : undefined, gridTemplateColumns: isMobile ? undefined : "repeat(3, 1fr)", gap: 14 }}>
               {TYPES.map((type, i) => (
                 <motion.div key={type.name} variants={fadeUp}>
-                  <TiltCard disabled={isMobile}>
+                  <TiltCard disabled={isMobile} style={{ height: "100%" }}>
                     <div onMouseEnter={() => !isMobile && setHoveredType(i)} onMouseLeave={() => !isMobile && setHoveredType(null)}
-                      style={{ position: "relative", borderRadius: 18, background: hoveredType === i ? type.bg : "rgba(12,12,18,0.9)", border: `1px solid ${hoveredType === i ? type.border : "rgba(255,255,255,0.06)"}`, transition: "all 0.3s ease", overflow: "hidden" }}>
+                      style={{ position: "relative", borderRadius: 18, background: hoveredType === i ? type.bg : "rgba(12,12,18,0.9)", border: `1px solid ${hoveredType === i ? type.border : "rgba(255,255,255,0.06)"}`, transition: "all 0.3s ease", overflow: "hidden", height: "100%", display: "flex", flexDirection: isMobile ? "row" : "column" }}>
 
                       {type.featured && (
                         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${type.color}, transparent)`, opacity: 0.7 }} />
                       )}
 
-                      {/* layout horizontal sur mobile */}
-                      <div style={{ display: isMobile ? "flex" : "block" }}>
-
-                        {/* video/thumb */}
-                        <div style={{
-                          width: isMobile ? 110 : "100%",
-                          minWidth: isMobile ? 110 : undefined,
-                          height: isMobile ? "auto" : 140,
-                          minHeight: isMobile ? 110 : undefined,
-                          overflow: "hidden",
-                          background: `linear-gradient(135deg, ${type.color}14 0%, rgba(0,0,0,0) 100%)`,
-                          borderRight: isMobile ? `1px solid rgba(255,255,255,0.05)` : "none",
-                          borderBottom: isMobile ? "none" : "1px solid rgba(255,255,255,0.05)",
-                          position: "relative",
-                          flexShrink: 0,
-                        }}>
-                          {hasVideos ? (
-                            <LazyVideo src={type.video} style={{ width: "100%", height: "100%", objectFit: "cover" }} opacity={0.85} />
-                          ) : (
-                            <div style={{ width: "100%", height: "100%", minHeight: isMobile ? 110 : undefined, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
-                              <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 70% 80% at 50% 60%, ${type.color}20 0%, transparent 70%)` }} />
-                              <div style={{ display: "flex", gap: 6, opacity: 0.4 }}>
-                                {[70, 100, 80].map((h, j) => (
-                                  <div key={j} style={{ width: 28, height: h, borderRadius: 6, background: `linear-gradient(180deg, ${type.color} 0%, transparent 100%)` }} />
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {type.featured && !isMobile && (
-                            <div style={{ position: "absolute", top: 10, right: 10 }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: type.color, background: `${type.color}18`, border: `1px solid ${type.color}30`, padding: "3px 9px", borderRadius: 99, letterSpacing: "0.05em" }}>POPULAIRE</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* content */}
-                        <div style={{ padding: isMobile ? "16px 18px" : "22px 26px", flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 6, gap: 8 }}>
-                            <h3 style={{ fontFamily: "var(--font-syne)", fontSize: isMobile ? 15 : 18, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", margin: 0 }}>{type.name}</h3>
-                            <div style={{ display: "flex", alignItems: "baseline", gap: 2, flexShrink: 0 }}>
-                              <span style={{ fontFamily: "var(--font-syne)", fontSize: isMobile ? 22 : 32, fontWeight: 700, color: type.color, letterSpacing: "-0.03em", lineHeight: 1 }}>{type.price}</span>
-                              <span style={{ fontSize: 12, color: "rgba(226,226,234,0.3)", fontWeight: 500 }}>€</span>
+                      {/* video/thumb */}
+                      <div style={{
+                        width: isMobile ? 110 : "100%",
+                        minWidth: isMobile ? 110 : undefined,
+                        height: isMobile ? "auto" : 160,
+                        minHeight: isMobile ? 110 : undefined,
+                        overflow: "hidden",
+                        background: `linear-gradient(135deg, ${type.color}14 0%, rgba(0,0,0,0) 100%)`,
+                        borderRight: isMobile ? `1px solid rgba(255,255,255,0.05)` : "none",
+                        borderBottom: isMobile ? "none" : "1px solid rgba(255,255,255,0.05)",
+                        position: "relative",
+                        flexShrink: 0,
+                      }}>
+                        {hasVideos ? (
+                          <LazyVideo src={type.video} style={{ width: "100%", height: "100%", objectFit: "cover" }} opacity={0.85} />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", minHeight: isMobile ? 110 : 160, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+                            <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 70% 80% at 50% 60%, ${type.color}20 0%, transparent 70%)` }} />
+                            <div style={{ display: "flex", gap: 6, opacity: 0.4 }}>
+                              {[70, 100, 80].map((h, j) => (
+                                <div key={j} style={{ width: 28, height: h, borderRadius: 6, background: `linear-gradient(180deg, ${type.color} 0%, transparent 100%)` }} />
+                              ))}
                             </div>
                           </div>
+                        )}
+                        {type.featured && (
+                          <div style={{ position: "absolute", top: 10, right: 10 }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: type.color, background: `${type.color}18`, border: `1px solid ${type.color}30`, padding: "3px 9px", borderRadius: 99, letterSpacing: "0.05em" }}>POPULAIRE</span>
+                          </div>
+                        )}
+                      </div>
 
-                          <p style={{ fontSize: 12, color: "rgba(226,226,234,0.42)", lineHeight: 1.65, marginBottom: isMobile ? 12 : 20 }}>{type.desc}</p>
-
-                          {!isMobile && (
-                            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px", display: "flex", flexDirection: "column", gap: 8 }}>
-                              {type.features.map(f => (
-                                <li key={f} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12, color: "rgba(226,226,234,0.55)" }}>
-                                  <span style={{ width: 16, height: 16, borderRadius: "50%", background: `${type.color}16`, border: `1px solid ${type.color}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2L6.5 2" stroke={type.color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                  </span>
-                                  {f}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-
-                          {isMobile ? (
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-                              {type.features.map(f => (
-                                <span key={f} style={{ fontSize: 10, color: type.color, background: `${type.color}12`, border: `1px solid ${type.color}20`, padding: "3px 8px", borderRadius: 99 }}>{f}</span>
-                              ))}
-                            </div>
-                          ) : null}
-
-                          <a href="/form" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: isMobile ? "9px 14px" : "11px 18px", borderRadius: 9, background: `linear-gradient(135deg, ${type.color}, ${type.color}cc)`, color: "#fff", fontWeight: 600, fontSize: 13, textDecoration: "none", fontFamily: "var(--font-syne)" }}>
-                            Démarrer
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6h7M6.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                          </a>
+                      {/* content */}
+                      <div style={{ padding: isMobile ? "16px 18px" : "20px 22px", flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 6, gap: 8 }}>
+                          <h3 style={{ fontFamily: "var(--font-syne)", fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", margin: 0 }}>{type.name}</h3>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 2, flexShrink: 0 }}>
+                            <span style={{ fontFamily: "var(--font-syne)", fontSize: isMobile ? 22 : 28, fontWeight: 700, color: type.color, letterSpacing: "-0.03em", lineHeight: 1 }}>{type.price}</span>
+                            <span style={{ fontSize: 12, color: "rgba(226,226,234,0.3)", fontWeight: 500 }}>€</span>
+                          </div>
                         </div>
+
+                        <p style={{ fontSize: 12, color: "rgba(226,226,234,0.42)", lineHeight: 1.65, marginBottom: isMobile ? 12 : 16 }}>{type.desc}</p>
+
+                        {isMobile ? (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+                            {type.features.map(f => (
+                              <span key={f} style={{ fontSize: 10, color: type.color, background: `${type.color}12`, border: `1px solid ${type.color}20`, padding: "3px 8px", borderRadius: 99 }}>{f}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px", display: "flex", flexDirection: "column", gap: 7, flex: 1 }}>
+                            {type.features.map(f => (
+                              <li key={f} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12, color: "rgba(226,226,234,0.55)" }}>
+                                <span style={{ width: 16, height: 16, borderRadius: "50%", background: `${type.color}16`, border: `1px solid ${type.color}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2L6.5 2" stroke={type.color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                </span>
+                                {f}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        <a href="/form" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: isMobile ? "9px 14px" : "10px 16px", borderRadius: 9, background: `linear-gradient(135deg, ${type.color}, ${type.color}cc)`, color: "#fff", fontWeight: 600, fontSize: 13, textDecoration: "none", fontFamily: "var(--font-syne)", marginTop: isMobile ? 0 : "auto" }}>
+                          Démarrer →
+                        </a>
                       </div>
                     </div>
                   </TiltCard>
