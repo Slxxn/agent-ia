@@ -244,11 +244,12 @@ async def generate_videos_for_project(
     for video_spec in specs.get("videos", []):
         vid_id = video_spec["id"]
         duration = video_spec.get("duration", 8)
-        html_path = str(temp_dir / f"{vid_id}.html")
+        comp_dir = temp_dir / vid_id
+        comp_dir.mkdir(parents=True, exist_ok=True)
         mp4_path = str(videos_dir / f"{vid_id}.mp4")
 
-        (temp_dir / f"{vid_id}.html").write_text(_build_html(video_spec), encoding="utf-8")
-        if await _render(html_path, mp4_path, duration):
+        (comp_dir / "index.html").write_text(_build_html(video_spec), encoding="utf-8")
+        if await _render(str(comp_dir), mp4_path, duration):
             generated[vid_id] = f"/videos/{vid_id}.mp4"
 
     return generated
