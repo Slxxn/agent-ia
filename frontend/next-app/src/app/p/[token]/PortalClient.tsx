@@ -84,8 +84,18 @@ function ProgressBar({ progress, color }: { progress: number; color: string }) {
 export default function PortalClient() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const token = params?.token as string;
   const sessionId = searchParams?.get("session_id");
+
+  // In static export, useParams returns "_" (catch-all filename) — read real token from URL
+  const rawToken = params?.token as string;
+  const [token, setToken] = useState<string>(rawToken ?? "");
+  useEffect(() => {
+    const parts = window.location.pathname.split("/");
+    const idx = parts.lastIndexOf("p");
+    const urlToken = idx >= 0 ? parts[idx + 1] : "";
+    if (urlToken && urlToken !== "_") setToken(urlToken);
+    else if (rawToken && rawToken !== "_") setToken(rawToken);
+  }, [rawToken]);
 
   const [order, setOrder] = useState<PortalOrder | null>(null);
   const [loading, setLoading] = useState(true);
