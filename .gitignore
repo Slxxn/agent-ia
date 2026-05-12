@@ -23,3 +23,8 @@ dist/
 Thumbs.db
 frontend/next-app/.firebase/
 frontend/next-app/.env.local
+
+# Local workspace and venv
+workspace/
+check_venv/
+*.tsbuildinfo
