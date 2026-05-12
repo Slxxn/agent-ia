@@ -1,0 +1,17 @@
+export { default as Hero } from './Hero';
+export { default as LogosSection } from './LogosSection';
+export { default as Products } from './Products';
+export { default as Categories } from './Categories';
+export { default as About } from './About';
+export { default as Testimonials } from './Testimonials';
+export { default as Contact } from './Contact';
+export { default as CTA } from './CTA';
+export { default as ProblemSection } from './ProblemSection';
+export { default as SolutionSection } from './SolutionSection';
+export { default as FeaturesSection } from './FeaturesSection';
+export { default as HowItWorksSection } from './HowItWorksSection';
+export { default as TestimonialsSection } from './TestimonialsSection';
+export { default as PricingSection } from './PricingSection';
+export { default as CategoriesSection } from './CategoriesSection';
+export { default as AboutSection } from './AboutSection';
+export { default as InfosSection } from './InfosSection';

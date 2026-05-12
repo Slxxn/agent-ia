@@ -14,6 +14,7 @@ from backend.agent.build_validator import BuildValidator
 from backend.agent.visual_validator import VisualValidator
 from backend.agent.validator import NarrativeValidator
 from backend.agent.static_post_processor import StaticPostProcessor
+from backend.agent.video_generator import generate_videos_for_project
 from backend.agent.assembler import Assembler
 from backend.tools.filesystem import FilesystemTool
 from backend.tools.terminal import TerminalTool
@@ -264,7 +265,28 @@ class AgentRunner:
             assembler = Assembler(workspace_path)
             await assembler.run(site_spec, project_id)
 
-            # ── PHASE 3.4 : Post-traitement statique ─────────────────────
+            # ── PHASE 3.4 : Génération vidéo HyperFrames ─────────────────
+            client_has_videos = bool(project.get("videos") or project.get("video_urls"))
+            if not client_has_videos:
+                await add_log(project_id, "🎬 Génération des vidéos HyperFrames...", "info")
+                try:
+                    sector = project.get("sector", "default") or "default"
+                    style = project.get("visualStyle") or project.get("style", "moderne")
+                    generated_videos = await generate_videos_for_project(
+                        project_id=str(project_id),
+                        brief=full_objective,
+                        sector=sector,
+                        style=style,
+                        workspace_path=workspace_path,
+                    )
+                    if generated_videos:
+                        await add_log(project_id, f"✅ {len(generated_videos)} vidéo(s) générée(s) : {list(generated_videos.keys())}", "info")
+                    else:
+                        await add_log(project_id, "⚠️ Génération vidéo échouée — site livré sans vidéos", "warning")
+                except Exception as _ve:
+                    await add_log(project_id, f"⚠️ Erreur vidéo (non bloquante) : {_ve}", "warning")
+
+            # ── PHASE 3.5 : Post-traitement statique ─────────────────────
             post = StaticPostProcessor(workspace_path)
             await post.run(project_id)
 

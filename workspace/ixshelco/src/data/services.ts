@@ -1,0 +1,193 @@
+export interface Service {
+  id: string;
+  name: string;
+  description: string;
+  duration: number;
+  price: number;
+  category: string;
+  image: string;
+  isActive: boolean;
+  order: number;
+}
+
+export const services: Service[] = [
+  {
+    id: 'manucure-classique',
+    name: 'Manucure Classique',
+    description: 'Soin complet des mains avec limage, repousse des cuticules et vernis classique.',
+    duration: 45,
+    price: 35,
+    category: 'manucure',
+    image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&q=80',
+    isActive: true,
+    order: 1,
+  },
+  {
+    id: 'manucure-semi-permanent',
+    name: 'Manucure Semi-Permanent',
+    description: 'Vernis semi-permanent longue tenue pour des ongles parfaits jusqu\'à 3 semaines. Large choix de couleurs tendance.',
+    duration: 60,
+    price: 45,
+    category: 'manucure',
+    image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&q=80',
+    isActive: true,
+    order: 2,
+  },
+  {
+    id: 'nail-art-simple',
+    name: 'Nail Art Simple',
+    description: 'Design personnalisé sur vos ongles : motifs géométriques, points, lignes ou stickers de qualité professionnelle.',
+    duration: 75,
+    price: 55,
+    category: 'nail-art',
+    image: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?w=600&q=80',
+    isActive: true,
+    order: 3,
+  },
+  {
+    id: 'nail-art-avance',
+    name: 'Nail Art Avancé',
+    description: 'Création sur mesure avec techniques avancées : marbrure, ombré, 3D, strass, foil ou chromé. Laissez libre cours à votre imagination.',
+    duration: 90,
+    price: 75,
+    category: 'nail-art',
+    image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&q=80',
+    isActive: true,
+    order: 4,
+  },
+  {
+    id: 'soin-complet-mains',
+    name: 'Soin Complet des Mains',
+    description: 'Soin hydratant profond avec gommage, masque nourrissant et massage relaxant. Mains régénérées et sublimées.',
+    duration: 60,
+    price: 50,
+    category: 'soin',
+    image: 'https://images.unsplash.com/photo-1610992015732-2449b76344bc?w=600&q=80',
+    isActive: true,
+    order: 5,
+  },
+  {
+    id: 'pedicure-classique',
+    name: 'Pédicure Classique',
+    description: 'Soin complet des pieds : bain relaxant, limage, cuticules, soin des ongles et vernis classique.',
+    duration: 50,
+    price: 40,
+    category: 'pedicure',
+    image: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=600&q=80',
+    isActive: true,
+    order: 6,
+  },
+  {
+    id: 'pedicure-semi-permanent',
+    name: 'Pédicure Semi-Permanent',
+    description: 'Vernis semi-permanent pour les pieds. Tenue exceptionnelle pour des pieds parfaits tout l\'été.',
+    duration: 65,
+    price: 50,
+    category: 'pedicure',
+    image: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=600&q=80',
+    isActive: true,
+    order: 7,
+  },
+  {
+    id: 'forfait-mariee',
+    name: 'Forfait Mariée',
+    description: 'Prestation complète pour votre plus beau jour : manucure semi-permanent, nail art personnalisé et soin des mains. Sur rendez-vous uniquement.',
+    duration: 120,
+    price: 120,
+    category: 'forfait',
+    image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&q=80',
+    isActive: true,
+    order: 8,
+  },
+  {
+    id: 'forfait-duo',
+    name: 'Forfait Duo Mains & Pieds',
+    description: 'Manucure semi-permanent + pédicure semi-permanent. Le combo parfait pour être belle de la tête aux pieds.',
+    duration: 120,
+    price: 85,
+    category: 'forfait',
+    image: 'https://images.unsplash.com/photo-1610992015732-2449b76344bc?w=600&q=80',
+    isActive: true,
+    order: 9,
+  },
+  {
+    id: 'pose-ongles-gel',
+    name: 'Pose d\'Ongles en Gel',
+    description: 'Extension d\'ongles en gel pour des ongles longs et résistants. Forme et longueur personnalisées selon vos envies.',
+    duration: 120,
+    price: 65,
+    category: 'ongles-gel',
+    image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&q=80',
+    isActive: true,
+    order: 10,
+  },
+  {
+    id: 'remplissage-gel',
+    name: 'Remplissage Gel',
+    description: 'Entretien de vos ongles en gel : remplissage, réparation si nécessaire et nouvelle couleur.',
+    duration: 75,
+    price: 45,
+    category: 'ongles-gel',
+    image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&q=80',
+    isActive: true,
+    order: 11,
+  },
+  {
+    id: 'depose-gel',
+    name: 'Dépose Gel',
+    description: 'Retrait professionnel et sécurisé de vos ongles en gel sans abîmer l\'ongle naturel.',
+    duration: 30,
+    price: 15,
+    category: 'ongles-gel',
+    image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=600&q=80',
+    isActive: true,
+    order: 12,
+  },
+];
+
+export const serviceCategories = [
+  {
+    id: 'manucure',
+    name: 'Manucure',
+    description: 'Soins et vernis pour des mains parfaites',
+    icon: 'Sparkles',
+    order: 1,
+  },
+  {
+    id: 'nail-art',
+    name: 'Nail Art',
+    description: 'Créations uniques et personnalisées',
+    icon: 'Palette',
+    order: 2,
+  },
+  {
+    id: 'soin',
+    name: 'Soins',
+    description: 'Soins hydratants et régénérants',
+    icon: 'Heart',
+    order: 3,
+  },
+  {
+    id: 'pedicure',
+    name: 'Pédicure',
+    description: 'Soins complets pour vos pieds',
+    icon: 'Foot',
+    order: 4,
+  },
+  {
+    id: 'ongles-gel',
+    name: 'Ongles en Gel',
+    description: 'Extensions et entretien gel',
+    icon: 'Gem',
+    order: 5,
+  },
+  {
+    id: 'forfait',
+    name: 'Forfaits',
+    description: 'Prestations combinées avantageuses',
+    icon: 'Gift',
+    order: 6,
+  },
+];
+
+export default services;

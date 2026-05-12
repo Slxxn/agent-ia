@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(backend/venv/Scripts/python.exe -c ' *)",
+      "Bash(python -c ' *)",
+      "Bash(cmd /c \"C:\\\\Program Files\\\\nodejs\\\\npm.cmd\" install --dry-run)",
+      "Bash(firebase deploy *)",
+      "Bash(npm install *)",
+      "Bash(ssh -i \"C:\\\\Users\\\\sloan\\\\Downloads\\\\ssh-key-2026-04-24.key\" -o StrictHostKeyChecking=no ubuntu@144.21.38.240 \"cd ~/agent-platform/backend && python3 -m venv venv && venv/bin/pip install -r requirements.txt 2>&1 | tail -8\")",
+      "Bash(ssh -i \"C:\\\\Users\\\\sloan\\\\Downloads\\\\ssh-key-2026-04-24.key\" -o StrictHostKeyChecking=no ubuntu@144.21.38.240 \"cat ~/agent-platform/backend/.env 2>/dev/null || echo 'no .env'\")",
+      "Bash(ssh -i *)",
+      "Bash(ssh ubuntu@141.148.234.250 \"cd ~/agent-ia && git pull origin master && pm2 restart agent-backend\")",
+      "Bash(ssh ubuntu@141.148.234.250 \"cd ~/agent-platform && git pull origin master && pm2 restart backend && pm2 status\")",
+      "Read(//c/Users/sloan/.ssh/**)",
+      "Bash(ssh -v -i ~/.ssh/id_rsa ubuntu@141.148.234.250 \"echo ok\")",
+      "Read(//c/Users/sloan/agent-platform/workspace/soleya/src/providers/**)",
+      "Bash(python -c \"from backend.tools.llm import get_system_prompt, CODE_SYSTEM_PROMPT, CODE_SYSTEM_PROMPT_LITE; print\\('OK'\\); print\\('scaffold tokens ~', len\\(get_system_prompt\\('scaffold'\\)\\)//4\\); print\\('section_emotional tokens ~', len\\(get_system_prompt\\('section_emotional'\\)\\)//4\\); print\\('data tokens ~', len\\(get_system_prompt\\('data'\\)\\)//4\\)\")",
+      "Bash(python -c \"from backend.agent.static_post_processor import StaticPostProcessor; print\\('OK'\\)\")",
+      "Bash(python -c \"from backend.agent.runner import AgentRunner; print\\('OK'\\)\")",
+      "Bash(ssh root@209.38.241.243 \"cd /root/agent-platform && git pull origin master && pm2 restart backend\")",
+      "Bash(ssh -o StrictHostKeyChecking=no root@209.38.241.243 \"cd /root/agent-platform && git pull origin master && pm2 restart backend\")",
+      "Bash(git remote *)",
+      "Bash(ssh -o BatchMode=yes ubuntu@agent-ia \"find / -name 'runner.py' -path '*/agent/*' 2>/dev/null | head -5\")",
+      "Read(//home/ubuntu/agent-platform/**)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")",
+      "Bash(ssh ubuntu@agent-ia \"cat /home/ubuntu/agent-platform/workspace/isxhel/src/App.tsx 2>/dev/null || echo 'NOT FOUND'\")",
+      "Bash(python -c \"from pathlib import Path; p = Path\\('c:/dev/agent-platform/backend/agent/assembler.py'\\).parent.parent.parent / 'workspace-template'; print\\(p, p.exists\\(\\)\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(git -C c:/dev/agent-platform diff --name-only HEAD)",
+      "Bash(git -C c:/dev/agent-platform status --short)",
+      "Bash(Remove-Item -Recurse -Force c:/dev/agent-platform/frontend/next-app/.next -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item -Recurse -Force c:/dev/agent-platform/frontend/next-app/out -ErrorAction SilentlyContinue)",
+      "Bash(Write-Host \"Cleaned\")",
+      "Read(//mnt/c/dev/agent-platform/frontend/next-app/**)",
+      "Bash(ssh ubuntu@agent-ia.builderz.shop \"pm2 show frontend 2>/dev/null | grep -E 'script|cwd|status|restart'\")",
+      "mcp__higgsfield__balance"
+    ]
+  }
+}

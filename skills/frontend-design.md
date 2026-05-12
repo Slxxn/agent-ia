@@ -47,3 +47,22 @@ distinctifs et sans erreurs de build. Éviter absolument l'esthétique "AI slop"
 - [ ] Les couleurs sont en variables CSS, pas hardcodées
 - [ ] Les animations ont un fallback si prefers-reduced-motion
 - [ ] BrowserRouter est dans main.tsx, pas dans App.tsx
+
+## Règles brief client (obligatoires)
+- Toujours exiger dans le brief : 1 URL de référence + 2 adjectifs visuels (ex. "éditorial & brutaliste")
+- Sans ces éléments, le rendu sera générique — relancer le client pour les obtenir
+- 1 émotion cible à définir (ex. "confiance", "excitation", "sérénité")
+
+## Règles animations — limite stricte
+- Maximum 3 types d'animation sur tout le site :
+  1. Apparition au scroll (whileInView)
+  2. Hover sur éléments interactifs
+  3. Transition de page
+- Au-delà de 3 types, le site perd en crédibilité — supprimer les animations superflues
+- Pas d'animations en cascade sur plus de 5 éléments simultanément
+
+## Audit obligatoire avant déploiement
+Avant tout build final, vérifier :
+- Responsive : breakpoints mobile (375px), tablet (768px), desktop (1280px)
+- Lighthouse : performance > 80, a11y > 90, SEO > 90
+- Liens : aucun lien mort ou href="#" en production

@@ -1,0 +1,12 @@
+export { services, serviceCategories } from './services';
+export type { Service, ServiceCategory } from './services';
+export { testimonials, testimonialsStats } from './testimonials';
+export type { Testimonial } from './testimonials';
+export { galleryImages, galleryCategories } from './gallery';
+export type { GalleryImage, GalleryCategory } from './gallery';
+export { faqItems, faqCategories } from './faq';
+export type { FAQItem } from './faq';
+export { recentReviews } from './reviews';
+export type { Review } from './reviews';
+export { heroContent, problemSolution, logoItems } from './homeContent';
+export type { HeroContent, LogoItem, ProblemSolution } from './homeContent';

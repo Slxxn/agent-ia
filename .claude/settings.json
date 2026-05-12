@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -X POST http://localhost:8000/api/projects/46/deploy -H \"Content-Type: application/json\")",
+      "Bash(curl -s -o response.json -w \"%{http_code}\" http://localhost:8000/api/projects/46/deploy -X POST)",
+      "Bash(curl -s http://localhost:8000/api/settings)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(ssh -i \"C:\\\\Users\\\\sloan\\\\Downloads\\\\ssh-key-2026-04-24.key\" -o StrictHostKeyChecking=no ubuntu@144.21.38.240 \"node --version 2>/dev/null; python3 --version 2>/dev/null; git --version 2>/dev/null; pm2 --version 2>/dev/null; echo 'done'\")",
+      "Bash(ssh -i \"C:\\\\Users\\\\sloan\\\\Downloads\\\\ssh-key-2026-04-24.key\" -o StrictHostKeyChecking=no ubuntu@144.21.38.240 \"curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs && sudo npm install -g pm2 && node --version && pm2 --version\")",
+      "Bash(ssh -i \"C:\\\\Users\\\\sloan\\\\Downloads\\\\ssh-key-2026-04-24.key\" -o StrictHostKeyChecking=no ubuntu@144.21.38.240 \"sudo apt-get install -y python3-pip python3-venv && pip3 --version\")",
+      "Bash(ssh -i \"C:\\\\Users\\\\sloan\\\\Downloads\\\\ssh-key-2026-04-24.key\" -o StrictHostKeyChecking=no ubuntu@144.21.38.240 \"ls ~/agent-platform/\")",
+      "Bash(ssh -i \"C:\\\\Users\\\\sloan\\\\Downloads\\\\ssh-key-2026-04-24.key\" -o StrictHostKeyChecking=no ubuntu@144.21.38.240 \"cd ~/agent-platform && git log --oneline -3\")",
+      "Bash(ssh -i \"C:\\\\Users\\\\sloan\\\\Downloads\\\\ssh-key-2026-04-24.key\" -o StrictHostKeyChecking=no ubuntu@144.21.38.240 \"cd ~/agent-platform && git branch -a\")",
+      "Bash(ssh -i \"C:\\\\Users\\\\sloan\\\\Downloads\\\\ssh-key-2026-04-24.key\" -o StrictHostKeyChecking=no ubuntu@144.21.38.240 \"cd ~/agent-platform && git checkout master && ls\")"
+    ]
+  }
+}

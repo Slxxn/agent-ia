@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Loader2 } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ClientRequest, SECTORS, SITE_GOALS, VISUAL_STYLES, VISUAL_STYLES_3D, VISUAL_STYLES_SCROLLYTELLING, COLOR_THEMES, COLOR_THEMES_3D, COLOR_THEMES_SCROLLYTELLING, PAGE_OPTIONS, BUDGETS } from '@/types/clientRequest';
+import { ClientRequest, SECTORS, SITE_GOALS, VISUAL_STYLES, VISUAL_STYLES_3D, VISUAL_STYLES_SCROLLYTELLING, COLOR_THEMES, COLOR_THEMES_3D, COLOR_THEMES_SCROLLYTELLING, PAGE_OPTIONS, SITE_TYPE_PRICES } from '@/types/clientRequest';
 
 interface Props {
   request: ClientRequest | null;
@@ -190,16 +190,11 @@ export default function EditRequestModal({ request, onClose, onSaved }: Props) {
                 </Section>
 
                 {/* Budget & notes */}
-                <Section title="Budget & notes">
-                  <Row label="Budget">
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {BUDGETS.map(b => (
-                        <button key={b} type="button" onClick={() => set('budget', b)}
-                          style={{ padding: '5px 12px', borderRadius: 7, border: `1px solid ${form.budget === b ? 'var(--primary)' : 'var(--bd-bright)'}`, background: form.budget === b ? 'var(--primary-muted)' : 'var(--surface3)', color: form.budget === b ? 'var(--accent)' : 'var(--text2)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
-                          {b}
-                        </button>
-                      ))}
-                    </div>
+                <Section title="Prix & notes">
+                  <Row label="Prix forfaitaire">
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)' }}>
+                      {form.siteType ? SITE_TYPE_PRICES[form.siteType].label : form.budget ?? '—'}
+                    </span>
                   </Row>
                   <Row label="Notes complémentaires">
                     <Textarea value={form.notes ?? ''} onChange={v => set('notes', v)} rows={3} />

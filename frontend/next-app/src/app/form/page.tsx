@@ -20,7 +20,7 @@ import {
   FEATURE_GROUPS_3D,
   FEATURE_GROUPS_SCROLLYTELLING,
   PAGE_OPTIONS,
-  BUDGETS,
+  SITE_TYPE_PRICES,
   type SiteType,
 } from '@/types/clientRequest';
 
@@ -71,7 +71,6 @@ interface FormData {
   // Step 5 — Finir
   clientEmail: string;
   clientPhone: string;
-  budget: string;
   notes: string;
 }
 
@@ -82,7 +81,7 @@ const INITIAL: FormData = {
   logoFile: null, colors: ['#6366f1'], colorTheme: 'light', visualStyle: '', inspirationSites: '',
   pages: ['home'], features: [],
   clientEmail: '', clientPhone: '',
-  budget: '', notes: '',
+  notes: '',
 };
 
 const STEPS = [
@@ -140,7 +139,7 @@ export default function FormPage() {
     if (step === 2) return form.targetAudience.trim() && form.uniqueValue.trim();
     if (step === 3) return form.visualStyle && form.colorTheme;
     if (step === 4) return form.siteType === 'scrollytelling' || form.pages.length > 0;
-    return !!form.budget && !!form.clientEmail.trim();
+    return !!form.clientEmail.trim();
   };
 
   const handleSubmit = async () => {
@@ -173,7 +172,7 @@ export default function FormPage() {
         inspirationSites: form.inspirationSites,
         pages: form.pages,
         features: form.features,
-        budget: form.budget,
+        budget: SITE_TYPE_PRICES[form.siteType].label,
         notes: form.notes,
         clientEmail: form.clientEmail,
         clientPhone: form.clientPhone,
@@ -742,7 +741,7 @@ interface GeminiSuggestions {
 }
 
 // ─── Step 5: Finir ────────────────────────────────────────────────────────────
-function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unknown) => void; }) {
+function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unknown) => void }) {
   const [geminiLoading, setGeminiLoading] = useState(false);
   const [geminiSuggestions, setGeminiSuggestions] = useState<GeminiSuggestions | null>(null);
   const [geminiError, setGeminiError] = useState('');
@@ -767,7 +766,7 @@ function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unkn
           visualStyle: form.visualStyle,
           pages: form.pages,
           features: form.features,
-          budget: form.budget,
+          budget: SITE_TYPE_PRICES[form.siteType].label,
         }),
       });
       const data = await res.json();
@@ -811,24 +810,13 @@ function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unkn
         </Field>
       </div>
 
-      <Field label="Budget *">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {BUDGETS.map(b => (
-            <button
-              key={b}
-              type="button"
-              onClick={() => set('budget', b)}
-              className={`px-4 py-3 rounded-xl border font-medium transition-all ${
-                form.budget === b
-                  ? 'border-indigo-500 bg-indigo-600/20 text-white'
-                  : 'border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-500 hover:text-white'
-              }`}
-            >
-              {b}
-            </button>
-          ))}
+      <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-xl px-5 py-4 flex items-center justify-between">
+        <div>
+          <div className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-0.5">Prix forfaitaire</div>
+          <div className="text-sm text-gray-300">{SITE_TYPES.find(t => t.key === form.siteType)?.label} · livraison 72h · Firebase inclus</div>
         </div>
-      </Field>
+        <div className="text-3xl font-bold text-white font-mono">{SITE_TYPE_PRICES[form.siteType].label}</div>
+      </div>
 
       <Field label="Notes complémentaires" hint="Délais, contraintes techniques, demandes spéciales…">
         <textarea
@@ -852,7 +840,7 @@ function Step5({ form, set }: { form: FormData; set: (f: keyof FormData, v: unkn
         } />
         <Row label="Pages" value={form.siteType === 'scrollytelling' ? 'Une page (scrollytelling)' : `${form.pages.length} page(s)`} />
         <Row label="Fonctionnalités" value={`${form.features.length} sélectionnée(s)`} />
-        <Row label="Budget" value={form.budget} />
+        <Row label="Prix" value={SITE_TYPE_PRICES[form.siteType].label} />
       </div>
 
       {/* Gemini Suggestions */}

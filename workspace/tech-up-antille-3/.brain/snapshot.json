@@ -1,0 +1,825 @@
+{
+  "project_id": 40,
+  "workspace_name": "tech-up-antille-3",
+  "tech_stack": [
+    "React",
+    "Vite",
+    "Tailwind CSS",
+    "Framer Motion",
+    "React Router"
+  ],
+  "packages": {
+    "clsx": "^2.1.0",
+    "framer-motion": "^11.0.0",
+    "lucide-react": "^0.300.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0"
+  },
+  "entry_point": "src/main.tsx",
+  "routes": [
+    {
+      "path": "/",
+      "component": "Home"
+    },
+    {
+      "path": "/products",
+      "component": "ProductsPage"
+    },
+    {
+      "path": "/products/:slug",
+      "component": "ProductDetailPage"
+    },
+    {
+      "path": "/cart",
+      "component": "CartPage"
+    },
+    {
+      "path": "/checkout",
+      "component": "CheckoutPage"
+    },
+    {
+      "path": "/about",
+      "component": "AboutPage"
+    },
+    {
+      "path": "/contact",
+      "component": "ContactPage"
+    }
+  ],
+  "files": {
+    "package.json": {
+      "path": "package.json",
+      "file_type": "module",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "vite.config.ts": {
+      "path": "vite.config.ts",
+      "file_type": "config",
+      "exports": [],
+      "default_export": "defineConfig",
+      "imports": {
+        "vite": [
+          "defineConfig"
+        ],
+        "@vitejs/plugin-react": [
+          "react"
+        ]
+      },
+      "local_deps": []
+    },
+    "tsconfig.json": {
+      "path": "tsconfig.json",
+      "file_type": "config",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "tailwind.config.js": {
+      "path": "tailwind.config.js",
+      "file_type": "config",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "postcss.config.js": {
+      "path": "postcss.config.js",
+      "file_type": "config",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "index.html": {
+      "path": "index.html",
+      "file_type": "module",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/data/products.ts": {
+      "path": "src/data/products.ts",
+      "file_type": "module",
+      "exports": [
+        "Product",
+        "categories",
+        "products",
+        "getProductBySlug",
+        "getProductsByCategory",
+        "getFeaturedProducts"
+      ],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/lib/utils.ts": {
+      "path": "src/lib/utils.ts",
+      "file_type": "util",
+      "exports": [
+        "cn",
+        "formatPrice"
+      ],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/styles/globals.css": {
+      "path": "src/styles/globals.css",
+      "file_type": "style",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/stores/cartStore.tsx": {
+      "path": "src/stores/cartStore.tsx",
+      "file_type": "store",
+      "exports": [
+        "CartItem",
+        "CartContextValue",
+        "CartContext",
+        "CartProvider",
+        "useCart",
+        "useCartContext",
+        "useCartStore"
+      ],
+      "default_export": "CartProvider",
+      "imports": {
+        "react": [
+          "React",
+          "createContext",
+          "useContext",
+          "useReducer",
+          "useCallback",
+          "useMemo"
+        ],
+        "../data/products": [
+          "Product"
+        ]
+      },
+      "local_deps": [
+        "src/data/products"
+      ]
+    },
+    "src/components/layout/Navbar.tsx": {
+      "path": "src/components/layout/Navbar.tsx",
+      "file_type": "component",
+      "exports": [
+        "Navbar"
+      ],
+      "default_export": "Navbar",
+      "imports": {
+        "react": [
+          "React",
+          "useState"
+        ],
+        "react-router-dom": [
+          "Link",
+          "useLocation"
+        ],
+        "framer-motion": [
+          "motion",
+          "AnimatePresence"
+        ],
+        "lucide-react": [
+          "ShoppingCart",
+          "Menu",
+          "X",
+          "Zap"
+        ],
+        "../../stores/cartStore": [
+          "useCart"
+        ]
+      },
+      "local_deps": [
+        "src/stores/cartStore"
+      ]
+    },
+    "src/components/layout/Footer.tsx": {
+      "path": "src/components/layout/Footer.tsx",
+      "file_type": "component",
+      "exports": [
+        "Footer"
+      ],
+      "default_export": null,
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "react-router-dom": [
+          "Link"
+        ],
+        "lucide-react": [
+          "Zap",
+          "Facebook",
+          "Twitter",
+          "Instagram",
+          "Github"
+        ]
+      },
+      "local_deps": []
+    },
+    "src/components/product/ProductCard.tsx": {
+      "path": "src/components/product/ProductCard.tsx",
+      "file_type": "component",
+      "exports": [
+        "ProductCardProps",
+        "ProductCard"
+      ],
+      "default_export": "ProductCard",
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "react-router-dom": [
+          "Link"
+        ],
+        "lucide-react": [
+          "Star",
+          "ShoppingCart"
+        ],
+        "../../data/products": [
+          "Product"
+        ],
+        "../../lib/utils": [
+          "formatPrice"
+        ],
+        "../../stores/cartStore": [
+          "useCart"
+        ]
+      },
+      "local_deps": [
+        "src/data/products",
+        "src/lib/utils",
+        "src/stores/cartStore"
+      ]
+    },
+    "src/components/product/ProductGrid.tsx": {
+      "path": "src/components/product/ProductGrid.tsx",
+      "file_type": "component",
+      "exports": [
+        "ProductGridProps",
+        "ProductGrid"
+      ],
+      "default_export": "ProductGrid",
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "../../data/products": [
+          "Product"
+        ],
+        "./ProductCard": [
+          "ProductCard"
+        ]
+      },
+      "local_deps": [
+        "src/data/products",
+        "src/components/product/ProductCard"
+      ]
+    },
+    "src/components/product/ProductFilters.tsx": {
+      "path": "src/components/product/ProductFilters.tsx",
+      "file_type": "component",
+      "exports": [
+        "ProductFiltersProps",
+        "ProductFilters"
+      ],
+      "default_export": "ProductFilters",
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "X",
+          "SlidersHorizontal"
+        ],
+        "../../data/products": [
+          "categories"
+        ]
+      },
+      "local_deps": [
+        "src/data/products"
+      ]
+    },
+    "src/components/home/HeroSection.tsx": {
+      "path": "src/components/home/HeroSection.tsx",
+      "file_type": "component",
+      "exports": [
+        "HeroSection"
+      ],
+      "default_export": "HeroSection",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "ArrowRight",
+          "Sparkles",
+          "Star",
+          "ChevronRight"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ],
+        "react-router-dom": [
+          "useNavigate"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/home/CategoriesOverview.tsx": {
+      "path": "src/components/home/CategoriesOverview.tsx",
+      "file_type": "component",
+      "exports": [
+        "CategoriesOverview"
+      ],
+      "default_export": "CategoriesOverview",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "Smartphone",
+          "Cable",
+          "Headphones",
+          "Shield",
+          "Gem",
+          "ArrowRight"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ],
+        "react-router-dom": [
+          "useNavigate"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/home/FeaturedProductsSection.tsx": {
+      "path": "src/components/home/FeaturedProductsSection.tsx",
+      "file_type": "component",
+      "exports": [
+        "FeaturedProductsSection"
+      ],
+      "default_export": "FeaturedProductsSection",
+      "imports": {
+        "react": [
+          "useState",
+          "useCallback",
+          "memo"
+        ],
+        "framer-motion": [
+          "motion",
+          "useInView",
+          "AnimatePresence"
+        ],
+        "lucide-react": [
+          "ShoppingBag",
+          "Check",
+          "Zap",
+          "Star",
+          "ArrowRight"
+        ],
+        "../../stores/cartStore": [
+          "useCart",
+          "CartItem"
+        ],
+        "../../data/products": [
+          "getFeaturedProducts",
+          "Product"
+        ],
+        "../../lib/utils": [
+          "cn",
+          "formatPrice"
+        ],
+        "react-router-dom": [
+          "Link"
+        ]
+      },
+      "local_deps": [
+        "src/stores/cartStore",
+        "src/data/products",
+        "src/lib/utils"
+      ]
+    },
+    "src/components/home/BrandIdentitySection.tsx": {
+      "path": "src/components/home/BrandIdentitySection.tsx",
+      "file_type": "component",
+      "exports": [
+        "BrandIdentitySection"
+      ],
+      "default_export": "BrandIdentitySection",
+      "imports": {
+        "framer-motion": [
+          "motion",
+          "useInView"
+        ],
+        "lucide-react": [
+          "MapPin",
+          "Zap",
+          "Sparkles",
+          "Shield",
+          "Users",
+          "Smartphone"
+        ],
+        "react-router-dom": [
+          "Link"
+        ]
+      },
+      "local_deps": []
+    },
+    "src/pages/ProductsPage.tsx": {
+      "path": "src/pages/ProductsPage.tsx",
+      "file_type": "page",
+      "exports": [
+        "ProductsPage"
+      ],
+      "default_export": "ProductsPage",
+      "imports": {
+        "react": [
+          "React",
+          "useState",
+          "useMemo"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "../data/products": [
+          "products"
+        ],
+        "../components/product/ProductGrid": [
+          "ProductGrid"
+        ],
+        "../components/product/ProductFilters": [
+          "ProductFilters"
+        ]
+      },
+      "local_deps": [
+        "src/data/products",
+        "src/components/product/ProductGrid",
+        "src/components/product/ProductFilters"
+      ]
+    },
+    "src/pages/ProductDetailPage.tsx": {
+      "path": "src/pages/ProductDetailPage.tsx",
+      "file_type": "page",
+      "exports": [
+        "ProductDetailPage"
+      ],
+      "default_export": "ProductDetailPage",
+      "imports": {
+        "react": [
+          "React",
+          "useState"
+        ],
+        "react-router-dom": [
+          "useParams",
+          "Link"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "Star",
+          "ShoppingCart",
+          "Check",
+          "ChevronLeft",
+          "Minus",
+          "Plus"
+        ],
+        "../data/products": [
+          "getProductBySlug"
+        ],
+        "../lib/utils": [
+          "formatPrice"
+        ],
+        "../stores/cartStore": [
+          "useCart"
+        ]
+      },
+      "local_deps": [
+        "src/data/products",
+        "src/lib/utils",
+        "src/stores/cartStore"
+      ]
+    },
+    "src/pages/CartPage.tsx": {
+      "path": "src/pages/CartPage.tsx",
+      "file_type": "page",
+      "exports": [
+        "CartPage"
+      ],
+      "default_export": "CartPage",
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "react-router-dom": [
+          "Link"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "Trash2",
+          "Minus",
+          "Plus",
+          "ShoppingBag",
+          "ArrowRight"
+        ],
+        "../stores/cartStore": [
+          "useCart"
+        ],
+        "../lib/utils": [
+          "formatPrice"
+        ]
+      },
+      "local_deps": [
+        "src/stores/cartStore",
+        "src/lib/utils"
+      ]
+    },
+    "src/pages/CheckoutPage.tsx": {
+      "path": "src/pages/CheckoutPage.tsx",
+      "file_type": "page",
+      "exports": [
+        "CheckoutPage"
+      ],
+      "default_export": null,
+      "imports": {
+        "react": [
+          "React",
+          "useState"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "react-router-dom": [
+          "Link",
+          "useNavigate"
+        ],
+        "lucide-react": [
+          "CreditCard",
+          "CheckCircle"
+        ],
+        "../stores/cartStore": [
+          "useCart"
+        ],
+        "../lib/utils": [
+          "formatPrice"
+        ]
+      },
+      "local_deps": [
+        "src/stores/cartStore",
+        "src/lib/utils"
+      ]
+    },
+    "src/pages/AboutPage.tsx": {
+      "path": "src/pages/AboutPage.tsx",
+      "file_type": "page",
+      "exports": [
+        "AboutPage"
+      ],
+      "default_export": "AboutPage",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "MapPin",
+          "Zap",
+          "Shield",
+          "Heart",
+          "Sparkles",
+          "Users"
+        ],
+        "../components/layout/Navbar": [
+          "Navbar"
+        ],
+        "../components/layout/Footer": [
+          "Footer"
+        ]
+      },
+      "local_deps": [
+        "src/components/layout/Navbar",
+        "src/components/layout/Footer"
+      ]
+    },
+    "src/pages/ContactPage.tsx": {
+      "path": "src/pages/ContactPage.tsx",
+      "file_type": "page",
+      "exports": [
+        "ContactPage"
+      ],
+      "default_export": "ContactPage",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "MessageCircle",
+          "Phone",
+          "Mail",
+          "MapPin",
+          "Clock",
+          "Send"
+        ],
+        "../components/layout/Navbar": [
+          "Navbar"
+        ],
+        "../components/layout/Footer": [
+          "Footer"
+        ]
+      },
+      "local_deps": [
+        "src/components/layout/Navbar",
+        "src/components/layout/Footer"
+      ]
+    },
+    "src/App.tsx": {
+      "path": "src/App.tsx",
+      "file_type": "module",
+      "exports": [],
+      "default_export": "App",
+      "imports": {
+        "react-router-dom": [
+          "BrowserRouter",
+          "Routes",
+          "Route"
+        ],
+        "./components/layout/Navbar": [
+          "Navbar"
+        ],
+        "./components/layout/Footer": [
+          "Footer"
+        ],
+        "./pages/Home": [
+          "Home"
+        ],
+        "./pages/ProductsPage": [
+          "ProductsPage"
+        ],
+        "./pages/ProductDetailPage": [
+          "ProductDetailPage"
+        ],
+        "./pages/CartPage": [
+          "CartPage"
+        ],
+        "./pages/CheckoutPage": [
+          "CheckoutPage"
+        ],
+        "./pages/AboutPage": [
+          "AboutPage"
+        ],
+        "./pages/ContactPage": [
+          "ContactPage"
+        ]
+      },
+      "local_deps": [
+        "src/components/layout/Navbar",
+        "src/components/layout/Footer",
+        "src/pages/Home",
+        "src/pages/ProductsPage",
+        "src/pages/ProductDetailPage",
+        "src/pages/CartPage",
+        "src/pages/CheckoutPage",
+        "src/pages/AboutPage",
+        "src/pages/ContactPage"
+      ]
+    },
+    "src/pages/Home.tsx": {
+      "path": "src/pages/Home.tsx",
+      "file_type": "page",
+      "exports": [],
+      "default_export": "Home",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "../components/home/HeroSection": [
+          "HeroSection"
+        ],
+        "../components/home/CategoriesOverview": [
+          "CategoriesOverview"
+        ],
+        "../components/home/FeaturedProductsSection": [
+          "FeaturedProductsSection"
+        ],
+        "../components/home/BrandIdentitySection": [
+          "BrandIdentitySection"
+        ],
+        "../components/home/TestimonialsSection": [
+          "TestimonialsSection"
+        ],
+        "../components/home/PricingSection": [
+          "PricingSection"
+        ],
+        "../lib/utils": [
+          "cn"
+        ]
+      },
+      "local_deps": [
+        "src/components/home/HeroSection",
+        "src/components/home/CategoriesOverview",
+        "src/components/home/FeaturedProductsSection",
+        "src/components/home/BrandIdentitySection",
+        "src/components/home/TestimonialsSection",
+        "src/components/home/PricingSection",
+        "src/lib/utils"
+      ]
+    },
+    "src/main.tsx": {
+      "path": "src/main.tsx",
+      "file_type": "entry",
+      "exports": [],
+      "default_export": null,
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "react-dom/client": [
+          "ReactDOM"
+        ],
+        "./App": [
+          "App"
+        ]
+      },
+      "local_deps": [
+        "src/App"
+      ]
+    },
+    "src/components/home/TestimonialsSection.tsx": {
+      "path": "src/components/home/TestimonialsSection.tsx",
+      "file_type": "component",
+      "exports": [
+        "TestimonialsSection"
+      ],
+      "default_export": "TestimonialsSection",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "Star"
+        ]
+      },
+      "local_deps": []
+    },
+    "src/components/home/PricingSection.tsx": {
+      "path": "src/components/home/PricingSection.tsx",
+      "file_type": "component",
+      "exports": [],
+      "default_export": "PricingSection",
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "Check",
+          "X",
+          "Sparkles",
+          "Shield",
+          "Zap",
+          "Infinity",
+          "Headphones",
+          "Star",
+          "Package"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    }
+  }
+}

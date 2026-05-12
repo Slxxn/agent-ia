@@ -1,0 +1,1608 @@
+{
+  "project_id": 51,
+  "workspace_name": "ixshelco",
+  "tech_stack": [
+    "React",
+    "Vite",
+    "Tailwind CSS",
+    "Framer Motion",
+    "Zustand",
+    "React Router"
+  ],
+  "packages": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "framer-motion": "^10.16.0",
+    "lucide-react": "^0.294.0",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^2.1.0",
+    "date-fns": "^2.30.0",
+    "react-hot-toast": "^2.4.1",
+    "zustand": "^4.4.7",
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.5",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0"
+  },
+  "entry_point": "src/main.tsx",
+  "routes": [
+    {
+      "path": "/",
+      "component": "Home"
+    },
+    {
+      "path": "/contact",
+      "component": "Contact"
+    },
+    {
+      "path": "/faq",
+      "component": "Faq"
+    },
+    {
+      "path": "/admin",
+      "component": "Admin"
+    },
+    {
+      "path": "/booking",
+      "component": "Booking"
+    },
+    {
+      "path": "/profile",
+      "component": "Profile"
+    }
+  ],
+  "files": {
+    "package.json": {
+      "path": "package.json",
+      "file_type": "module",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "index.html": {
+      "path": "index.html",
+      "file_type": "module",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "public/favicon.svg": {
+      "path": "public/favicon.svg",
+      "file_type": "module",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "vite.config.ts": {
+      "path": "vite.config.ts",
+      "file_type": "config",
+      "exports": [],
+      "default_export": "defineConfig",
+      "imports": {
+        "vite": [
+          "defineConfig"
+        ],
+        "@vitejs/plugin-react": [
+          "react"
+        ],
+        "path": [
+          "path"
+        ]
+      },
+      "local_deps": []
+    },
+    "tsconfig.json": {
+      "path": "tsconfig.json",
+      "file_type": "config",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "tsconfig.node.json": {
+      "path": "tsconfig.node.json",
+      "file_type": "config",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "postcss.config.js": {
+      "path": "postcss.config.js",
+      "file_type": "config",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "tailwind.config.js": {
+      "path": "tailwind.config.js",
+      "file_type": "config",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/index.css": {
+      "path": "src/index.css",
+      "file_type": "style",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/lib/utils.ts": {
+      "path": "src/lib/utils.ts",
+      "file_type": "util",
+      "exports": [
+        "cn",
+        "formatPrice",
+        "formatDate",
+        "formatTime",
+        "formatDateTime",
+        "formatRelativeDate",
+        "formatDuration",
+        "slugify",
+        "truncate",
+        "generateId",
+        "classNames",
+        "getInitials",
+        "maskPhone",
+        "maskEmail",
+        "isValidEmail",
+        "isValidPhone",
+        "getTimeSlots",
+        "calculateEndTime",
+        "getDayName",
+        "getMonthName",
+        "isWeekend",
+        "addDays",
+        "startOfDay",
+        "endOfDay"
+      ],
+      "default_export": null,
+      "imports": {
+        "clsx": [
+          "type ClassValue",
+          "clsx"
+        ],
+        "tailwind-merge": [
+          "twMerge"
+        ],
+        "date-fns": [
+          "format",
+          "parseISO",
+          "differenceInDays",
+          "differenceInHours",
+          "differenceInMinutes",
+          "isToday",
+          "isTomorrow",
+          "isYesterday"
+        ],
+        "date-fns/locale": [
+          "fr"
+        ]
+      },
+      "local_deps": []
+    },
+    "src/main.tsx": {
+      "path": "src/main.tsx",
+      "file_type": "entry",
+      "exports": [],
+      "default_export": null,
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "react-dom/client": [
+          "ReactDOM"
+        ],
+        "react-router-dom": [
+          "BrowserRouter"
+        ],
+        "./App": [
+          "App"
+        ]
+      },
+      "local_deps": [
+        "src/App"
+      ]
+    },
+    "src/App.tsx": {
+      "path": "src/App.tsx",
+      "file_type": "module",
+      "exports": [
+        "App"
+      ],
+      "default_export": "App",
+      "imports": {
+        "react-router-dom": [
+          "Routes",
+          "Route"
+        ],
+        "react-hot-toast": [
+          "Toaster"
+        ],
+        "./components/layout/Layout": [
+          "Layout"
+        ],
+        "./pages/Home": [
+          "Home"
+        ],
+        "./pages/Contact": [
+          "Contact"
+        ],
+        "./pages/Faq": [
+          "Faq"
+        ],
+        "./pages/Admin": [
+          "Admin"
+        ],
+        "./pages/Booking": [
+          "Booking"
+        ],
+        "./pages/Profile": [
+          "Profile"
+        ]
+      },
+      "local_deps": [
+        "src/components/layout/Layout",
+        "src/pages/Home",
+        "src/pages/Contact",
+        "src/pages/Faq",
+        "src/pages/Admin",
+        "src/pages/Booking",
+        "src/pages/Profile"
+      ]
+    },
+    "src/pages/Home.tsx": {
+      "path": "src/pages/Home.tsx",
+      "file_type": "page",
+      "exports": [
+        "Home"
+      ],
+      "default_export": "Home",
+      "imports": {
+        "../components/sections/Hero": [
+          "Hero"
+        ],
+        "../components/sections/Logos": [
+          "Logos"
+        ],
+        "../components/sections/ProblemSolution": [
+          "ProblemSolution"
+        ],
+        "../components/sections/Services": [
+          "Services"
+        ],
+        "../components/sections/HowItWorks": [
+          "HowItWorks"
+        ],
+        "../components/sections/Pricing": [
+          "Pricing"
+        ],
+        "../components/sections/Testimonials": [
+          "Testimonials"
+        ],
+        "../components/sections/Gallery": [
+          "Gallery"
+        ],
+        "../components/sections/CTA": [
+          "CTA"
+        ]
+      },
+      "local_deps": [
+        "src/components/sections/Hero",
+        "src/components/sections/Logos",
+        "src/components/sections/ProblemSolution",
+        "src/components/sections/Services",
+        "src/components/sections/HowItWorks",
+        "src/components/sections/Pricing",
+        "src/components/sections/Testimonials",
+        "src/components/sections/Gallery",
+        "src/components/sections/CTA"
+      ]
+    },
+    "src/pages/Contact.tsx": {
+      "path": "src/pages/Contact.tsx",
+      "file_type": "page",
+      "exports": [
+        "Contact"
+      ],
+      "default_export": "Contact",
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "MapPin",
+          "Phone",
+          "Mail",
+          "Clock",
+          "Send",
+          "CheckCircle"
+        ],
+        "../components/ui/Button": [
+          "Button"
+        ],
+        "../components/ui/Input": [
+          "Input"
+        ],
+        "../components/ui/Textarea": [
+          "Textarea"
+        ],
+        "../lib/theme": [
+          "theme"
+        ]
+      },
+      "local_deps": [
+        "src/components/ui/Button",
+        "src/components/ui/Input",
+        "src/components/ui/Textarea",
+        "src/lib/theme"
+      ]
+    },
+    "src/pages/Faq.tsx": {
+      "path": "src/pages/Faq.tsx",
+      "file_type": "page",
+      "exports": [
+        "Faq"
+      ],
+      "default_export": "Faq",
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "framer-motion": [
+          "motion",
+          "AnimatePresence"
+        ],
+        "lucide-react": [
+          "ChevronDown",
+          "Search"
+        ],
+        "../data/faq": [
+          "faqItems",
+          "faqCategories"
+        ],
+        "../components/ui/Input": [
+          "Input"
+        ]
+      },
+      "local_deps": [
+        "src/data/faq",
+        "src/components/ui/Input"
+      ]
+    },
+    "src/pages/Admin.tsx": {
+      "path": "src/pages/Admin.tsx",
+      "file_type": "page",
+      "exports": [
+        "Admin"
+      ],
+      "default_export": "Admin",
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "Calendar",
+          "Users",
+          "Settings",
+          "BarChart3",
+          "Clock",
+          "CheckCircle",
+          "XCircle",
+          "AlertCircle"
+        ],
+        "../stores/appointmentStore": [
+          "useAppointmentStore"
+        ],
+        "../stores/authStore": [
+          "useAuthStore"
+        ],
+        "../components/ui/Button": [
+          "Button"
+        ],
+        "../components/ui/Badge": [
+          "Badge"
+        ],
+        "../components/ui/LoadingSpinner": [
+          "LoadingSpinner"
+        ],
+        "../components/ui/EmptyState": [
+          "EmptyState"
+        ]
+      },
+      "local_deps": [
+        "src/stores/appointmentStore",
+        "src/stores/authStore",
+        "src/components/ui/Button",
+        "src/components/ui/Badge",
+        "src/components/ui/LoadingSpinner",
+        "src/components/ui/EmptyState"
+      ]
+    },
+    "src/vite-env.d.ts": {
+      "path": "src/vite-env.d.ts",
+      "file_type": "module",
+      "exports": [],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/lib/theme.ts": {
+      "path": "src/lib/theme.ts",
+      "file_type": "util",
+      "exports": [
+        "theme",
+        "Service",
+        "ServiceCategory",
+        "BusinessHours"
+      ],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/stores/authStore.ts": {
+      "path": "src/stores/authStore.ts",
+      "file_type": "store",
+      "exports": [
+        "AuthUser",
+        "useAuthStore",
+        "useAuth",
+        "useAuthContext"
+      ],
+      "default_export": null,
+      "imports": {
+        "zustand": [
+          "create"
+        ],
+        "zustand/middleware": [
+          "persist"
+        ]
+      },
+      "local_deps": []
+    },
+    "src/stores/appointmentStore.ts": {
+      "path": "src/stores/appointmentStore.ts",
+      "file_type": "store",
+      "exports": [
+        "Appointment",
+        "useAppointmentStore"
+      ],
+      "default_export": null,
+      "imports": {
+        "zustand": [
+          "create"
+        ],
+        "zustand/middleware": [
+          "persist"
+        ],
+        "@/lib/theme": [
+          "Service"
+        ],
+        "@/lib/utils": [
+          "generateId"
+        ]
+      },
+      "local_deps": []
+    },
+    "src/stores/bookingStore.ts": {
+      "path": "src/stores/bookingStore.ts",
+      "file_type": "store",
+      "exports": [
+        "ClientInfo",
+        "useBookingStore"
+      ],
+      "default_export": null,
+      "imports": {
+        "zustand": [
+          "create"
+        ],
+        "@/lib/theme": [
+          "Service"
+        ]
+      },
+      "local_deps": []
+    },
+    "src/stores/index.ts": {
+      "path": "src/stores/index.ts",
+      "file_type": "store",
+      "exports": [
+        "useAuthStore",
+        "useAppointmentStore",
+        "useBookingStore"
+      ],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/components/layout/Navbar.tsx": {
+      "path": "src/components/layout/Navbar.tsx",
+      "file_type": "component",
+      "exports": [
+        "Navbar"
+      ],
+      "default_export": "Navbar",
+      "imports": {
+        "react": [
+          "useState",
+          "useEffect"
+        ],
+        "framer-motion": [
+          "motion",
+          "AnimatePresence"
+        ],
+        "lucide-react": [
+          "Menu",
+          "X",
+          "Sparkles"
+        ],
+        "react-router-dom": [
+          "Link",
+          "useLocation"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ],
+        "../../stores/authStore": [
+          "useAuthStore"
+        ],
+        "../../stores/cartStore": [
+          "useCartStore"
+        ],
+        "../auth/AuthModal": [
+          "AuthModal"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils",
+        "src/stores/authStore",
+        "src/stores/cartStore",
+        "src/components/auth/AuthModal"
+      ]
+    },
+    "src/components/layout/Footer.tsx": {
+      "path": "src/components/layout/Footer.tsx",
+      "file_type": "component",
+      "exports": [
+        "Footer"
+      ],
+      "default_export": "Footer",
+      "imports": {
+        "react-router-dom": [
+          "Link"
+        ],
+        "lucide-react": [
+          "Sparkles",
+          "MapPin",
+          "Phone",
+          "Mail",
+          "Clock",
+          "Instagram",
+          "Facebook",
+          "Twitter"
+        ]
+      },
+      "local_deps": []
+    },
+    "src/components/layout/Layout.tsx": {
+      "path": "src/components/layout/Layout.tsx",
+      "file_type": "component",
+      "exports": [
+        "Layout"
+      ],
+      "default_export": "Layout",
+      "imports": {
+        "react-router-dom": [
+          "Outlet"
+        ],
+        "./Navbar": [
+          "Navbar"
+        ],
+        "./Footer": [
+          "Footer"
+        ]
+      },
+      "local_deps": [
+        "src/components/layout/Navbar",
+        "src/components/layout/Footer"
+      ]
+    },
+    "src/components/layout/index.ts": {
+      "path": "src/components/layout/index.ts",
+      "file_type": "component",
+      "exports": [
+        "Navbar",
+        "Footer",
+        "Layout"
+      ],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/components/ui/Button.tsx": {
+      "path": "src/components/ui/Button.tsx",
+      "file_type": "component",
+      "exports": [
+        "Button"
+      ],
+      "default_export": "Button",
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/ui/Card.tsx": {
+      "path": "src/components/ui/Card.tsx",
+      "file_type": "component",
+      "exports": [
+        "Card",
+        "CardHeader",
+        "CardBody",
+        "CardFooter"
+      ],
+      "default_export": "Card",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ],
+        "react": [
+          "React"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/ui/Input.tsx": {
+      "path": "src/components/ui/Input.tsx",
+      "file_type": "component",
+      "exports": [
+        "Input"
+      ],
+      "default_export": "Input",
+      "imports": {
+        "react": [
+          "React",
+          "forwardRef"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ],
+        "framer-motion": [
+          "motion"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/ui/Textarea.tsx": {
+      "path": "src/components/ui/Textarea.tsx",
+      "file_type": "component",
+      "exports": [
+        "Textarea"
+      ],
+      "default_export": "Textarea",
+      "imports": {
+        "react": [
+          "React",
+          "forwardRef"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ],
+        "framer-motion": [
+          "motion"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/ui/Select.tsx": {
+      "path": "src/components/ui/Select.tsx",
+      "file_type": "component",
+      "exports": [
+        "Select"
+      ],
+      "default_export": "Select",
+      "imports": {
+        "react": [
+          "React",
+          "forwardRef"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ],
+        "lucide-react": [
+          "ChevronDown"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/ui/Modal.tsx": {
+      "path": "src/components/ui/Modal.tsx",
+      "file_type": "component",
+      "exports": [
+        "Modal"
+      ],
+      "default_export": "Modal",
+      "imports": {
+        "react": [
+          "React",
+          "useEffect",
+          "useCallback"
+        ],
+        "framer-motion": [
+          "motion",
+          "AnimatePresence"
+        ],
+        "lucide-react": [
+          "X"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/ui/Badge.tsx": {
+      "path": "src/components/ui/Badge.tsx",
+      "file_type": "component",
+      "exports": [],
+      "default_export": "Badge",
+      "imports": {
+        "../../lib/utils": [
+          "cn"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/ui/LoadingSpinner.tsx": {
+      "path": "src/components/ui/LoadingSpinner.tsx",
+      "file_type": "component",
+      "exports": [
+        "LoadingSpinner"
+      ],
+      "default_export": "LoadingSpinner",
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/ui/EmptyState.tsx": {
+      "path": "src/components/ui/EmptyState.tsx",
+      "file_type": "component",
+      "exports": [
+        "EmptyState"
+      ],
+      "default_export": "EmptyState",
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ],
+        "lucide-react": [
+          "Inbox"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/ui/Toast.tsx": {
+      "path": "src/components/ui/Toast.tsx",
+      "file_type": "component",
+      "exports": [
+        "Toast"
+      ],
+      "default_export": "Toast",
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "framer-motion": [
+          "motion",
+          "AnimatePresence"
+        ],
+        "lucide-react": [
+          "CheckCircle",
+          "XCircle",
+          "AlertCircle",
+          "Info",
+          "X"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ]
+      },
+      "local_deps": [
+        "src/lib/utils"
+      ]
+    },
+    "src/components/ui/index.ts": {
+      "path": "src/components/ui/index.ts",
+      "file_type": "component",
+      "exports": [
+        "Button",
+        "Card",
+        "CardHeader",
+        "CardBody",
+        "CardFooter",
+        "Input",
+        "Textarea",
+        "Select",
+        "Modal",
+        "Badge",
+        "LoadingSpinner",
+        "EmptyState",
+        "Toast"
+      ],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/data/services.ts": {
+      "path": "src/data/services.ts",
+      "file_type": "module",
+      "exports": [
+        "services",
+        "serviceCategories"
+      ],
+      "default_export": "services",
+      "imports": {
+        "../lib/theme": [
+          "Service"
+        ]
+      },
+      "local_deps": [
+        "src/lib/theme"
+      ]
+    },
+    "src/data/testimonials.ts": {
+      "path": "src/data/testimonials.ts",
+      "file_type": "module",
+      "exports": [
+        "Testimonial",
+        "testimonialsStats"
+      ],
+      "default_export": "testimonials",
+      "imports": {},
+      "local_deps": []
+    },
+    "src/data/gallery.ts": {
+      "path": "src/data/gallery.ts",
+      "file_type": "module",
+      "exports": [
+        "GalleryImage",
+        "galleryImages",
+        "galleryCategories"
+      ],
+      "default_export": "galleryImages",
+      "imports": {},
+      "local_deps": []
+    },
+    "src/data/index.ts": {
+      "path": "src/data/index.ts",
+      "file_type": "entry",
+      "exports": [
+        "services",
+        "serviceCategories",
+        "testimonials",
+        "testimonialsStats",
+        "galleryImages",
+        "galleryCategories",
+        "faqItems",
+        "faqCategories",
+        "recentReviews",
+        "heroContent",
+        "problemSolution",
+        "logoItems"
+      ],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/data/faq.ts": {
+      "path": "src/data/faq.ts",
+      "file_type": "module",
+      "exports": [
+        "FAQItem",
+        "faqCategories",
+        "faqItems"
+      ],
+      "default_export": "faqItems",
+      "imports": {},
+      "local_deps": []
+    },
+    "src/data/reviews.ts": {
+      "path": "src/data/reviews.ts",
+      "file_type": "module",
+      "exports": [
+        "Review",
+        "recentReviews"
+      ],
+      "default_export": "recentReviews",
+      "imports": {},
+      "local_deps": []
+    },
+    "src/data/homeContent.ts": {
+      "path": "src/data/homeContent.ts",
+      "file_type": "module",
+      "exports": [
+        "HeroContent",
+        "LogoItem",
+        "ProblemSolution",
+        "heroContent",
+        "problemSolution",
+        "logoItems"
+      ],
+      "default_export": null,
+      "imports": {
+        "../lib/theme": [
+          "Service"
+        ]
+      },
+      "local_deps": [
+        "src/lib/theme"
+      ]
+    },
+    "src/components/sections/Hero.tsx": {
+      "path": "src/components/sections/Hero.tsx",
+      "file_type": "component",
+      "exports": [
+        "Hero"
+      ],
+      "default_export": "Hero",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "ArrowRight",
+          "Sparkles",
+          "Star",
+          "Shield",
+          "Clock",
+          "Award"
+        ],
+        "../ui/Button": [
+          "Button"
+        ],
+        "../ui/Badge": [
+          "Badge"
+        ],
+        "../../data/homeContent": [
+          "heroContent"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ]
+      },
+      "local_deps": [
+        "src/components/ui/Button",
+        "src/components/ui/Badge",
+        "src/data/homeContent",
+        "src/lib/utils"
+      ]
+    },
+    "src/components/sections/Logos.tsx": {
+      "path": "src/components/sections/Logos.tsx",
+      "file_type": "component",
+      "exports": [
+        "Logos"
+      ],
+      "default_export": "Logos",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "../../data/homeContent": [
+          "logoItems"
+        ]
+      },
+      "local_deps": [
+        "src/data/homeContent"
+      ]
+    },
+    "src/components/sections/ProblemSolution.tsx": {
+      "path": "src/components/sections/ProblemSolution.tsx",
+      "file_type": "component",
+      "exports": [
+        "ProblemSolution"
+      ],
+      "default_export": "ProblemSolution",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "Lightbulb",
+          "Target",
+          "ArrowRight",
+          "CheckCircle2",
+          "XCircle"
+        ],
+        "../ui/Button": [
+          "Button"
+        ],
+        "../../data/homeContent": [
+          "problemSolution"
+        ]
+      },
+      "local_deps": [
+        "src/components/ui/Button",
+        "src/data/homeContent"
+      ]
+    },
+    "src/components/sections/index.ts": {
+      "path": "src/components/sections/index.ts",
+      "file_type": "component",
+      "exports": [
+        "Hero",
+        "Logos",
+        "ProblemSolution",
+        "Services",
+        "HowItWorks",
+        "Pricing",
+        "Testimonials",
+        "Gallery",
+        "CTA"
+      ],
+      "default_export": null,
+      "imports": {},
+      "local_deps": []
+    },
+    "src/components/sections/Services.tsx": {
+      "path": "src/components/sections/Services.tsx",
+      "file_type": "component",
+      "exports": [
+        "Services"
+      ],
+      "default_export": "Services",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "ArrowRight",
+          "Sparkles"
+        ],
+        "../ui/Button": [
+          "Button"
+        ],
+        "../ui/Badge": [
+          "Badge"
+        ],
+        "../../data/services": [
+          "services"
+        ]
+      },
+      "local_deps": [
+        "src/components/ui/Button",
+        "src/components/ui/Badge",
+        "src/data/services"
+      ]
+    },
+    "src/components/sections/HowItWorks.tsx": {
+      "path": "src/components/sections/HowItWorks.tsx",
+      "file_type": "component",
+      "exports": [
+        "HowItWorks"
+      ],
+      "default_export": "HowItWorks",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "ArrowRight",
+          "Sparkles"
+        ],
+        "../ui/Button": [
+          "Button"
+        ],
+        "../ui/Badge": [
+          "Badge"
+        ]
+      },
+      "local_deps": [
+        "src/components/ui/Button",
+        "src/components/ui/Badge"
+      ]
+    },
+    "src/components/sections/Pricing.tsx": {
+      "path": "src/components/sections/Pricing.tsx",
+      "file_type": "component",
+      "exports": [
+        "Pricing"
+      ],
+      "default_export": null,
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "framer-motion": [
+          "motion",
+          "AnimatePresence"
+        ],
+        "lucide-react": [
+          "Check",
+          "Sparkles",
+          "ArrowRight"
+        ],
+        "../ui/Button": [
+          "Button"
+        ],
+        "../ui/Badge": [
+          "Badge"
+        ]
+      },
+      "local_deps": [
+        "src/components/ui/Button",
+        "src/components/ui/Badge"
+      ]
+    },
+    "src/components/sections/Testimonials.tsx": {
+      "path": "src/components/sections/Testimonials.tsx",
+      "file_type": "component",
+      "exports": [],
+      "default_export": "Testimonials",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "../../data/testimonials": [
+          "testimonialsData",
+          "testimonialsStats"
+        ],
+        "lucide-react": [
+          "Star",
+          "Quote"
+        ],
+        "react": [
+          "useRef"
+        ]
+      },
+      "local_deps": [
+        "src/data/testimonials"
+      ]
+    },
+    "src/components/sections/Gallery.tsx": {
+      "path": "src/components/sections/Gallery.tsx",
+      "file_type": "component",
+      "exports": [
+        "Gallery"
+      ],
+      "default_export": "Gallery",
+      "imports": {
+        "framer-motion": [
+          "useInView"
+        ],
+        "../../data/gallery": [
+          "galleryImages",
+          "galleryCategories"
+        ],
+        "react": [
+          "useState",
+          "useRef"
+        ],
+        "lucide-react": [
+          "X",
+          "ChevronLeft",
+          "ChevronRight",
+          "Sparkles"
+        ],
+        "../../lib/utils": [
+          "cn"
+        ]
+      },
+      "local_deps": [
+        "src/data/gallery",
+        "src/lib/utils"
+      ]
+    },
+    "src/components/sections/CTA.tsx": {
+      "path": "src/components/sections/CTA.tsx",
+      "file_type": "component",
+      "exports": [],
+      "default_export": "CTA",
+      "imports": {
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "ArrowRight",
+          "Sparkles",
+          "Shield",
+          "Clock"
+        ],
+        "react-router-dom": [
+          "Link"
+        ],
+        "@/components/ui/Button": [
+          "Button"
+        ]
+      },
+      "local_deps": []
+    },
+    "src/pages/Booking.tsx": {
+      "path": "src/pages/Booking.tsx",
+      "file_type": "page",
+      "exports": [
+        "BookingPage"
+      ],
+      "default_export": null,
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "framer-motion": [
+          "motion",
+          "AnimatePresence"
+        ],
+        "lucide-react": [
+          "Calendar",
+          "Clock",
+          "User",
+          "Phone",
+          "Mail",
+          "MessageSquare",
+          "ChevronLeft",
+          "ChevronRight",
+          "CheckCircle"
+        ],
+        "date-fns": [
+          "format",
+          "addDays",
+          "startOfWeek",
+          "addWeeks",
+          "isSameDay",
+          "parseISO"
+        ],
+        "date-fns/locale": [
+          "fr"
+        ],
+        "../data/services": [
+          "services"
+        ],
+        "../components/ui/Button": [
+          "Button"
+        ],
+        "../components/ui/Input": [
+          "Input"
+        ],
+        "../components/ui/Textarea": [
+          "Textarea"
+        ],
+        "../components/ui/Select": [
+          "Select"
+        ],
+        "../stores/bookingStore": [
+          "useBookingStore"
+        ],
+        "../stores/appointmentStore": [
+          "useAppointmentStore"
+        ],
+        "../lib/utils": [
+          "generateId",
+          "getTimeSlots"
+        ],
+        "react-hot-toast": [
+          "toast"
+        ]
+      },
+      "local_deps": [
+        "src/data/services",
+        "src/components/ui/Button",
+        "src/components/ui/Input",
+        "src/components/ui/Textarea",
+        "src/components/ui/Select",
+        "src/stores/bookingStore",
+        "src/stores/appointmentStore",
+        "src/lib/utils"
+      ]
+    },
+    "src/stores/historyStore.ts": {
+      "path": "src/stores/historyStore.ts",
+      "file_type": "store",
+      "exports": [
+        "HistoryEntry",
+        "useHistoryStore"
+      ],
+      "default_export": null,
+      "imports": {
+        "zustand": [
+          "create"
+        ],
+        "zustand/middleware": [
+          "persist"
+        ]
+      },
+      "local_deps": []
+    },
+    "src/components/auth/LoginForm.tsx": {
+      "path": "src/components/auth/LoginForm.tsx",
+      "file_type": "component",
+      "exports": [
+        "LoginForm"
+      ],
+      "default_export": "LoginForm",
+      "imports": {
+        "react": [
+          "React",
+          "useState"
+        ],
+        "framer-motion": [
+          "motion",
+          "AnimatePresence"
+        ],
+        "lucide-react": [
+          "Mail",
+          "Lock",
+          "Eye",
+          "EyeOff",
+          "Loader2",
+          "AlertCircle"
+        ],
+        "../../stores/authStore": [
+          "useAuthStore"
+        ],
+        "../ui/Button": [
+          "Button"
+        ],
+        "../ui/Input": [
+          "Input"
+        ]
+      },
+      "local_deps": [
+        "src/stores/authStore",
+        "src/components/ui/Button",
+        "src/components/ui/Input"
+      ]
+    },
+    "src/components/auth/RegisterForm.tsx": {
+      "path": "src/components/auth/RegisterForm.tsx",
+      "file_type": "component",
+      "exports": [
+        "RegisterForm"
+      ],
+      "default_export": "RegisterForm",
+      "imports": {
+        "react": [
+          "React",
+          "useState"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "User",
+          "Mail",
+          "Phone",
+          "Lock",
+          "Loader2",
+          "AlertCircle"
+        ],
+        "../../stores/authStore": [
+          "useAuthStore"
+        ],
+        "../ui/Button": [
+          "Button"
+        ]
+      },
+      "local_deps": [
+        "src/stores/authStore",
+        "src/components/ui/Button"
+      ]
+    },
+    "src/components/auth/AuthModal.tsx": {
+      "path": "src/components/auth/AuthModal.tsx",
+      "file_type": "component",
+      "exports": [
+        "AuthModal"
+      ],
+      "default_export": "AuthModal",
+      "imports": {
+        "react": [
+          "React",
+          "useState"
+        ],
+        "framer-motion": [
+          "motion",
+          "AnimatePresence"
+        ],
+        "lucide-react": [
+          "X"
+        ],
+        "./LoginForm": [
+          "LoginForm"
+        ],
+        "./RegisterForm": [
+          "RegisterForm"
+        ]
+      },
+      "local_deps": [
+        "src/components/auth/LoginForm",
+        "src/components/auth/RegisterForm"
+      ]
+    },
+    "src/components/profile/ProfileCard.tsx": {
+      "path": "src/components/profile/ProfileCard.tsx",
+      "file_type": "component",
+      "exports": [
+        "ProfileCard"
+      ],
+      "default_export": "ProfileCard",
+      "imports": {
+        "react": [
+          "React",
+          "useState"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "User",
+          "Mail",
+          "Phone",
+          "Calendar",
+          "Edit2",
+          "Save",
+          "X",
+          "Loader2"
+        ],
+        "../../stores/authStore": [
+          "useAuthStore"
+        ],
+        "../ui/Button": [
+          "Button"
+        ],
+        "../../lib/utils": [
+          "formatDate"
+        ]
+      },
+      "local_deps": [
+        "src/stores/authStore",
+        "src/components/ui/Button",
+        "src/lib/utils"
+      ]
+    },
+    "src/components/profile/AppointmentHistory.tsx": {
+      "path": "src/components/profile/AppointmentHistory.tsx",
+      "file_type": "component",
+      "exports": [
+        "AppointmentHistory"
+      ],
+      "default_export": "AppointmentHistory",
+      "imports": {
+        "react": [
+          "React",
+          "useState"
+        ],
+        "framer-motion": [
+          "motion",
+          "AnimatePresence"
+        ],
+        "lucide-react": [
+          "Calendar",
+          "Clock",
+          "MapPin",
+          "CheckCircle",
+          "XCircle",
+          "ChevronDown",
+          "ChevronUp",
+          "Loader2"
+        ],
+        "../../stores/appointmentStore": [
+          "useAppointmentStore",
+          "Appointment"
+        ],
+        "../../stores/authStore": [
+          "useAuthStore"
+        ],
+        "../../lib/utils": [
+          "formatDate",
+          "formatTime",
+          "formatPrice"
+        ],
+        "../ui/Badge": [
+          "Badge"
+        ],
+        "../ui/EmptyState": [
+          "EmptyState"
+        ]
+      },
+      "local_deps": [
+        "src/stores/appointmentStore",
+        "src/stores/authStore",
+        "src/lib/utils",
+        "src/components/ui/Badge",
+        "src/components/ui/EmptyState"
+      ]
+    },
+    "src/pages/Profile.tsx": {
+      "path": "src/pages/Profile.tsx",
+      "file_type": "page",
+      "exports": [],
+      "default_export": null,
+      "imports": {
+        "react": [
+          "React"
+        ],
+        "framer-motion": [
+          "motion"
+        ],
+        "lucide-react": [
+          "ArrowLeft"
+        ],
+        "react-router-dom": [
+          "useNavigate"
+        ]
+      },
+      "local_deps": []
+    },
+    "src/stores/cartStore.ts": {
+      "path": "src/stores/cartStore.ts",
+      "file_type": "store",
+      "exports": [
+        "CartItem",
+        "useCartStore",
+        "useCart",
+        "useCartContext"
+      ],
+      "default_export": null,
+      "imports": {
+        "zustand": [
+          "create"
+        ],
+        "zustand/middleware": [
+          "persist"
+        ]
+      },
+      "local_deps": []
+    }
+  }
+}

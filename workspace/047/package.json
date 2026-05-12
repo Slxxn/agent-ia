@@ -1,0 +1,6 @@
+{
+  "name": "test-build",
+  "version": "1.0.0",
+  "scripts": { "build": "tsc --noEmit" },
+  "devDependencies": { "typescript": "^5.3.3" }
+}

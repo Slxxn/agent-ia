@@ -26,6 +26,40 @@ def _load_skill(skill_name: str) -> str:
 
 _FRONTEND_SKILL = _load_skill("frontend-design")
 
+_CONTEXT7_INSTRUCTION = """
+## Documentation — instructions importantes
+Pour tout code React, Next.js, Tailwind, Framer Motion, TypeScript :
+- Utilise uniquement les APIs documentées dans la version actuelle
+- Si tu as accès à context7, récupère la doc officielle avant de générer
+- Ne pas inventer des props ou méthodes qui n'existent pas
+- Vérifier que les imports correspondent aux versions dans package.json
+"""
+
+_VIDEO_INSTRUCTION = """
+## Vidéos disponibles dans ce projet
+Si des vidéos ont été générées (disponibles dans /public/videos/),
+utilise-les dans les composants appropriés :
+- /videos/hero.mp4 → Section Hero
+- /videos/features.mp4 → Section Features/Services
+
+Pattern React :
+```tsx
+<video autoPlay loop muted playsInline className="w-full h-full object-cover">
+  <source src="/videos/hero.mp4" type="video/mp4" />
+</video>
+```
+Si la vidéo n'existe pas, utilise un fond coloré CSS. Ne jamais laisser un src inexistant.
+"""
+
+_COMPONENTS_INSTRUCTION = """
+## Composants — 21st.dev Magic en priorité
+Pour les blocs standards (hero, pricing, testimonials, FAQ, footer, navbar),
+utilise les composants 21st.dev Magic via MCP plutôt que de les générer from scratch.
+Avantages : production-ready, testés, accessibles, cohérents.
+Ne génère from scratch que si le composant n'existe pas dans 21st.dev
+ou si le brief demande quelque chose de très spécifique.
+"""
+
 _UI_TASK_TYPES = {"component_ui", "section_emotional", "section_complex", "critical_structure", "polish_final"}
 
 if TYPE_CHECKING:
@@ -359,9 +393,9 @@ class AgentExecutor:
         if types_content:
             context = f"## TYPES DU PROJET (utilise UNIQUEMENT ces interfaces, ne jamais inventer de champs) :\n```typescript\n{types_content}\n```\n\n{context}"
 
-        # Injecter le skill frontend-design pour les tâches UI
+        # Injecter le skill frontend-design + instruction composants pour les tâches UI
         if ttype in _UI_TASK_TYPES and _FRONTEND_SKILL:
-            context = f"## FRONTEND DESIGN RULES :\n{_FRONTEND_SKILL}\n\n{context}"
+            context = f"{_CONTEXT7_INSTRUCTION}\n\n## FRONTEND DESIGN RULES :\n{_FRONTEND_SKILL}\n{_COMPONENTS_INSTRUCTION}\n{_VIDEO_INSTRUCTION}\n\n{context}"
 
         result = await self.llm.generate_code(
             task_description, context,

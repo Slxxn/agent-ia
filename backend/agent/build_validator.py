@@ -14,6 +14,7 @@ Supported error formats:
 import os
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from backend.db.database import add_log
@@ -102,6 +103,9 @@ class BuildValidator:
 
             if result.success:
                 await add_log(project_id, "✅ Compilation réussie — zéro erreur TypeScript.", "info")
+                audit = await self.run_quality_audit(workspace_path)
+                for issue in audit.get("issues", []):
+                    await add_log(project_id, f"⚠️ Audit qualité : {issue}", "warning")
                 return True
 
             errors = result.errors
@@ -414,6 +418,37 @@ class BuildValidator:
 
         await add_log(project_id, f"Échec écriture du correctif pour '{file_path}'.", "error")
         return False
+
+    # ── Quality audit ────────────────────────────────────────────────────────
+
+    @staticmethod
+    async def run_quality_audit(project_path: str) -> dict:
+        """Audit qualité final : taille du build + liens morts."""
+        issues: list[str] = []
+
+        build_path = Path(project_path) / "dist"
+        if build_path.exists():
+            total_size = sum(f.stat().st_size for f in build_path.rglob("*") if f.is_file())
+            if total_size >= 5_000_000:
+                issues.append(f"Build trop lourd : {total_size / 1_000_000:.1f}MB (max recommandé : 5MB)")
+
+        src_path = Path(project_path) / "src"
+        dead_links: list[str] = []
+        if src_path.exists():
+            for tsx_file in src_path.rglob("*.tsx"):
+                try:
+                    if 'href="#"' in tsx_file.read_text(encoding="utf-8"):
+                        dead_links.append(tsx_file.name)
+                except OSError:
+                    pass
+        if dead_links:
+            issues.append(f"Liens morts (href=\"#\") dans : {', '.join(dead_links)}")
+
+        return {
+            "build_size_ok": not any("lourd" in i for i in issues),
+            "links_ok": not dead_links,
+            "issues": issues,
+        }
 
     # ── Utilities ─────────────────────────────────────────────────────────────
 

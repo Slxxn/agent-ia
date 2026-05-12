@@ -105,46 +105,43 @@ export const FEATURE_GROUPS_3D: { label: string; items: { key: string; label: st
   {
     label: 'Scène 3D & WebGL',
     items: [
-      { key: 'hero_threejs',   label: 'Scène Three.js / R3F en hero' },
-      { key: 'particles',      label: 'Système de particules animé' },
-      { key: 'model_3d',       label: 'Modèle 3D custom (GLTF/GLB)' },
-      { key: 'scroll_scene',   label: 'Scroll storytelling 3D' },
+      { key: 'hero_threejs', label: 'Scène Three.js / R3F en hero' },
+      { key: 'particles',    label: 'Système de particules animé' },
+      { key: 'scroll_scene', label: 'Scroll storytelling 3D' },
     ],
   },
   {
     label: 'Interactions & UX',
     items: [
-      { key: 'custom_cursor',  label: 'Curseur custom animé' },
-      { key: 'parallax_deep',  label: 'Parallax multi-couches avancé' },
-      { key: 'morph_transition',label: 'Transitions morphing entre pages' },
-      { key: 'tilt_hover',     label: 'Effet tilt au survol (react-tilt)' },
+      { key: 'custom_cursor',   label: 'Curseur custom animé' },
+      { key: 'parallax_deep',   label: 'Parallax multi-couches avancé' },
+      { key: 'morph_transition', label: 'Transitions morphing entre pages' },
+      { key: 'tilt_hover',      label: 'Effet tilt au survol' },
     ],
   },
   {
-    label: 'Médias Immersifs',
+    label: 'Médias & Visuels',
     items: [
-      { key: 'gallery_3d',     label: 'Galerie 3D interactive' },
-      { key: 'video_bg',       label: 'Vidéo plein-écran en fond' },
-      { key: 'lottie_anim',    label: 'Animations Lottie / SVG avancées' },
-      { key: 'audio_reactive', label: 'Visuels réactifs au son' },
+      { key: 'gallery_3d', label: 'Galerie 3D interactive' },
+      { key: 'video_bg',   label: 'Vidéo plein-écran en fond' },
     ],
   },
   {
     label: 'Navigation & Structure',
     items: [
-      { key: 'loading_screen', label: 'Loading screen animé' },
-      { key: 'smooth_scroll',  label: 'Smooth scroll (Lenis/GSAP)' },
-      { key: 'page_transitions',label: 'Transitions de pages cinématiques' },
-      { key: 'fullscreen_nav', label: 'Navigation plein écran' },
+      { key: 'loading_screen',   label: 'Loading screen animé' },
+      { key: 'smooth_scroll',    label: 'Smooth scroll (Lenis)' },
+      { key: 'page_transitions', label: 'Transitions de pages cinématiques' },
+      { key: 'fullscreen_nav',   label: 'Navigation plein écran' },
     ],
   },
   {
     label: 'Contact & Conversion',
     items: [
-      { key: 'contact',        label: 'Formulaire de contact stylisé' },
-      { key: 'newsletter',     label: 'Newsletter' },
-      { key: 'whatsapp',       label: 'Bouton WhatsApp' },
-      { key: 'cta_immersive',  label: 'CTA avec scène 3D intégrée' },
+      { key: 'contact',       label: 'Formulaire de contact stylisé' },
+      { key: 'newsletter',    label: 'Newsletter' },
+      { key: 'whatsapp',      label: 'Bouton WhatsApp' },
+      { key: 'cta_immersive', label: 'CTA avec scène 3D intégrée' },
     ],
   },
   {
@@ -153,7 +150,6 @@ export const FEATURE_GROUPS_3D: { label: string; items: { key: string; label: st
       { key: 'webgl_fallback', label: 'Fallback mobile (sans WebGL)' },
       { key: 'seo',            label: 'Optimisation SEO' },
       { key: 'analytics',      label: 'Google Analytics' },
-      { key: 'pwa',            label: 'PWA (appli installable)' },
     ],
   },
 ];
@@ -162,20 +158,16 @@ export const FEATURE_GROUPS: { label: string; items: { key: string; label: strin
   {
     label: 'Boutique en ligne',
     items: [
-      { key: 'catalog',       label: 'Catalogue produits avec catégories' },
-      { key: 'cart',          label: "Panier d'achat" },
-      { key: 'stripe',        label: 'Paiement en ligne (Stripe)' },
-      { key: 'promo',         label: 'Codes promo / réductions' },
-      { key: 'orders',        label: 'Gestion des commandes' },
+      { key: 'catalog',  label: 'Catalogue produits avec catégories' },
+      { key: 'cart',     label: "Panier d'achat" },
+      { key: 'stripe',   label: 'Paiement en ligne (Stripe)' },
     ],
   },
   {
     label: 'Réservation & RDV',
     items: [
-      { key: 'booking',       label: 'Prise de rendez-vous en ligne' },
-      { key: 'calendar',      label: 'Calendrier interactif' },
-      { key: 'email_confirm', label: 'Confirmation email automatique' },
-      { key: 'booking_pay',   label: 'Paiement à la réservation' },
+      { key: 'booking',     label: 'Prise de RDV (intégration Calendly)' },
+      { key: 'booking_pay', label: 'Paiement à la réservation (Stripe)' },
     ],
   },
   {
@@ -190,10 +182,9 @@ export const FEATURE_GROUPS: { label: string; items: { key: string; label: strin
   {
     label: 'Contenu & Médias',
     items: [
-      { key: 'gallery',   label: 'Galerie photos / vidéos' },
-      { key: 'blog',      label: 'Blog / actualités' },
-      { key: 'reviews',   label: 'Témoignages clients' },
-      { key: 'instagram', label: 'Flux Instagram' },
+      { key: 'gallery', label: 'Galerie photos / vidéos' },
+      { key: 'blog',    label: 'Blog / actualités' },
+      { key: 'reviews', label: 'Témoignages clients' },
     ],
   },
   {
@@ -201,7 +192,6 @@ export const FEATURE_GROUPS: { label: string; items: { key: string; label: strin
     items: [
       { key: 'contact',    label: 'Formulaire de contact' },
       { key: 'whatsapp',   label: 'Bouton WhatsApp' },
-      { key: 'livechat',   label: 'Chat en direct' },
       { key: 'newsletter', label: 'Newsletter' },
     ],
   },
@@ -209,7 +199,7 @@ export const FEATURE_GROUPS: { label: string; items: { key: string; label: strin
     label: 'Performance & SEO',
     items: [
       { key: 'seo',      label: 'Optimisation SEO' },
-      { key: 'analytics',label: 'Google Analytics' },
+      { key: 'analytics', label: 'Google Analytics' },
       { key: 'darkmode', label: 'Mode sombre / clair' },
       { key: 'pwa',      label: 'PWA (appli installable)' },
     ],
@@ -259,30 +249,33 @@ export const FEATURE_GROUPS_SCROLLYTELLING: { label: string; items: { key: strin
   {
     label: 'Narration & Contenu',
     items: [
-      { key: 'chapter_nav',    label: 'Navigation par chapitres' },
-      { key: 'timeline',       label: 'Frise chronologique animée' },
-      { key: 'before_after',   label: 'Comparateur avant / après' },
-      { key: 'video_bg',       label: 'Vidéo plein-écran en fond' },
+      { key: 'chapter_nav', label: 'Navigation par chapitres' },
+      { key: 'timeline',    label: 'Frise chronologique animée' },
+      { key: 'video_bg',    label: 'Vidéo plein-écran en fond' },
     ],
   },
   {
     label: 'Contact & Conversion',
     items: [
-      { key: 'contact',      label: 'Formulaire de contact' },
-      { key: 'newsletter',   label: 'Inscription newsletter' },
-      { key: 'whatsapp',     label: 'Bouton WhatsApp' },
-      { key: 'cta_final',    label: 'CTA final impactant' },
+      { key: 'contact',    label: 'Formulaire de contact' },
+      { key: 'newsletter', label: 'Inscription newsletter' },
+      { key: 'whatsapp',   label: 'Bouton WhatsApp' },
+      { key: 'cta_final',  label: 'CTA final impactant' },
     ],
   },
   {
     label: 'Performance & UX',
     items: [
-      { key: 'smooth_scroll', label: 'Smooth scroll optimisé' },
+      { key: 'smooth_scroll',  label: 'Smooth scroll optimisé' },
       { key: 'loading_screen', label: 'Écran de chargement animé' },
-      { key: 'seo',           label: 'Optimisation SEO' },
-      { key: 'analytics',     label: 'Google Analytics' },
+      { key: 'seo',            label: 'Optimisation SEO' },
+      { key: 'analytics',      label: 'Google Analytics' },
     ],
   },
 ];
 
-export const BUDGETS = ['< 500€', '500 – 1 500€', '1 500 – 3 000€', '3 000€+', 'À discuter'];
+export const SITE_TYPE_PRICES: Record<SiteType, { amount: number; label: string }> = {
+  standard:      { amount: 490,  label: '490€' },
+  scrollytelling: { amount: 690, label: '690€' },
+  '3d':          { amount: 990,  label: '990€' },
+};
