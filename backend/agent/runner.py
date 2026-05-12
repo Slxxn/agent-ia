@@ -18,7 +18,7 @@ from backend.agent.video_generator import generate_videos_for_project
 from backend.agent.assembler import Assembler
 from backend.tools.filesystem import FilesystemTool
 from backend.tools.terminal import TerminalTool
-from backend.tools.llm import LLMTool, set_budget_mode, set_gemini_key
+from backend.tools.llm import LLMTool, set_budget_mode, set_gemini_key, set_anthropic_key
 from backend.core.project_manager import project_manager, WORKSPACE_ROOT
 from backend.core.task_manager import task_manager
 from backend.db.database import add_log, update_project, get_brief, get_tokens_used, get_setting
@@ -195,6 +195,9 @@ class AgentRunner:
             _gemini_key = await get_setting("GEMINI_API_KEY")
             if _gemini_key:
                 set_gemini_key(_gemini_key)
+            _anthropic_key = await get_setting("ANTHROPIC_API_KEY")
+            if _anthropic_key:
+                set_anthropic_key(_anthropic_key)
             _budget_mode = await get_setting("LLM_BUDGET_MODE")
             if _budget_mode:
                 set_budget_mode(_budget_mode)
