@@ -10,7 +10,7 @@
     "rewrites": [
       {
         "source": "/p/**",
-        "destination": "/p/_"
+        "destination": "/p/_.html"
       },
       {
         "source": "**",
