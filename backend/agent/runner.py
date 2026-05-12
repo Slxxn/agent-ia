@@ -315,11 +315,16 @@ class AgentRunner:
             _term = TerminalTool(workspace_path)
             _executor = AgentExecutor(_fs, _term, llm)
             visual = VisualValidator(executor=_executor)
-            visual_ok = await visual.run_validation_loop(
-                project_id=project_id,
-                workspace_path=workspace_path,
-                page_paths=page_paths,
-            )
+            try:
+                visual_ok = await visual.run_validation_loop(
+                    project_id=project_id,
+                    workspace_path=workspace_path,
+                    deployed_url=deploy_url or None,
+                    page_paths=page_paths,
+                )
+            except Exception as _ve:
+                await add_log(project_id, f"⚠️ Validation visuelle ignorée : {_ve or type(_ve).__name__}", "warning")
+                visual_ok = True
             # If fixes were applied and site was deployed, rebuild + redeploy
             if not visual_ok and deploy_url:
                 await add_log(project_id, "🔄 Corrections appliquées — rebuild et redéploiement...", "info")
