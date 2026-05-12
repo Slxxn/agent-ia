@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 ANTHROPIC_API_KEY    = os.getenv("ANTHROPIC_API_KEY", "")
 GEMINI_API_KEY       = os.getenv("GEMINI_API_KEY", "")
 VISION_MODEL         = os.getenv("VISION_MODEL", "claude-sonnet-4-6")
-GEMINI_VISION_MODEL  = "gemini-2.0-flash"
+GEMINI_VISION_MODEL  = "gemini-2.5-flash"
 VISUAL_VALIDATION    = os.getenv("VISUAL_VALIDATION", "0") == "1"
 MAX_FIX_ITERATIONS   = int(os.getenv("VISUAL_MAX_ITERATIONS", "2"))
 SERVER_POLL_INTERVAL = 0.5   # seconds between readiness polls
