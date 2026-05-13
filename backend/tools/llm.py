@@ -2019,7 +2019,7 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
             hero_rule = "3. Every page must start with a Hero3D block"
             extra_3d_rule = "8. MANDATORY for 3D: use Hero3D on Home page, WaveSection or MorphBlob on at least 1 other page, Scene3D and ParallaxSection spread across pages. Very dark bg (#060608 to #0a0a10)."
         else:
-            hero_rule = "3. Every page must start with a Hero block (HeroA, HeroB, or HeroC)"
+            hero_rule = "3. ONLY the Home page (path='/') must start with a Hero block (HeroA, HeroB, or HeroC). Other pages (shop, faq, about, contact, legal…) must NOT use a Hero — use blocks appropriate to the page purpose (ProductGrid, FaqAccordion, ContactForm, TeamGrid, etc.)"
             extra_3d_rule = ""
 
         _json_example = '''OUTPUT FORMAT (JSON):
@@ -2087,11 +2087,11 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
             + scrollytelling_blocks +
             "\nRULES:\n"
             "1. For images use picsum with a descriptive seed: https://picsum.photos/seed/{descriptive-english-word}/1200/800 (e.g. /seed/swimwear/1200/800, /seed/fashion-model/1200/800). Never invent Unsplash photo IDs.\n"
-            "2. Choose seeds that match the brand/sector visually\n"
+            "2. Choose seeds that match the brand/sector visually. Every imageUrl across ALL pages must use a DIFFERENT seed word.\n"
             + hero_rule + "\n"
             "4. Create 4-6 pages minimum: Home (most blocks), + 2-4 other pages\n"
             "5. All text must be in French unless the brief specifies otherwise\n"
-            "6. Theme colors must be dark: bg between #060608 and #141420\n"
+            "6. Theme colors: use EXACTLY the colors from the design system hint above. If the brief specifies a light theme (colorTheme=light/neutral), use a light background. Do NOT force dark unless the brief says so.\n"
             "7. Output ONLY valid JSON, no markdown, no explanation\n"
             "8. CONTENT UNIQUENESS: Every page must have DIFFERENT content from every other page. The 'about' page must NOT reuse the hero or features from the home page — it must show team, story, values, or mission-specific content. Never duplicate headlines, blocks, or text across pages.\n"
             "9. CTA LINKS: Any button/CTA labeled 'Démarrer', 'Commencer', 'Lancer', 'Devis', 'Essayer', 'Créer mon site' must link to href '/form'. Do NOT create a separate page for these — link directly to /form.\n"

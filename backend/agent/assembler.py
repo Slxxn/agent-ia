@@ -196,12 +196,6 @@ class Assembler:
         bg = theme.get("bg", "#0f0f12")
         surface = theme.get("surface", "#1a1a1f")
 
-        # Enforce dark backgrounds — components are dark-mode only
-        if bg and self._luminance(bg) > 80:
-            bg = "#0f0f12"
-        if surface and self._luminance(surface) > 80:
-            surface = "#1a1a1f"
-
         css = css_path.read_text(encoding="utf-8")
         replacements = {
             "--primary:": theme.get("primary"),
