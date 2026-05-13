@@ -333,12 +333,23 @@ class AgentRunner:
                 )
                 await add_log(project_id, f"📋 Brief CRM chargé — {palette.get('name','')} / {fonts.get('display','')}", "info")
 
+            # Détection du type de site (avant design system pour injection des rules)
+            _3d_keywords = ("3d/immersive", "three.js", "react three fiber", "immersive",
+                            "webgl", "sitetype: '3d'", "expérience 3d", "site 3d")
+            _scroll_keywords = ("scrollytelling", "one page", "onepage", "one-page", "single page",
+                                "single-page", "une page", "site scrollytelling", "sitetype: 'scrollytelling'")
+            is_3d = any(kw in full_objective.lower() for kw in _3d_keywords)
+            is_scrollytelling = any(kw in full_objective.lower() for kw in _scroll_keywords)
+
             # ── PHASE 1 : Design system ──────────────────────────────────
             await add_log(project_id, "═══ PHASE 1 : DESIGN SYSTEM ═══", "info")
             await project_manager.update_progress(project_id, 5.0)
             design_system = None
             try:
-                design_system = await llm.generate_design_system(full_objective, project_id=project_id)
+                design_system = await llm.generate_design_system(
+                    full_objective, project_id=project_id,
+                    is_3d=is_3d, is_scrollytelling=is_scrollytelling,
+                )
                 if design_system and design_system.get("palette", {}).get("tokens"):
                     palette_name = design_system.get("palette", {}).get("name", "custom")
                     fonts = design_system.get("fonts", {})
@@ -349,12 +360,6 @@ class AgentRunner:
             # ── PHASE 2 : Génération du spec JSON ────────────────────────
             await add_log(project_id, "═══ PHASE 2 : GÉNÉRATION DU SPEC ═══", "info")
             await project_manager.update_progress(project_id, 15.0)
-            _3d_keywords = ("3d/immersive", "three.js", "react three fiber", "immersive",
-                            "webgl", "sitetype: '3d'", "expérience 3d", "site 3d")
-            _scroll_keywords = ("scrollytelling", "one page", "onepage", "one-page", "single page",
-                                "single-page", "une page", "site scrollytelling", "sitetype: 'scrollytelling'")
-            is_3d = any(kw in full_objective.lower() for kw in _3d_keywords)
-            is_scrollytelling = any(kw in full_objective.lower() for kw in _scroll_keywords)
             if is_3d:
                 await add_log(project_id, "🌐 Mode 3D détecté — blocs Three.js activés.", "info")
             if is_scrollytelling:

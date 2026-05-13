@@ -119,10 +119,19 @@ def _load_skill(name: str) -> str:
             return content
     return ""
 
-_SKILL_FRONTEND_DESIGN = _load_skill("frontend-design")
-_SKILL_TASTE           = _load_skill("design-taste-frontend")   # Leonxlnx/taste-skill
-_SKILL_HIGH_END        = _load_skill("high-end-visual-design")  # agency-level patterns
-_VISUAL_QUALITY_RULES  = "\n\n".join(filter(None, [_SKILL_TASTE, _SKILL_FRONTEND_DESIGN]))
+_SKILL_FRONTEND_DESIGN     = _load_skill("frontend-design")
+_SKILL_TASTE               = _load_skill("design-taste-frontend")   # Leonxlnx/taste-skill
+_SKILL_HIGH_END            = _load_skill("high-end-visual-design")  # agency-level patterns
+_SKILL_GSAP_SCROLLTRIGGER  = _load_skill("gsap-scrolltrigger")
+_SKILL_THREEJS_R3F         = _load_skill("threejs-r3f")
+_VISUAL_QUALITY_RULES      = "\n\n".join(filter(None, [_SKILL_TASTE, _SKILL_FRONTEND_DESIGN]))
+_SCROLLYTELLING_RULES      = "\n\n".join(filter(None, [_VISUAL_QUALITY_RULES, _SKILL_GSAP_SCROLLTRIGGER]))
+_3D_RULES                  = "\n\n".join(filter(None, [_VISUAL_QUALITY_RULES, _SKILL_THREEJS_R3F]))
+
+print(f"[Skills] frontend-design: {len(_SKILL_FRONTEND_DESIGN)} chars")
+print(f"[Skills] taste: {len(_SKILL_TASTE)} chars")
+print(f"[Skills] gsap-scrolltrigger: {len(_SKILL_GSAP_SCROLLTRIGGER)} chars")
+print(f"[Skills] threejs-r3f: {len(_SKILL_THREEJS_R3F)} chars")
 
 
 # ─── Système prompts ───────────────────────────────────────────────────────────
@@ -2107,7 +2116,19 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
 }'''
 
         _spec_quality_block = ""
-        if _SKILL_FRONTEND_DESIGN:
+        if is_scrollytelling and _SKILL_GSAP_SCROLLTRIGGER:
+            _spec_quality_block = (
+                "\n\n## SCROLLYTELLING TECH RULES (mandatory)\n"
+                + _SKILL_GSAP_SCROLLTRIGGER
+                + "\n"
+            )
+        elif is_3d and _SKILL_THREEJS_R3F:
+            _spec_quality_block = (
+                "\n\n## 3D/WEBGL TECH RULES (mandatory)\n"
+                + _SKILL_THREEJS_R3F
+                + "\n"
+            )
+        elif _SKILL_FRONTEND_DESIGN:
             _spec_quality_block = (
                 "\n\n## VISUAL QUALITY RULES (mandatory)\n"
                 + _SKILL_FRONTEND_DESIGN
@@ -2251,7 +2272,7 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
         _logging.warning(f"generate_site_spec: could not parse JSON. Raw[:400]: {raw[:400]}")
         return None
 
-    async def generate_design_system(self, objective: str, project_id: int | None = None) -> dict:
+    async def generate_design_system(self, objective: str, project_id: int | None = None, is_3d: bool = False, is_scrollytelling: bool = False) -> dict:
         """
         Generate a client-specific design system from the brief/objective text.
         Extracts explicit colors (#RRGGBB), visual style, sector, mood.
@@ -2280,7 +2301,26 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
 - Color temperature must match the sector: wellness=warm, tech=cool neutral, luxury=warm cream or deep black.
 - Pair fonts deliberately: luxury=Cormorant+DM Sans, tech=Geist+Geist Mono, agency=Cabinet Grotesk+Inter, creative=Syne+DM Sans.
 """
-        _ds_skill_block = _taste_hint
+
+        _type_hint = ""
+        if is_scrollytelling:
+            _type_hint = """
+## Scrollytelling design system rules
+- Dark background mandatory (#050505–#0a0a0a): scroll reveals work best on OLED black.
+- Typography: cinematic scale — display font must be bold and dramatic (Clash Display, Cabinet Grotesk, Syne).
+- Palette: max 2 accent colors, high contrast against dark bg. Gold/amber or electric blue work well.
+- Mood: narrative, editorial, cinematic.
+"""
+        elif is_3d:
+            _type_hint = """
+## 3D/WebGL design system rules
+- Dark background mandatory (#050505–#0a0a10): 3D objects stand out on deep black.
+- 1-2 luminous accent colors (electric cyan, violet, gold) that contrast the dark bg.
+- Typography: geometric sans or display — Geist, Space Grotesk, or Cabinet Grotesk.
+- Mood: immersive, futuristic, tech-premium.
+"""
+
+        _ds_skill_block = _taste_hint + _type_hint
         system = f"""You are an expert art director and brand designer.
 Given a client brief, generate a precise design system for their website.
 {_ds_skill_block}

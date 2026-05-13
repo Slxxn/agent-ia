@@ -80,6 +80,10 @@ THREE_DEPS = {
     "three": "^0.166.1",
     "@types/three": "^0.166.0",
 }
+GSAP_DEPS = {
+    "gsap": "^3.12.5",
+    "@gsap/react": "^2.1.2",
+}
 
 
 class Assembler:
@@ -142,6 +146,9 @@ class Assembler:
             await add_log(project_id, "🌐 Blocs 3D détectés — injection des dépendances Three.js...", "info")
             self._inject_3d_deps()
             self._apply_3d_theme_override(spec.get("theme", {}))
+        if is_scrollytelling:
+            await add_log(project_id, "📜 Scrollytelling détecté — injection des dépendances GSAP...", "info")
+            self._inject_gsap_deps()
 
         # 3. Generate siteConfig.ts
         await add_log(project_id, "⚙️  Génération de la configuration...", "info")
@@ -185,6 +192,9 @@ class Assembler:
             await add_log(project_id, "🌐 Injection dépendances Three.js...", "info")
             self._inject_3d_deps()
             self._apply_3d_theme_override(spec.get("theme", {}))
+        if is_scrollytelling:
+            await add_log(project_id, "📜 Injection dépendances GSAP...", "info")
+            self._inject_gsap_deps()
 
         await add_log(project_id, "⚙️  Génération de siteConfig.ts...", "info")
         self._write_site_config(spec)
@@ -207,6 +217,14 @@ class Assembler:
             return
         pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
         pkg.setdefault("dependencies", {}).update(THREE_DEPS)
+        pkg_path.write_text(json.dumps(pkg, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    def _inject_gsap_deps(self) -> None:
+        pkg_path = self.workspace / "package.json"
+        if not pkg_path.exists():
+            return
+        pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
+        pkg.setdefault("dependencies", {}).update(GSAP_DEPS)
         pkg_path.write_text(json.dumps(pkg, indent=2, ensure_ascii=False), encoding="utf-8")
 
     def _copy_template(self) -> None:
