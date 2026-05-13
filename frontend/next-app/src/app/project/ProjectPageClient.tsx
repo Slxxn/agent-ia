@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Play, Pause, Square, RotateCcw, Trash2,
-  Terminal, FolderOpen, MessageSquare, KeyRound,
-  Send, Loader2, CheckCircle2, ExternalLink, ScanEye, Rocket,
+  Terminal, FolderOpen, KeyRound,
+  Loader2, CheckCircle2, ExternalLink, Rocket,
 } from "lucide-react";
 import LogViewer from "@/components/LogViewer";
 import FileExplorer from "@/components/FileExplorer";
@@ -15,16 +15,15 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import Modal from "@/components/ui/Modal";
 import {
   Project, getProject, startProject, stopProject, pauseProject,
-  resumeProject, deleteProject, streamProject, sendChatMessage,
-  getProjectEnv, updateProjectEnv, validateVisual, deployProject,
+  resumeProject, deleteProject, streamProject,
+  getProjectEnv, updateProjectEnv, deployProject,
 } from "@/lib/api";
 
-type Tab = "logs" | "files" | "copilot" | "variables";
+type Tab = "logs" | "files" | "variables";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "logs",      label: "Logs",      icon: <Terminal size={12} /> },
   { key: "files",     label: "Fichiers",  icon: <FolderOpen size={12} /> },
-  { key: "copilot",   label: "Copilote",  icon: <MessageSquare size={12} /> },
   { key: "variables", label: "Variables", icon: <KeyRound size={12} /> },
 ];
 
@@ -41,19 +40,12 @@ export default function ProjectPageClient() {
   const [activeTab,     setActiveTab]     = useState<Tab>("logs");
   const [deleteModal,   setDeleteModal]   = useState(false);
 
-  const [chatMessages, setChatMessages] = useState<{ role: "user"|"agent"; text: string }[]>([]);
-  const [chatInput,    setChatInput]    = useState("");
-  const [chatLoading,  setChatLoading]  = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
   const [envVars,    setEnvVars]    = useState<Record<string, string>>({});
   const [envLoading, setEnvLoading] = useState(false);
   const [envSaved,   setEnvSaved]   = useState(false);
 
   const [deployLoading, setDeployLoading] = useState(false);
   const [deployDone,    setDeployDone]    = useState(false);
-  const [visualLoading, setVisualLoading] = useState(false);
-  const [visualDone,    setVisualDone]    = useState(false);
   const [mobilePanel,   setMobilePanel]   = useState<"controls"|"logs">("controls");
   const [isMobile,      setIsMobile]      = useState(false);
 
@@ -88,7 +80,6 @@ export default function ProjectPageClient() {
     getProjectEnv(projectId).then(setEnvVars).catch(() => {}).finally(() => setEnvLoading(false));
   }, [activeTab, projectId]);
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
 
   const wrap = (fn: () => Promise<void>) => async () => {
     try { setActionLoading(true); await fn(); const d = await getProject(projectId); setProject(d); }
@@ -111,31 +102,10 @@ export default function ProjectPageClient() {
     finally { setDeployLoading(false); }
   };
 
-  const handleValidateVisual = async () => {
-    setVisualLoading(true); setVisualDone(false);
-    try { await validateVisual(projectId); setVisualDone(true); setTimeout(() => setVisualDone(false), 3000); }
-    catch {}
-    finally { setVisualLoading(false); }
-  };
-
   const handleDelete = async () => {
-    try { setActionLoading(true); await deleteProject(projectId); router.push("/"); }
+    try { setActionLoading(true); await deleteProject(projectId); router.push("/app"); }
     catch (err) { alert(err instanceof Error ? err.message : "Erreur"); }
     finally { setActionLoading(false); }
-  };
-
-  const handleSendChat = async () => {
-    if (!chatInput.trim()) return;
-    const msg = chatInput.trim();
-    setChatInput("");
-    setChatMessages((p) => [...p, { role: "user", text: msg }]);
-    setChatLoading(true);
-    try {
-      await sendChatMessage(projectId, msg);
-      setChatMessages((p) => [...p, { role: "agent", text: "Modification en cours… Suivez l'avancement dans les Logs." }]);
-    } catch {
-      setChatMessages((p) => [...p, { role: "agent", text: "❌ Erreur lors de l'envoi du message." }]);
-    } finally { setChatLoading(false); }
   };
 
   const handleSaveEnv = async () => {
@@ -158,7 +128,7 @@ export default function ProjectPageClient() {
   if (error || !project) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20 }}>
-        <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--accent)", fontSize: 13, textDecoration: "none" }}>
+        <Link href="/app" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--accent)", fontSize: 13, textDecoration: "none" }}>
           <ArrowLeft size={13} /> Retour au dashboard
         </Link>
         <div style={{ background: "var(--error-bg)", border: "1px solid var(--error-border)", borderRadius: 10, padding: 14, color: "var(--error)", fontSize: 13 }}>
@@ -203,7 +173,7 @@ export default function ProjectPageClient() {
       <div style={{ flex: 1, overflow: "hidden", display: "flex", gap: 12 }}>
       <div style={{ width: isMobile ? "100%" : 300, flexShrink: 0, display: isMobile && mobilePanel !== "controls" ? "none" : "flex", flexDirection: "column", gap: 8, overflowY: "auto", paddingRight: 4 }}>
         <div>
-          <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--muted)", fontSize: 11, textDecoration: "none", marginBottom: 8 }}>
+          <Link href="/app" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--muted)", fontSize: 11, textDecoration: "none", marginBottom: 8 }}>
             <ArrowLeft size={11} /> Dashboard
           </Link>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
@@ -325,12 +295,6 @@ export default function ProjectPageClient() {
                deployDone ? <><CheckCircle2 size={12} /> Déployé !</> :
                <><Rocket size={12} /> Publier</>}
             </button>
-            <button onClick={handleValidateVisual} disabled={visualLoading}
-              style={{ ...btnBase, border: `1px solid ${visualDone ? "var(--success-border)" : "var(--bd-bright)"}`, background: visualDone ? "var(--success-bg)" : "var(--surface2)", color: visualDone ? "var(--success)" : "var(--text2)", opacity: visualLoading ? 0.7 : 1 }}>
-              {visualLoading ? <><Loader2 size={12} className="animate-spin" /> Validation…</> :
-               visualDone ? <><CheckCircle2 size={12} /> Validé</> :
-               <><ScanEye size={12} /> Valider visuellement</>}
-            </button>
           </div>
         )}
 
@@ -364,45 +328,6 @@ export default function ProjectPageClient() {
             >
               {activeTab === "logs"  && <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}><LogViewer projectId={projectId} /></div>}
               {activeTab === "files" && <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}><FileExplorer projectId={projectId} /></div>}
-
-              {activeTab === "copilot" && (
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                  <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, paddingRight: 4, marginBottom: 10 }}>
-                    {chatMessages.length === 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", color: "var(--muted)", gap: 8 }}>
-                        <MessageSquare size={22} style={{ opacity: 0.35 }} />
-                        <p style={{ fontSize: 13 }}>Posez une question ou demandez une modification.</p>
-                      </div>
-                    ) : chatMessages.map((msg, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
-                        <div style={{ maxWidth: "80%", padding: "8px 12px", borderRadius: 10, fontSize: 13, background: msg.role === "user" ? "var(--primary)" : "var(--surface2)", color: msg.role === "user" ? "white" : "var(--text2)", border: msg.role === "user" ? "none" : "1px solid var(--bd-bright)", lineHeight: 1.5, borderBottomRightRadius: msg.role === "user" ? 3 : 10, borderBottomLeftRadius: msg.role === "agent" ? 3 : 10 }}>
-                          {msg.text}
-                        </div>
-                      </div>
-                    ))}
-                    {chatLoading && (
-                      <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                        <div style={{ padding: "8px 12px", borderRadius: 10, borderBottomLeftRadius: 3, background: "var(--surface2)", border: "1px solid var(--bd-bright)", color: "var(--muted)", fontSize: 13 }}>
-                          <span className="dot-pulse">…</span>
-                        </div>
-                      </div>
-                    )}
-                    <div ref={chatEndRef} />
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                    <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendChat()}
-                      placeholder="Écrivez votre message…" disabled={chatLoading}
-                      style={{ flex: 1, height: 36, padding: "0 11px", borderRadius: 7, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--text)", fontSize: 13, outline: "none", fontFamily: "inherit" }}
-                      onFocus={(e) => { e.target.style.borderColor = "var(--primary)"; }} onBlur={(e) => { e.target.style.borderColor = "var(--bd-bright)"; }}
-                    />
-                    <button onClick={handleSendChat} disabled={chatLoading || !chatInput.trim()}
-                      style={{ width: 36, height: 36, borderRadius: 7, border: "none", background: chatInput.trim() ? "var(--primary)" : "var(--surface3)", color: chatInput.trim() ? "white" : "var(--muted)", cursor: chatInput.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Send size={13} />
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {activeTab === "variables" && (
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12, overflow: "hidden" }}>
