@@ -88,20 +88,7 @@ async def delete_project(project_id: int):
 
 @router.post("/{project_id}/brief")
 async def build_project_brief(project_id: int, data: ProjectBriefRequest):
-    """Générer le brief créatif (palette, fonts, narrative) sans démarrer l'exécution."""
-    project = await project_manager.get(project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Projet non trouvé.")
-
-    from backend.tools.llm import LLMTool
-    from backend.agent.planner import AgentPlanner
-
-    llm = LLMTool()
-    planner = AgentPlanner(llm)
-    result = await planner.build_plan(data.objective, settings=data.settings, project_id=project_id)
-
-    await project_manager.update(project_id, objective=data.objective)
-    return result
+    raise HTTPException(status_code=410, detail="Brief créatif statique supprimé — le design system est généré dynamiquement par Gemini.")
 
 
 @router.get("/{project_id}/brief")

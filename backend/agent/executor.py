@@ -65,9 +65,6 @@ _UI_TASK_TYPES = {"component_ui", "section_emotional", "section_complex", "criti
 if TYPE_CHECKING:
     from backend.agent.project_brain import ProjectBrain
 from backend.prompts.templates import (
-    STATIC_PROJECT_PROMPT,
-    REACT_NODE_SQLITE_PROJECT_PROMPT,
-    REACT_SUPABASE_PROJECT_PROMPT,
     STRIPE_INTEGRATION_PROMPT,
     PAYPAL_INTEGRATION_PROMPT,
 )

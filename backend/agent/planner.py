@@ -7,10 +7,8 @@ from __future__ import annotations
 import json
 import re
 from typing import List, Dict, Any, Optional
-from backend.tools.llm import LLMTool, route_model
-from backend.db.database import add_log, save_brief, add_tokens_used
-from backend.agent.presets import PALETTES, FONT_PAIRS, NARRATIVE_TEMPLATES, pick_preset
-
+from backend.tools.llm import LLMTool
+from backend.db.database import add_log
 
 # Keywords that trigger React full-stack mode
 _COMPLEX_KEYWORDS = [
@@ -89,164 +87,6 @@ class AgentPlanner:
 
         return tasks
 
-    # ── build_plan : brief créatif + liste de tâches ──────────────────────
-
-    async def build_plan(
-        self,
-        goal_text: str,
-        settings: dict | None = None,
-        project_id: int | None = None,
-    ) -> dict:
-        """
-        Génère un brief créatif complet + la liste de tâches ordonnée.
-        Retourne {"brief": {...}, "tasks": [...]}.
-
-        Le brief est généré via un appel LLM flash (task_type="brief_creation")
-        avec response_format JSON. Fallback sur pick_preset() si le LLM échoue.
-        """
-        settings = settings or {}
-        palette_names   = list(PALETTES.keys())
-        font_pair_names = list(FONT_PAIRS.keys())
-        narrative_types = list(NARRATIVE_TEMPLATES.keys())
-
-        brief_prompt = f"""You are an art director. From the goal below, generate a creative JSON brief.
-
-Goal: {goal_text}
-
-Available palettes: {palette_names}
-Available font pairs: {font_pair_names}
-Available narrative types: {narrative_types}
-
-Respond ONLY with a valid JSON object (no markdown, no explanation):
-{{
-  "project_type": "<e.g.: wellness_showcase>",
-  "metier": "<e.g.: massage therapist>",
-  "palette_key": "<an exact key from the palettes list>",
-  "font_pair_key": "<an exact key from the font pairs list>",
-  "narrative_type": "<an exact key from the narratives list>",
-  "photos_keywords": ["<keyword1>", "<keyword2>", "<keyword3>"],
-  "brand_details": {{
-    "name": "<project name or deduced brand>",
-    "city": "<city if mentioned, otherwise empty>",
-    "unique_method": "<signature method if mentioned>",
-    "signature_phrase": "<short poetic tagline>"
-  }},
-  "integrations_required": ["<e.g.: stripe>"]
-}}"""
-
-        brief_model = route_model(task_type="brief_creation")
-        result = await self.llm.call_ollama(
-            brief_prompt,
-            system_prompt="You are an expert art director. Respond only in valid JSON.",
-            temperature=0.4,
-            model_override=brief_model,
-        )
-
-        tokens = (result.get("prompt_tokens", 0) or 0) + (result.get("completion_tokens", 0) or 0)
-        if tokens > 0 and project_id:
-            await add_tokens_used(project_id, tokens)
-
-        # Parser le JSON du brief
-        llm_brief: dict = {}
-        if result.get("success"):
-            raw = result.get("content", "")
-            for pattern in (r'\{[\s\S]*\}',):
-                try:
-                    m = re.search(pattern, raw)
-                    if m:
-                        llm_brief = json.loads(m.group())
-                        break
-                except Exception:
-                    pass
-
-        # Valider les clés et appliquer le fallback preset si hors-liste
-        preset = pick_preset(goal_text)
-        palette_key = llm_brief.get("palette_key", "")
-        if palette_key not in PALETTES:
-            palette_key = preset["palette"]["key"]
-
-        font_key = llm_brief.get("font_pair_key", "")
-        if font_key not in FONT_PAIRS:
-            font_key = PALETTES[palette_key]["suggested_fonts"]
-
-        narrative_type = llm_brief.get("narrative_type", "")
-        if narrative_type not in NARRATIVE_TEMPLATES:
-            narrative_type = list(NARRATIVE_TEMPLATES.keys())[0]
-            for nt in NARRATIVE_TEMPLATES:
-                if nt in llm_brief.get("project_type", ""):
-                    narrative_type = nt
-                    break
-
-        palette_data = PALETTES[palette_key]
-        font_data    = FONT_PAIRS[font_key]
-        narrative    = NARRATIVE_TEMPLATES[narrative_type]
-
-        # Détecter les intégrations requises depuis le goal
-        integrations = list(llm_brief.get("integrations_required", []))
-        goal_lower = goal_text.lower()
-        if any(k in goal_lower for k in ("stripe", "paiement", "payer", "vente", "boutique", "shop")):
-            if "stripe" not in integrations:
-                integrations.append("stripe")
-        if any(k in goal_lower for k in ("supabase", "base de données", "inscription", "utilisateur")):
-            if "supabase" not in integrations:
-                integrations.append("supabase")
-
-        # Avertissements intégrations manquantes
-        integration_warnings: list[str] = []
-        if "stripe" in integrations:
-            from backend.db.database import get_setting
-            stripe_key = await get_setting("STRIPE_SECRET_KEY")
-            if not stripe_key:
-                integration_warnings.append(
-                    "⚠️ STRIPE_SECRET_KEY non configurée — ajoutez vos clés dans Réglages avant déploiement."
-                )
-
-        brand_details = llm_brief.get("brand_details", {})
-        if not isinstance(brand_details, dict):
-            brand_details = {}
-        # Valeurs par défaut
-        brand_details.setdefault("name", goal_text.split("pour")[-1].strip()[:40] if "pour" in goal_text else "")
-        brand_details.setdefault("city", "")
-        brand_details.setdefault("unique_method", "")
-        brand_details.setdefault("signature_phrase", "")
-
-        brief: dict = {
-            "project_type": llm_brief.get("project_type", narrative_type),
-            "metier": llm_brief.get("metier", ""),
-            "palette": {
-                "key": palette_key,
-                "name": palette_data["name"],
-                "mood": palette_data["mood"],
-                "tokens": palette_data["tokens"],
-            },
-            "fonts": font_data,
-            "narrative": narrative,
-            "components_to_create": list(set(
-                [act["id"] for act in narrative]
-                + ["Navbar", "Footer", "Layout", "Button", "Badge", "Card"]
-            )),
-            "photos_keywords": llm_brief.get("photos_keywords", ["wellness", "nature", "light"]),
-            "brand_details": brand_details,
-            "integrations_required": integrations,
-            "integration_warnings": integration_warnings,
-        }
-
-        # Enrichir l'objectif avec le brief pour le planner
-        enhanced_goal = goal_text + f"\n\nDESIGN BRIEF:\n- Palette: {palette_data['name']} ({palette_data['mood']})\n- Fonts: {font_data['display']} / {font_data['body']}\n- Narrative: {narrative_type}\n- Brand: {brand_details.get('name', '')}"
-        if project_id:
-            enhanced_goal += f"\n- Intégrations: {', '.join(integrations) if integrations else 'aucune'}"
-
-        tasks = await self.generate_plan(project_id or 0, enhanced_goal)
-
-        # Sauvegarder le brief en DB
-        if project_id:
-            await save_brief(project_id, brief)
-            await add_log(project_id, f"📋 Brief généré — Palette: {palette_data['name']}, Fonts: {font_data['display']}/{font_data['body']}", "info")
-            for warning in integration_warnings:
-                await add_log(project_id, warning, "warning")
-
-        return {"brief": brief, "tasks": tasks}
-
     # ── Contraintes injectées dans l'objectif ──────────────────────────────
 
     def _build_react_constraints(self, is_landing: bool, is_ecommerce: bool) -> str:
@@ -286,25 +126,19 @@ Respond ONLY with a valid JSON object (no markdown, no explanation):
                 "\n• COPYWRITING: punchy titles, benefit-driven, NEVER lorem ipsum."
             )
         elif is_ecommerce:
-            from backend.prompts.templates import ECOMMERCE_PREMIUM_PROMPT, STRIPE_CHECKOUT_PATTERN, FIREBASE_STACK_PATTERN
-            base += f"\n\n{ECOMMERCE_PREMIUM_PROMPT}"
             base += (
-                "\n\n⚠️ COLOR OVERRIDE: Ignore the 'Dark SaaS' palette in the template above."
-                "\n   Use the client's DESIGN BRIEF palette exclusively (--bg, --primary, --accent tokens)."
-                "\n\n══ CONTRAINTES E-COMMERCE SUPPLÉMENTAIRES ══"
+                "\n\n══ E-COMMERCE CONSTRAINTS ══"
                 "\n• Minimum 12 produits avec vrais noms, prix, descriptions marketing, images Unsplash."
                 "\n• CartContext (src/context/CartContext.tsx) : CartProvider + useCart + useCartStore alias."
                 "\n• Pages obligatoires : Home, Products, ProductDetail, Cart, Checkout, Login, Register, OrderSuccess."
-                "\n• Navbar avec compteur panier dynamique + isActive helper (voir règles anti-bugs)."
+                "\n• Navbar avec compteur panier dynamique + isActive helper."
                 "\n• ProductCard avec hover animation + quick-add to cart + badge (Nouveau/Promo)."
                 "\n• CartDrawer : drawer latéral animé avec liste items, quantités éditables, total, CTA."
                 "\n• Firebase Auth (email/password + Google Sign-In) via src/lib/firebase.ts."
-                "\n• Firestore pour users, orders, carts (sync panier utilisateur connecté)."
-                "\n• Stripe PaymentElement (Apple Pay + Google Pay + cartes) via Firebase Cloud Functions."
-                "\n• functions/ dossier avec createPaymentIntent Cloud Function (stripe npm package)."
+                "\n• Firestore pour users, orders, carts."
+                "\n• Stripe PaymentElement via Firebase Cloud Functions (createPaymentIntent)."
                 "\n• COPYWRITING : descriptions produits réalistes, prix en €, JAMAIS de lorem ipsum."
-                f"\n\n{FIREBASE_STACK_PATTERN}"
-                f"\n\n{STRIPE_CHECKOUT_PATTERN}"
+                "\n• COLORS: use the client's DESIGN BRIEF palette exclusively (--bg, --primary, --accent tokens)."
             )
 
         base += (
