@@ -78,9 +78,13 @@ export function Step3Style({ data, update, onNext, onBack }: Props) {
   const themes = COLOR_THEMES[siteType] ?? COLOR_THEMES.standard;
 
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoBase64, setLogoBase64] = useState<string>('');
+  const [logoMediaType, setLogoMediaType] = useState<string>('image/png');
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [logoAnalysisMsg, setLogoAnalysisMsg] = useState('');
+  const [palettePreview, setPalettePreview] = useState<{ colors: string[]; reasoning: string; visualStyle: string; colorTheme: string } | null>(null);
+  const [generatingPalette, setGeneratingPalette] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestions | null>(null);
   const [aiError, setAiError] = useState('');
@@ -94,6 +98,13 @@ export function Step3Style({ data, update, onNext, onBack }: Props) {
     reader.onload = e => setLogoPreview(e.target?.result as string);
     reader.readAsDataURL(file);
 
+    const base64 = await fileToBase64(file);
+    const rawB64 = base64.split(',')[1];
+    setLogoBase64(rawB64);
+    setLogoMediaType(file.type);
+    setPalettePreview(null);
+    setLogoAnalysisMsg('');
+
     setUploading(true);
     try {
       const path = `logos/${Date.now()}_${file.name}`;
@@ -101,25 +112,58 @@ export function Step3Style({ data, update, onNext, onBack }: Props) {
       const url = await getDownloadURL(snap.ref);
       update({ logoUrl: url });
 
-      // Analyse logo avec Gemini
+      // Analyse automatique à l'upload
       setAnalyzing(true);
-      setLogoAnalysisMsg('');
       try {
-        const base64 = await fileToBase64(file);
         const res = await fetch(`${API_BASE}/analyze-logo`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image_base64: base64.split(',')[1], media_type: file.type }),
+          body: JSON.stringify({ image_base64: rawB64, media_type: file.type }),
         });
         const analysis = await res.json();
         if (!analysis.error && analysis.colors) {
-          update({ colors: analysis.colors, visualStyle: analysis.visualStyle, colorTheme: analysis.colorTheme });
-          setLogoAnalysisMsg(analysis.reasoning || 'Couleurs et style harmonisés avec votre logo.');
+          setPalettePreview({
+            colors: analysis.colors,
+            reasoning: analysis.reasoning || 'Couleurs extraites depuis votre logo.',
+            visualStyle: analysis.visualStyle,
+            colorTheme: analysis.colorTheme,
+          });
         }
       } catch {}
       finally { setAnalyzing(false); }
     } catch {}
     finally { setUploading(false); }
+  };
+
+  const generatePaletteFromLogo = async () => {
+    if (!logoBase64) return;
+    setGeneratingPalette(true);
+    setPalettePreview(null);
+    setLogoAnalysisMsg('');
+    try {
+      const res = await fetch(`${API_BASE}/analyze-logo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_base64: logoBase64, media_type: logoMediaType }),
+      });
+      const analysis = await res.json();
+      if (!analysis.error && analysis.colors) {
+        setPalettePreview({
+          colors: analysis.colors,
+          reasoning: analysis.reasoning || 'Palette générée depuis votre logo.',
+          visualStyle: analysis.visualStyle,
+          colorTheme: analysis.colorTheme,
+        });
+      }
+    } catch {}
+    finally { setGeneratingPalette(false); }
+  };
+
+  const applyLogoPalette = () => {
+    if (!palettePreview) return;
+    update({ colors: palettePreview.colors, visualStyle: palettePreview.visualStyle, colorTheme: palettePreview.colorTheme });
+    setLogoAnalysisMsg(palettePreview.reasoning);
+    setPalettePreview(null);
   };
 
   const fetchAiSuggestions = async () => {
@@ -208,6 +252,57 @@ export function Step3Style({ data, update, onNext, onBack }: Props) {
             ✨ {logoAnalysisMsg}
           </div>
         )}
+
+        {/* Bouton palette + preview */}
+        {logoBase64 && !uploading && !analyzing && (
+          <div style={{ marginTop: 10 }}>
+            <button type="button" onClick={generatePaletteFromLogo} disabled={generatingPalette}
+              style={{
+                width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid rgba(99,102,241,0.35)',
+                background: 'rgba(99,102,241,0.07)', color: 'rgba(180,180,255,0.85)', fontSize: 12, fontWeight: 600,
+                cursor: generatingPalette ? 'wait' : 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.15s',
+              }}>
+              {generatingPalette ? <><Spinner /> Analyse du logo…</> : '🎨 Générer une palette depuis ce logo'}
+            </button>
+
+            {palettePreview && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                style={{ marginTop: 10, padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {palettePreview.colors.map((c, i) => (
+                      <div key={i} title={c} style={{
+                        width: 36, height: 36, borderRadius: 8, background: c,
+                        border: '2px solid rgba(255,255,255,0.15)', boxShadow: `0 2px 8px ${c}55`,
+                      }} />
+                    ))}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>
+                      {palettePreview.colors.join(' · ')}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontStyle: 'italic' }}>
+                      {palettePreview.reasoning}
+                    </div>
+                  </div>
+                </div>
+                <button type="button" onClick={applyLogoPalette}
+                  style={{
+                    width: '100%', padding: '9px', borderRadius: 8, border: 'none',
+                    background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 12, fontWeight: 700,
+                    cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.17)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)'; }}>
+                  Appliquer cette palette ✓
+                </button>
+              </motion.div>
+            )}
+          </div>
+        )}
+
         <button type="button" onClick={() => update({ generateLogo: !data.generateLogo })}
           style={{ marginTop: 10, fontSize: 12, color: data.generateLogo ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
           {data.generateLogo ? '✓ ' : ''}Je n&apos;ai pas de logo — en générer un simple

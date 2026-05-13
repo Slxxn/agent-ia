@@ -206,20 +206,7 @@ class AgentRunner:
             project = await project_manager.get(project_id)
             project_name = project["name"] if project else "projet"
 
-            # ── PHASE 1 : Design system ──────────────────────────────────
-            await add_log(project_id, "═══ PHASE 1 : DESIGN SYSTEM ═══", "info")
-            await project_manager.update_progress(project_id, 5.0)
-            design_system = None
-            try:
-                design_system = await llm.generate_design_system(objective, project_id=project_id)
-                if design_system and design_system.get("palette", {}).get("tokens"):
-                    palette_name = design_system.get("palette", {}).get("name", "custom")
-                    fonts = design_system.get("fonts", {})
-                    await add_log(project_id, f"🎨 {palette_name} | {fonts.get('display','?')}/{fonts.get('body','?')}", "info")
-            except Exception as _ds_err:
-                await add_log(project_id, f"⚠️ Design system : {_ds_err}", "debug")
-
-            # Enrichir avec brief CRM si présent
+            # Enrichir avec brief CRM si présent (avant le design system)
             saved_brief = await get_brief(project_id)
             full_objective = objective
             if saved_brief:
@@ -233,6 +220,19 @@ class AgentRunner:
                     + f"\n- Brand: {brand.get('name','')}"
                 )
                 await add_log(project_id, f"📋 Brief CRM chargé — {palette.get('name','')} / {fonts.get('display','')}", "info")
+
+            # ── PHASE 1 : Design system ──────────────────────────────────
+            await add_log(project_id, "═══ PHASE 1 : DESIGN SYSTEM ═══", "info")
+            await project_manager.update_progress(project_id, 5.0)
+            design_system = None
+            try:
+                design_system = await llm.generate_design_system(full_objective, project_id=project_id)
+                if design_system and design_system.get("palette", {}).get("tokens"):
+                    palette_name = design_system.get("palette", {}).get("name", "custom")
+                    fonts = design_system.get("fonts", {})
+                    await add_log(project_id, f"🎨 {palette_name} | {fonts.get('display','?')}/{fonts.get('body','?')}", "info")
+            except Exception as _ds_err:
+                await add_log(project_id, f"⚠️ Design system : {_ds_err}", "debug")
 
             # ── PHASE 2 : Génération du spec JSON ────────────────────────
             await add_log(project_id, "═══ PHASE 2 : GÉNÉRATION DU SPEC ═══", "info")

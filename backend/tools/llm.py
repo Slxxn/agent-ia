@@ -1619,10 +1619,11 @@ class LLMTool:
     ) -> Dict[str, Any]:
         """Appelle Claude via le SDK Anthropic officiel."""
         if not ANTHROPIC_API_KEY:
-            # Fallback vers DeepSeek si pas de clé
+            print("⚠️  [LLM] ANTHROPIC_API_KEY manquante — fallback DeepSeek. Vérifiez les settings.")
             return await self._call_deepseek_with_continuation(
                 prompt, system_prompt, 0.4, max_tokens, None
             )
+        print(f"🤖 [LLM] Appel Claude ({model_override or ANTHROPIC_MODEL})…")
         try:
             import anthropic as _anthropic
             client = _anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
@@ -2216,7 +2217,7 @@ Rules:
 Respond ONLY with valid JSON, no markdown fences, no explanation."""
 
         prompt = f"""Client brief:
-{objective[:2500]}{hex_hint}
+{objective[:4000]}{hex_hint}
 
 Generate this JSON exactly:
 {{
