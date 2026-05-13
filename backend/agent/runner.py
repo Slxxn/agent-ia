@@ -181,7 +181,7 @@ class AgentRunner:
             await cls.resume_project(project_id)
 
     @classmethod
-    async def _quality_generate_pages(
+    async def _quality_generate_homepage(
         cls,
         project_id: int,
         workspace_path: str,
@@ -189,88 +189,89 @@ class AgentRunner:
         design_system: dict | None,
         llm: "LLMTool",
     ) -> None:
-        """Quality mode: generate each page with Claude (Taste + Frontend-Design injected)."""
+        """Quality mode: generate ONLY the homepage with Claude. Other pages use the assembler."""
         import json as _json
-        from pathlib import Path as _Path
+
+        pages = site_spec.get("pages", [])
+        if not pages:
+            return
+
+        # Only the first page (homepage) gets Claude generation
+        home_page = pages[0]
+        page_name = home_page.get("name", home_page.get("file", "Home"))
+        page_file = home_page.get("file", "Home")
+        page_path = home_page.get("path", "/")
+        blocks = home_page.get("blocks", [])
+
+        # Generate remaining pages with the assembler (standard blocks)
+        assembler = Assembler(workspace_path)
+        if len(pages) > 1:
+            await add_log(project_id, f"📄 Assemblage standard pour {len(pages)-1} page(s) secondaire(s)...", "info")
+            for page in pages[1:]:
+                assembler._write_page(page)
+
+        # Build a concise section summary (no full JSON — keeps context small)
+        section_lines = []
+        for b in blocks[:5]:  # cap at 5 sections to avoid truncation
+            bname = b.get("block", "")
+            props = b.get("props", {})
+            headline = props.get("headline", props.get("title", props.get("heading", "")))
+            subtitle = props.get("subtitle", props.get("description", ""))
+            line = bname
+            if headline:
+                line += f' — "{headline}"'
+            if subtitle:
+                line += f' — "{subtitle[:50]}"'
+            section_lines.append(f"  - {line}")
+        sections_text = "\n".join(section_lines) or "  - Hero, Features, CTA"
+
+        palette = (design_system or {}).get("palette", {})
+        fonts = (design_system or {}).get("fonts", {})
+        brand = site_spec.get("brand", {})
+        tokens = palette.get("tokens", {})
+
+        # Minimal context — Taste + Frontend-Design are already in the system prompt
+        page_ctx = (
+            f"## DESIGN SYSTEM\n"
+            f"Palette : {palette.get('name', '')} | "
+            f"primary={tokens.get('--primary','?')} bg={tokens.get('--bg','?')} surface={tokens.get('--surface','?')}\n"
+            f"Fonts : display={fonts.get('display', '')}, body={fonts.get('body', '')}\n"
+            f"Brand : {brand.get('name', '')} — {brand.get('tagline', '')}\n\n"
+            f"## CSS VARIABLES (déjà dans index.css)\n"
+            f"var(--primary) var(--accent) var(--bg) var(--surface) var(--text)\n"
+            f"import {{ SITE_CONFIG }} from '@/siteConfig';\n"
+        )
+
+        task_desc = (
+            f'Génère src/pages/{page_file}.tsx — page "{page_name}" (route : {page_path}).\n\n'
+            f"Sections (dans l'ordre) :\n{sections_text}\n\n"
+            f"RÈGLES :\n"
+            f"- Sections inline Tailwind, PAS d'import depuis @/blocks/\n"
+            f"- Variables CSS pour les couleurs (var(--primary), etc.)\n"
+            f"- Framer Motion pour les animations d'entrée (whileInView)\n"
+            f"- py-16 lg:py-20 par section — responsive mobile-first\n"
+            f"- BUDGET 120 lignes max — code concis, pas de commentaires\n"
+            f"- Default export\n"
+        )
 
         fs = FilesystemTool(workspace_path)
         term = TerminalTool(workspace_path)
         executor = AgentExecutor(fs, term, llm)
         executor._design_system = design_system
 
-        palette = (design_system or {}).get("palette", {})
-        fonts = (design_system or {}).get("fonts", {})
-        brand = site_spec.get("brand", {})
+        await project_manager.update_progress(project_id, 38.0)
+        await add_log(project_id, f"✨ Génération Claude : homepage — {page_name}", "info")
 
-        design_ctx = (
-            f"## DESIGN SYSTEM\n"
-            f"Palette : {palette.get('name', '')} — tokens CSS :\n"
-            f"{_json.dumps(palette.get('tokens', {}), ensure_ascii=False, indent=2)}\n"
-            f"Fonts : display={fonts.get('display', '')}, body={fonts.get('body', '')}\n\n"
-            f"## MARQUE\n"
-            f"Nom : {brand.get('name', '')}\n"
-            f"Tagline : {brand.get('tagline', '')}\n\n"
-            f"## CSS VARIABLES DISPONIBLES\n"
-            f"var(--primary), var(--accent), var(--accent2), var(--bg), var(--surface)\n"
-            f"Ces variables sont déjà injectées dans index.css — utilise-les directement.\n\n"
-            f"## IMPORT DISPONIBLE\n"
-            f"import {{ SITE_CONFIG }} from '@/siteConfig';  // brand, navbar, footer, theme\n"
+        result = await executor.execute_task(
+            project_id=project_id,
+            task_description=task_desc,
+            steps=[f"Générer src/pages/{page_file}.tsx"],
+            context=page_ctx,
         )
 
-        pages = site_spec.get("pages", [])
-        for i, page in enumerate(pages):
-            page_name = page.get("name", page.get("file", "Page"))
-            page_file = page.get("file", "Page")
-            page_path = page.get("path", "/")
-            blocks = page.get("blocks", [])
-
-            section_lines = []
-            for b in blocks:
-                bname = b.get("block", "")
-                props = b.get("props", {})
-                headline = props.get("headline", props.get("title", props.get("heading", "")))
-                subtitle  = props.get("subtitle", props.get("description", ""))
-                summary = f"{bname}"
-                if headline:
-                    summary += f' — "{headline}"'
-                if subtitle:
-                    summary += f' — "{subtitle[:60]}"'
-                section_lines.append(f"  - {summary}")
-
-            sections_text = "\n".join(section_lines) or "  - (sections libres)"
-
-            task_desc = (
-                f'Génère src/pages/{page_file}.tsx — page "{page_name}" (route : {page_path}).\n\n'
-                f"Sections (dans l'ordre) :\n{sections_text}\n\n"
-                f"CONTRAINTES ABSOLUES :\n"
-                f"- NE PAS importer depuis @/blocks/ — générer chaque section inline en Tailwind\n"
-                f"- Tailwind CSS + Framer Motion uniquement\n"
-                f"- Utiliser les variables CSS (var(--primary), var(--bg), etc.) pour les couleurs\n"
-                f"- Chaque section : py-16 lg:py-24 minimum\n"
-                f"- Responsive mobile-first (sm: md: lg:)\n"
-                f"- Default export du composant page\n"
-            )
-
-            page_ctx = (
-                design_ctx
-                + f"## SPEC COMPLÈTE DE LA PAGE\n"
-                + _json.dumps(page, ensure_ascii=False, indent=2)
-                + "\n"
-            )
-
-            progress_pct = 35.0 + (i / max(len(pages), 1)) * 20.0
-            await project_manager.update_progress(project_id, progress_pct)
-            await add_log(project_id, f"✨ Génération Claude : page {i+1}/{len(pages)} — {page_name}", "info")
-
-            result = await executor.execute_task(
-                project_id=project_id,
-                task_description=task_desc,
-                steps=[f"Générer src/pages/{page_file}.tsx"],
-                context=page_ctx,
-            )
-
-            if not result.get("success"):
-                await add_log(project_id, f"⚠️ Page {page_name} : génération partielle — {result.get('error','')}", "warning")
+        if not result.get("success"):
+            await add_log(project_id, f"⚠️ Homepage : génération partielle, fallback assembler", "warning")
+            assembler._write_page(home_page)
 
     @classmethod
     async def _run(cls, project_id: int, objective: str):
@@ -359,9 +360,9 @@ class AgentRunner:
             await project_manager.update_progress(project_id, 35.0)
             assembler = Assembler(workspace_path)
             if _budget_mode == "quality":
-                await add_log(project_id, "🎨 Mode qualité — scaffold + génération Claude des pages", "info")
+                await add_log(project_id, "🎨 Mode qualité — scaffold + homepage Claude + assembler pour les autres pages", "info")
                 await assembler.scaffold_only(site_spec, project_id)
-                await cls._quality_generate_pages(project_id, workspace_path, site_spec, design_system, llm)
+                await cls._quality_generate_homepage(project_id, workspace_path, site_spec, design_system, llm)
             else:
                 await assembler.run(site_spec, project_id)
 
