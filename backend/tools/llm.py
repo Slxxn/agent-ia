@@ -104,8 +104,10 @@ DEFAULT_TIMEOUT = 240  # secondes
 from pathlib import Path as _Path
 
 def _load_skill(name: str) -> str:
+    _root = _Path(__file__).parent.parent.parent
     for path in [
-        _Path(__file__).parent.parent.parent / "skills" / f"{name}.md",
+        _root / "skills" / f"{name}.md",
+        _root / ".agents" / "skills" / name / "SKILL.md",
         _Path.home() / ".claude" / "skills" / name / "SKILL.md",
         _Path.home() / ".claude" / "skills" / f"{name}.md",
     ]:
@@ -118,7 +120,8 @@ def _load_skill(name: str) -> str:
     return ""
 
 _SKILL_FRONTEND_DESIGN = _load_skill("frontend-design")
-_SKILL_TASTE           = _load_skill("taste")
+_SKILL_TASTE           = _load_skill("design-taste-frontend")   # Leonxlnx/taste-skill
+_SKILL_HIGH_END        = _load_skill("high-end-visual-design")  # agency-level patterns
 _VISUAL_QUALITY_RULES  = "\n\n".join(filter(None, [_SKILL_TASTE, _SKILL_FRONTEND_DESIGN]))
 
 
@@ -1091,6 +1094,9 @@ def get_system_prompt(
     """
     modules = _TASK_MODULES.get(task_type, list(_ALL_MODULES.keys()))
     parts = [_PROMPT_HEADER, "\n", ANTI_TRUNCATE_RULES, "\n", REACT_EXPORT_RULES]
+    _UI_TYPES = {"component_ui", "section_emotional", "section_complex", "critical_structure", "polish_final"}
+    if _SKILL_TASTE and task_type in _UI_TYPES:
+        parts.append(f"\n\n## DESIGN TASTE — ANTI-SLOP RULES (MANDATORY)\n{_SKILL_TASTE}\n")
     if is_3d:
         parts.append(_MOD_3D_DEPTH)
     for mod_key in modules:
@@ -2260,10 +2266,21 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
             if hex_colors else ""
         )
 
-        _ds_skill_block = (
-            f"\n## Visual quality rules to apply\n{_VISUAL_QUALITY_RULES}\n"
-            if _VISUAL_QUALITY_RULES else ""
-        )
+        # Condensed taste rules relevant to design system generation only
+        _taste_hint = ""
+        if _SKILL_TASTE or _SKILL_HIGH_END:
+            _taste_hint = """
+## Anti-slop design rules (MANDATORY)
+- THE LILA BAN: violet/purple/blue AI default palette is STRICTLY BANNED. No purple glows, no neon gradients.
+- Max 1 accent color. Saturation < 80%. Neutral bases (Zinc/Slate/Stone) with high-contrast singular accent.
+- NO Inter, Roboto, Arial, Open Sans — use Geist, Outfit, Cabinet Grotesk, Satoshi, Syne, Plus Jakarta Sans, Cormorant.
+- NO pure black (#000000). Use Off-Black, Zinc-950, or Charcoal as darkest tone.
+- For dark themes: deep OLED backgrounds (#050505–#0D0D0D), NOT generic #1a1a1a or #333.
+- For light themes: warm creams (#FDFBF7), silver-grey (#F8F9FA), or pure white — NOT cold grey.
+- Color temperature must match the sector: wellness=warm, tech=cool neutral, luxury=warm cream or deep black.
+- Pair fonts deliberately: luxury=Cormorant+DM Sans, tech=Geist+Geist Mono, agency=Cabinet Grotesk+Inter, creative=Syne+DM Sans.
+"""
+        _ds_skill_block = _taste_hint
         system = f"""You are an expert art director and brand designer.
 Given a client brief, generate a precise design system for their website.
 {_ds_skill_block}
