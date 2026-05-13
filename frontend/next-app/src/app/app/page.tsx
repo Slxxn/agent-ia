@@ -10,8 +10,50 @@ import ProjectCard from "@/components/ProjectCard";
 import Modal from "@/components/ui/Modal";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { SkeletonCard } from "@/components/ui/Skeleton";
-import { Project, getProjects, createProject, deleteProject, startProject, streamProjects } from "@/lib/api";
+import { Project, getProjects, createProject, deleteProject, startProject, streamProjects, getSettings, saveSetting } from "@/lib/api";
 import { useClientRequests } from "@/hooks/useClientRequests";
+
+type BudgetMode = "fast" | "balanced" | "quality";
+const BUDGET_MODES: { key: BudgetMode; label: string; color: string }[] = [
+  { key: "fast",     label: "Rapide",    color: "#6B7280" },
+  { key: "balanced", label: "Équilibré", color: "#6366F1" },
+  { key: "quality",  label: "Qualité",   color: "#10B981" },
+];
+
+function LlmModeToggle() {
+  const [mode, setMode] = useState<BudgetMode>("balanced");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getSettings().then((settings) => {
+      const s = settings.find((s) => s.key === "LLM_BUDGET_MODE");
+      if (s?.value && ["fast","balanced","quality"].includes(s.value)) setMode(s.value as BudgetMode);
+    }).catch(() => {});
+  }, []);
+
+  const handleSelect = async (m: BudgetMode) => {
+    if (m === mode || saving) return;
+    setMode(m);
+    setSaving(true);
+    try { await saveSetting("LLM_BUDGET_MODE", m); } catch {} finally { setSaving(false); }
+  };
+
+  const active = BUDGET_MODES.find((m) => m.key === mode)!;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px", borderRadius: 9, background: "var(--surface2)", border: "1px solid var(--bd-bright)", opacity: saving ? 0.7 : 1, transition: "opacity 0.15s" }}>
+      {BUDGET_MODES.map((m) => (
+        <button key={m.key} onClick={() => handleSelect(m.key)}
+          style={{ height: 26, padding: "0 10px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 11, fontWeight: mode === m.key ? 700 : 500, fontFamily: "inherit", transition: "all 0.15s",
+            background: mode === m.key ? `${m.color}22` : "transparent",
+            color: mode === m.key ? m.color : "var(--muted)",
+            boxShadow: mode === m.key ? `inset 0 0 0 1px ${m.color}44` : "none",
+          }}>
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 type SortKey = "newest" | "oldest" | "progress";
 type FilterStatus = "all" | "running" | "done" | "error" | "idle" | "paused";
@@ -283,6 +325,8 @@ export default function AppDashboard() {
           )}
 
           <div style={{ flex: 1 }} />
+
+          <LlmModeToggle />
 
           <button onClick={() => setPanelOpen(true)}
             style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 13px", borderRadius: 8, background: "var(--primary)", color: "white", fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", flexShrink: 0, boxShadow: "0 0 18px var(--primary-glow)" }}
