@@ -259,12 +259,20 @@ class AgentRunner:
             task_desc = (
                 f'Génère src/pages/{page_file}.tsx — "{page_name}" (route : {page_path}).\n\n'
                 f"Sections :\n{sections_text}\n\n"
-                f"RÈGLES :\n"
+                f"## DESIGN DIRECTIVES (obligatoires)\n"
+                f"- Rendu $150k agency-tier — PAS un template générique\n"
+                f"- Toutes les cartes/containers : double-bezel (outer shell `rounded-[2rem] p-2 border border-white/10` + inner core `rounded-[calc(2rem-0.5rem)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]`)\n"
+                f"- Typographie massive : titres `text-5xl lg:text-7xl font-black tracking-tight` minimum\n"
+                f"- Espacement généreux : `py-20 lg:py-32` par section\n"
+                f"- Boutons CTA : pills `rounded-full px-8 py-4` avec icône dans cercle nested\n"
+                f"- Animations : Framer Motion `whileInView` avec `cubic-bezier(0.32,0.72,0,1)` — jamais de `ease-in-out`\n"
+                f"- Entrées : `initial={{{{ opacity:0, y:40 }}}} whileInView={{{{ opacity:1, y:0 }}}} transition={{{{ duration:0.7 }}}}`\n"
+                f"- Badges eyebrow avant chaque titre : pill `rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em]`\n"
+                f"- Layout asymétrique ou bento grid — JAMAIS de grille Bootstrap symétrique\n"
+                f"- Variables CSS pour toutes les couleurs, `var(--font-display)` pour les headings\n"
                 f"- Sections inline Tailwind, PAS d'import @/blocks/\n"
-                f"- Variables CSS pour les couleurs\n"
-                f"- Framer Motion whileInView pour les entrées\n"
-                f"- py-16 lg:py-20 par section, responsive mobile-first\n"
-                f"- BUDGET {line_budget} lignes max — code concis\n"
+                f"- Responsive : collapse agressif sous 768px → `w-full px-4`\n"
+                f"- BUDGET {line_budget} lignes max — code concis, pas de commentaires\n"
                 f"- Default export\n"
             )
 
