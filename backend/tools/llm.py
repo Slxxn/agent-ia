@@ -2403,3 +2403,22 @@ JSON:
                 }
         except Exception as e:
             return {"connected": False, "backend": "ollama", "error": str(e)}
+
+
+async def call_gemini_vision(prompt: str, image_base64: str, media_type: str = "image/png") -> str:
+    """Analyse une image via Gemini Vision (SDK natif). Retourne le texte généré."""
+    import asyncio
+    import base64
+
+    def _sync_call() -> str:
+        import google.generativeai as genai  # type: ignore
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        image_bytes = base64.b64decode(image_base64)
+        response = model.generate_content([
+            {"mime_type": media_type, "data": image_bytes},
+            prompt,
+        ])
+        return response.text
+
+    return await asyncio.to_thread(_sync_call)
