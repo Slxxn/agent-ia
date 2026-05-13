@@ -1635,6 +1635,7 @@ class LLMTool:
                 messages=[{"role": "user", "content": prompt}],
             )
             content = message.content[0].text if message.content else ""
+            usage = message.usage if hasattr(message, "usage") else None
             return {
                 "success": True,
                 "content": content,
@@ -1643,8 +1644,11 @@ class LLMTool:
                 "finish_reason": message.stop_reason or "stop",
                 "truncated": False,
                 "continuations": 0,
+                "prompt_tokens": usage.input_tokens if usage else 0,
+                "completion_tokens": usage.output_tokens if usage else 0,
             }
         except Exception as e:
+            print(f"❌ [LLM] Claude exception: {e}")
             return {"success": False, "error": f"Erreur Claude inattendue : {str(e)}"}
 
     # ─── Méthodes de haut niveau ───────────────────────────────────────────

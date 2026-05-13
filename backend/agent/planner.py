@@ -289,6 +289,8 @@ Respond ONLY with a valid JSON object (no markdown, no explanation):
             from backend.prompts.templates import ECOMMERCE_PREMIUM_PROMPT, STRIPE_CHECKOUT_PATTERN, FIREBASE_STACK_PATTERN
             base += f"\n\n{ECOMMERCE_PREMIUM_PROMPT}"
             base += (
+                "\n\n⚠️ COLOR OVERRIDE: Ignore the 'Dark SaaS' palette in the template above."
+                "\n   Use the client's DESIGN BRIEF palette exclusively (--bg, --primary, --accent tokens)."
                 "\n\n══ CONTRAINTES E-COMMERCE SUPPLÉMENTAIRES ══"
                 "\n• Minimum 12 produits avec vrais noms, prix, descriptions marketing, images Unsplash."
                 "\n• CartContext (src/context/CartContext.tsx) : CartProvider + useCart + useCartStore alias."
@@ -308,7 +310,9 @@ Respond ONLY with a valid JSON object (no markdown, no explanation):
         base += (
             "\n\n══ VISUAL QUALITY ══"
             "\n• Agency-level design / Framer template. NEVER an empty or generic page."
-            "\n• Dark background (bg-[#09090B] or equivalent) with glassmorphism effects."
+            "\n• COLORS: use the palette from the DESIGN BRIEF (--bg, --primary, --accent tokens)."
+            "\n• Do NOT default to bg-[#09090B] or violet/indigo — adapt to the client's actual brand."
+            "\n• If the brief specifies a light theme, use a light background. Dark brief → dark background."
             "\n• Each section: Framer Motion scroll-entry animations."
             "\n• Strong typography: titles text-5xl+ font-black."
             "\n• Images: real Unsplash URLs (https://images.unsplash.com/photo-ID?w=800)."
