@@ -129,9 +129,10 @@ class Assembler:
         await add_log(project_id, "📁 Copie du template de base...", "info")
         self._copy_template()
 
-        # 2. Apply theme (CSS variables)
+        # 2. Apply theme + fonts (CSS variables)
         await add_log(project_id, "🎨 Application du thème...", "info")
-        self._apply_theme(spec.get("theme", {}))
+        _fonts = spec.get("fonts") or spec.get("design_system", {}).get("fonts")
+        self._apply_theme(spec.get("theme", {}), fonts=_fonts)
 
         # 2b. Inject Three.js deps if any 3D block is used
         all_blocks = {b["block"] for p in spec.get("pages", []) for b in p.get("blocks", [])}
@@ -161,7 +162,7 @@ class Assembler:
             self._write_app(pages, spec)
 
         # 6. Update index.html title
-        self._write_index_html(spec.get("title", "Site"))
+        self._write_index_html(spec.get("title", "Site"), fonts=_fonts)
 
         await add_log(project_id, "✅ Assemblage terminé.", "info")
 
@@ -174,7 +175,8 @@ class Assembler:
         self._copy_template()
 
         await add_log(project_id, "🎨 Application du thème...", "info")
-        self._apply_theme(spec.get("theme", {}))
+        _fonts = spec.get("fonts") or spec.get("design_system", {}).get("fonts")
+        self._apply_theme(spec.get("theme", {}), fonts=_fonts)
 
         all_blocks = {b["block"] for p in spec.get("pages", []) for b in p.get("blocks", [])}
         is_3d = bool(all_blocks & THREE_BLOCKS)
@@ -194,7 +196,7 @@ class Assembler:
         else:
             self._write_app(pages, spec)
 
-        self._write_index_html(spec.get("title", "Site"))
+        self._write_index_html(spec.get("title", "Site"), fonts=_fonts)
         await add_log(project_id, "✅ Scaffold prêt — pages en attente de Claude.", "info")
 
     # ── Private ─────────────────────────────────────────────────────────────
@@ -220,7 +222,7 @@ class Assembler:
         r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
         return 0.299 * r + 0.587 * g + 0.114 * b
 
-    def _apply_theme(self, theme: dict) -> None:
+    def _apply_theme(self, theme: dict, fonts: dict | None = None) -> None:
         css_path = self.workspace / "src" / "index.css"
         if not css_path.exists() or not theme:
             return
@@ -229,7 +231,7 @@ class Assembler:
         surface = theme.get("surface", "#1a1a1f")
 
         css = css_path.read_text(encoding="utf-8")
-        replacements = {
+        color_replacements = {
             "--primary:": theme.get("primary"),
             "--primary-hover:": theme.get("primaryHover") or theme.get("primary"),
             "--accent:": theme.get("accent"),
@@ -237,13 +239,30 @@ class Assembler:
             "--bg:": bg,
             "--surface:": surface,
         }
-        for token, value in replacements.items():
+        for token, value in color_replacements.items():
             if value:
                 css = re.sub(
                     rf"({re.escape(token)}\s*)#[0-9a-fA-F]{{3,8}}",
                     rf"\g<1>{value}",
                     css,
                 )
+
+        if fonts:
+            display = fonts.get("display", "").split(",")[0].strip().strip("'\"")
+            body    = fonts.get("body", "").split(",")[0].strip().strip("'\"")
+            if display:
+                css = re.sub(
+                    r"(--font-display:\s*)[^;]+;",
+                    rf"\g<1>'{display}', sans-serif;",
+                    css,
+                )
+            if body:
+                css = re.sub(
+                    r"(--font-body:\s*)[^;]+;",
+                    rf"\g<1>'{body}', sans-serif;",
+                    css,
+                )
+
         css_path.write_text(css, encoding="utf-8")
 
     def _apply_3d_theme_override(self, theme: dict) -> None:
@@ -410,9 +429,38 @@ export default App;
 """
         (self.workspace / "src" / "App.tsx").write_text(app, encoding="utf-8")
 
-    def _write_index_html(self, title: str) -> None:
+    @staticmethod
+    def _google_fonts_url(display: str, body: str) -> str:
+        """Build a Google Fonts URL for the two project fonts."""
+        def _slug(name: str) -> str:
+            return name.strip().replace(" ", "+")
+
+        display_clean = display.split(",")[0].strip().strip("'\"")
+        body_clean    = body.split(",")[0].strip().strip("'\"")
+
+        families: list[str] = []
+        if display_clean:
+            families.append(f"family={_slug(display_clean)}:wght@600;700;800")
+        if body_clean and body_clean.lower() != display_clean.lower():
+            families.append(f"family={_slug(body_clean)}:wght@400;500;600")
+
+        if not families:
+            return ""
+        return "https://fonts.googleapis.com/css2?" + "&".join(families) + "&display=swap"
+
+    def _write_index_html(self, title: str, fonts: dict | None = None) -> None:
         html_path = self.workspace / "index.html"
-        if html_path.exists():
-            html = html_path.read_text(encoding="utf-8")
-            html = html.replace("{{SITE_TITLE}}", title)
-            html_path.write_text(html, encoding="utf-8")
+        if not html_path.exists():
+            return
+        html = html_path.read_text(encoding="utf-8")
+        html = html.replace("{{SITE_TITLE}}", title)
+
+        if fonts:
+            display = fonts.get("display", "Plus Jakarta Sans")
+            body    = fonts.get("body", "Inter")
+            gf_url  = self._google_fonts_url(display, body)
+            if gf_url:
+                old_link = 'href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"'
+                html = html.replace(old_link, f'href="{gf_url}"')
+
+        html_path.write_text(html, encoding="utf-8")
