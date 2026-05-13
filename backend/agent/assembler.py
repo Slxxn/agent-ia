@@ -165,6 +165,38 @@ class Assembler:
 
         await add_log(project_id, "✅ Assemblage terminé.", "info")
 
+    async def scaffold_only(self, spec: dict, project_id: int) -> None:
+        """Template + theme + config + App.tsx — sans les pages (mode qualité Claude)."""
+        await add_log(project_id, "═══ SCAFFOLD TEMPLATE ═══", "info")
+        self._fix_navbar_links(spec)
+
+        await add_log(project_id, "📁 Copie du template de base...", "info")
+        self._copy_template()
+
+        await add_log(project_id, "🎨 Application du thème...", "info")
+        self._apply_theme(spec.get("theme", {}))
+
+        all_blocks = {b["block"] for p in spec.get("pages", []) for b in p.get("blocks", [])}
+        is_3d = bool(all_blocks & THREE_BLOCKS)
+        is_scrollytelling = self._detect_scrollytelling(spec)
+        if is_3d:
+            await add_log(project_id, "🌐 Injection dépendances Three.js...", "info")
+            self._inject_3d_deps()
+            self._apply_3d_theme_override(spec.get("theme", {}))
+
+        await add_log(project_id, "⚙️  Génération de siteConfig.ts...", "info")
+        self._write_site_config(spec)
+
+        pages = spec.get("pages", [])
+        await add_log(project_id, "🔧 Génération de App.tsx...", "info")
+        if is_scrollytelling:
+            self._write_app_scrollytelling(pages, spec)
+        else:
+            self._write_app(pages, spec)
+
+        self._write_index_html(spec.get("title", "Site"))
+        await add_log(project_id, "✅ Scaffold prêt — pages en attente de Claude.", "info")
+
     # ── Private ─────────────────────────────────────────────────────────────
 
     def _inject_3d_deps(self) -> None:
