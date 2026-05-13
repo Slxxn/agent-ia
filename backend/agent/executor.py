@@ -52,12 +52,13 @@ Si la vidéo n'existe pas, utilise un fond coloré CSS. Ne jamais laisser un src
 """
 
 _COMPONENTS_INSTRUCTION = """
-## Composants — 21st.dev Magic en priorité
-Pour les blocs standards (hero, pricing, testimonials, FAQ, footer, navbar),
-utilise les composants 21st.dev Magic via MCP plutôt que de les générer from scratch.
-Avantages : production-ready, testés, accessibles, cohérents.
-Ne génère from scratch que si le composant n'existe pas dans 21st.dev
-ou si le brief demande quelque chose de très spécifique.
+## Composants UI — règles de génération
+- Générer des composants React complets et autonomes, un par fichier .tsx
+- Props typées avec TypeScript interface (jamais `any`)
+- Variantes de style via className conditionnel + cn(), pas de CSS inline
+- Toujours inclure les états : default, hover, disabled, loading si applicable
+- Nommage : PascalCase pour le composant, kebab-case pour le fichier si nécessaire
+- Toujours named export + default export sur chaque composant
 """
 
 _UI_TASK_TYPES = {"component_ui", "section_emotional", "section_complex", "critical_structure", "polish_final"}

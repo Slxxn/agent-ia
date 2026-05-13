@@ -91,7 +91,7 @@ RECURRING_BUG_PREVENTION = """
 8) LAYOUT & SECTION SPACING:
    - If Layout.tsx adds pt-16 lg:pt-20 on <main> to compensate for fixed navbar,
      DO NOT add extra padding-top in HeroSection or the first section.
-   - Standard spacing between sections: py-12 lg:py-16 (never py-24 lg:py-32).
+   - Standard spacing between sections: py-16 lg:py-24.
    - Consecutive sections accumulate their padding (bottom + top) → stay moderate.
 
 9) EXTERNAL IMAGES — use only verified and public URLs:

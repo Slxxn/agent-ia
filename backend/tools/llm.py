@@ -99,6 +99,29 @@ MAX_CONTINUATIONS  = int(os.getenv("LLM_MAX_CONTINUATIONS", "3"))
 DEFAULT_TIMEOUT = 240  # secondes
 
 
+# ─── Skills visuels — chargés une fois au démarrage ───────────────────────────
+
+from pathlib import Path as _Path
+
+def _load_skill(name: str) -> str:
+    for path in [
+        _Path(__file__).parent.parent.parent / "skills" / f"{name}.md",
+        _Path.home() / ".claude" / "skills" / name / "SKILL.md",
+        _Path.home() / ".claude" / "skills" / f"{name}.md",
+    ]:
+        if path.exists():
+            content = path.read_text(encoding="utf-8")
+            if content.startswith("---"):
+                parts = content.split("---", 2)
+                content = parts[2].strip() if len(parts) >= 3 else content
+            return content
+    return ""
+
+_SKILL_FRONTEND_DESIGN = _load_skill("frontend-design")
+_SKILL_TASTE           = _load_skill("taste")
+_VISUAL_QUALITY_RULES  = "\n\n".join(filter(None, [_SKILL_TASTE, _SKILL_FRONTEND_DESIGN]))
+
+
 # ─── Système prompts ───────────────────────────────────────────────────────────
 
 REACT_EXPORT_RULES = """\
@@ -313,6 +336,16 @@ invents its own colors or sizes. Total consistency across 100% of the site.
     --bg: #F8FAFC;  --surface: #FFFFFF;  --surface2: #F1F5F9;  --border: #E2E8F0;
     --primary: #6D28D9;  --primary-hover: #5B21B6;  --accent: #7C3AED;  --accent2: #0EA5E9;
     --text: #0F172A;  --muted: #64748B;  --success: #059669;
+
+  Palette NATURAL (Wellness, beauty, food, organic — warm light):
+    --bg: #FAFAF8;  --surface: #F5F4F0;  --surface2: #EDEAE3;  --border: #DDD9D0;
+    --primary: #2D2D2D;  --primary-hover: #1A1A1A;  --accent: #8B6F47;  --accent2: #C4956A;
+    --text: #1A1A1A;  --muted: #7A7066;  --success: #4A7C59;
+
+  Palette FRESH (Local business, restaurant, services — clean light):
+    --bg: #FFFFFF;  --surface: #F8FFFE;  --surface2: #EDF7F6;  --border: #D1E9E6;
+    --primary: #0D5C4E;  --primary-hover: #0A4A3E;  --accent: #16C79A;  --accent2: #4ECDC4;
+    --text: #1A2E2B;  --muted: #5A7A76;  --success: #16C79A;
 
 ▸ IMPLEMENTATION in globals.css:
   :root {{
@@ -1068,18 +1101,26 @@ def get_system_prompt(
 
     base = "\n".join(parts)
 
-    # Append brief-specific context for section tasks
-    if brief and task_type in ("section_emotional", "section_complex", "component_ui"):
-        base = _append_brief_context(base, brief, task or {})
+    # Append brief-specific context for section tasks (brief or design_system)
+    if task_type in ("section_emotional", "section_complex", "component_ui"):
+        if brief or (design_system and design_system.get("palette", {}).get("tokens")):
+            base = _append_brief_context(base, brief or {}, task or {}, design_system=design_system)
 
     return base
 
 
-def _append_brief_context(base: str, brief: dict, task: dict) -> str:
-    """Append project-specific palette/font/brand block to the assembled prompt."""
-    palette_tokens = brief.get("palette", {}).get("tokens", {})
-    fonts = brief.get("fonts", {})
-    brand = brief.get("brand_details", {})
+def _append_brief_context(base: str, brief: dict, task: dict, design_system: dict | None = None) -> str:
+    """Append project-specific palette/font/brand block to the assembled prompt.
+    Reads from design_system (new pipeline) if brief lacks palette tokens."""
+    # Prefer design_system tokens (new pipeline) over brief tokens (old presets system)
+    if design_system and design_system.get("palette", {}).get("tokens"):
+        palette_tokens = design_system["palette"]["tokens"]
+        fonts = design_system.get("fonts", {})
+        brand = brief.get("brand_details", {}) if brief else {}
+    else:
+        palette_tokens = brief.get("palette", {}).get("tokens", {}) if brief else {}
+        fonts = brief.get("fonts", {}) if brief else {}
+        brand = brief.get("brand_details", {}) if brief else {}
     narrative_act = next(
         (n for n in brief.get("narrative", []) if n.get("id") == task.get("section_id", "")),
         {}
@@ -2059,8 +2100,18 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
   ]
 }'''
 
+        _spec_quality_block = ""
+        if _SKILL_FRONTEND_DESIGN:
+            _spec_quality_block = (
+                "\n\n## VISUAL QUALITY RULES (mandatory)\n"
+                + _SKILL_FRONTEND_DESIGN
+                + "\n"
+            )
+
         system = (
-            "You are a senior front-end architect. Given a client brief, produce a JSON site spec that assembles a website from pre-built React blocks.\n\n"
+            "You are a senior front-end architect. Given a client brief, produce a JSON site spec that assembles a website from pre-built React blocks.\n"
+            + _spec_quality_block
+            + "\n"
             "AVAILABLE BLOCKS:\n"
             "- HeroA: centered hero, gradient orbs. Props: badge?, headline, headlineAccent?, sub, cta{label,href}, ctaSecondary?{label,href}, showScrollIndicator?, stats?[{value,label}]\n"
             "- HeroB: split hero (text left, image right). Props: badge?, headline, headlineAccent?, sub, cta, ctaSecondary?, imageUrl, imageAlt?, trustText?, avatarUrls?[]\n"
@@ -2209,14 +2260,22 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
             if hex_colors else ""
         )
 
-        system = """You are an expert art director and brand designer.
+        _ds_skill_block = (
+            f"\n## Visual quality rules to apply\n{_VISUAL_QUALITY_RULES}\n"
+            if _VISUAL_QUALITY_RULES else ""
+        )
+        system = f"""You are an expert art director and brand designer.
 Given a client brief, generate a precise design system for their website.
-
+{_ds_skill_block}
 Rules:
 - If the client specified hex colors, use them as primary/accent and derive bg, surface, border, muted to complement
 - Match color temperature and mode (dark/light) to the described visual style
 - Choose fonts matching the brand personality: luxury=serif display, tech=geometric sans, agency=bold grotesque
 - Be specific with hex values — no vague color names
+- NEVER return a generic blue/white palette without a strong reason from the brief
+- For light-theme briefs (wellness, beauty, food, B2B): use light backgrounds (#f8f9fa range), not dark
+- Font pairing examples: Cormorant+DM Sans (luxury), Syne+DM Sans (tech/agency), Plus Jakarta+Inter (B2B), Bricolage Grotesque+Inter (creative)
+- Palette must be distinctive and sector-appropriate
 
 Respond ONLY with valid JSON, no markdown fences, no explanation."""
 

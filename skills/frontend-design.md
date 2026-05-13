@@ -29,7 +29,7 @@ distinctifs et sans erreurs de build. Éviter absolument l'esthétique "AI slop"
 - Scroll animations via whileInView + viewport={{ once: true }}
 
 ## Règles layout
-- Sections avec padding-y généreux : py-24 minimum
+- Sections avec padding-y généreux : py-16 minimum, py-24 sur desktop (py-16 lg:py-24)
 - Max-width container : max-w-7xl mx-auto px-6
 - Grilles responsives : grid-cols-1 md:grid-cols-2 lg:grid-cols-3
 - Éviter les layouts trop centrés/symétriques — chercher l'asymétrie intentionnelle
