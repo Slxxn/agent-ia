@@ -2069,7 +2069,7 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
 """ if is_scrollytelling else ""
 
         if is_scrollytelling:
-            hero_rule = "3. This is a SCROLLYTELLING site: ONE page only (path '/'), start with ScrollHero, use ScrollChapter + ScrollReveal for the body, end with ScrollOutro. No other pages."
+            hero_rule = "3. This is a SCROLLYTELLING site: ONE page only (path '/'), EXACTLY this structure: ScrollHero → 2 ScrollChapter sections → ScrollReveal → ScrollOutro (total 5 blocks, no more). No other pages, no routing."
             extra_3d_rule = ""
         elif is_3d:
             hero_rule = "3. Every page must start with a Hero3D block"

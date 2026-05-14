@@ -207,6 +207,10 @@ class AgentRunner:
             page_blocks = [b.get("block", "") for b in page.get("blocks", [])]
             return bool(page_blocks) and all(b not in _KNOWN_BLOCKS for b in page_blocks)
 
+        from backend.agent.assembler import SCROLLYTELLING_BLOCKS as _SCROLL_BLOCKS
+        _all_blocks = {b["block"] for p in pages for b in p.get("blocks", [])}
+        _is_scrollytelling = bool(_all_blocks & _SCROLL_BLOCKS)
+
         claude_pages = [p for i, p in enumerate(pages) if _needs_claude(p, i == 0)]
         assembler_pages = [p for i, p in enumerate(pages) if not _needs_claude(p, i == 0)]
 
@@ -254,7 +258,19 @@ class AgentRunner:
             sections_text = "\n".join(section_lines) or "  - (sections libres)"
 
             is_home = (page.get("path", "") == "/" or idx == 0)
-            line_budget = "120" if is_home else "80"
+            # Scrollytelling pages are one single long page — allow more room
+            line_budget = "200" if _is_scrollytelling else ("120" if is_home else "80")
+
+            # Scrollytelling-specific compact coding rules to avoid truncation
+            _scroll_rules = ""
+            if _is_scrollytelling:
+                _scroll_rules = (
+                    f"- SCROLLYTELLING : déclare les données (chapitres, items) en const OUTSIDE du JSX avant le return\n"
+                    f"- Chaque section = composant fonctionnel séparé dans le même fichier (ex: function HeroSection(), function ChapterSection())\n"
+                    f"- Framer Motion useScroll + useTransform pour les animations scroll-liées\n"
+                    f"- Pas de Router, pas de Link — page unique, ancres seulement\n"
+                    f"- Fond sombre (#060818) obligatoire — scrollytelling est toujours dark\n"
+                )
 
             task_desc = (
                 f'Génère src/pages/{page_file}.tsx — "{page_name}" (route : {page_path}).\n\n'
@@ -272,6 +288,7 @@ class AgentRunner:
                 f"- Variables CSS pour toutes les couleurs, `var(--font-display)` pour les headings\n"
                 f"- Sections inline Tailwind, PAS d'import @/blocks/\n"
                 f"- Responsive : collapse agressif sous 768px → `w-full px-4`\n"
+                + _scroll_rules +
                 f"- BUDGET {line_budget} lignes max — code concis, pas de commentaires\n"
                 f"- Default export\n"
             )
