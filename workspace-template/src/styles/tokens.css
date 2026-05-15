@@ -1,0 +1,21 @@
+/* Design tokens — injected dynamically from design_system by assembler */
+/* These extend the base variables in index.css */
+
+:root {
+  /* Section spacing */
+  --section-py: 6rem;
+  --section-px: 1.5rem;
+  --container-max: 80rem;
+
+  /* Glow effects */
+  --glow-primary: 0 0 60px var(--primary-glow);
+  --glow-accent: 0 0 40px rgba(129,140,248,0.15);
+
+  /* Card radii */
+  --radius-card: 1.5rem;
+  --radius-button: 9999px;
+
+  /* Gradients */
+  --gradient-hero: radial-gradient(ellipse 80% 60% at 50% -10%, var(--primary-glow), transparent);
+  --gradient-surface: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+}

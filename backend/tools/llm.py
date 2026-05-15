@@ -2027,7 +2027,7 @@ Response format:
         result = await self.call_ollama(prompt, system_prompt=system, temperature=0.2, model_override=model)
         return result.get("content", raw_objective)
 
-    async def generate_site_spec(self, objective: str, design_system: dict | None = None, is_3d: bool = False, is_scrollytelling: bool = False, project_id: int | None = None) -> dict | None:
+    async def generate_site_spec(self, objective: str, design_system: dict | None = None, is_3d: bool = False, is_scrollytelling: bool = False, project_id: int | None = None, sector: str = "", goal: str = "") -> dict | None:
         """
         Generate a structured JSON site spec from the client brief.
         Returns a dict matching the Assembler spec format, or None on failure.
@@ -2135,14 +2135,43 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
                 + "\n"
             )
 
+        _composition_hint = ""
+        if sector and not is_scrollytelling and not is_3d:
+            try:
+                from backend.prompts.composition_rules import get_composition as _get_comp
+                _comp = _get_comp(sector, goal or "vitrine")
+                _composition_hint = (
+                    f"\n\nCOMPOSITION DIRECTIVE (sector={sector}, goal={goal or 'vitrine'}):\n"
+                    f"- Homepage HERO: use {_comp['hero']} block (sectorial variant)\n"
+                    f"- Homepage SECTIONS order: {' → '.join(_comp['sections'])}\n"
+                    f"- REQUIRED pages: {', '.join(_comp['pages'])}\n"
+                    f"- CSS accent family hint: {_comp['css_accent']}\n"
+                    "Follow this composition strictly — the hero block is pre-built and must match exactly.\n"
+                )
+            except Exception:
+                pass
+
         system = (
             "You are a senior front-end architect. Given a client brief, produce a JSON site spec that assembles a website from pre-built React blocks.\n"
             + _spec_quality_block
+            + _composition_hint
             + "\n"
             "AVAILABLE BLOCKS:\n"
             "- HeroA: centered hero, gradient orbs. Props: badge?, headline, headlineAccent?, sub, cta{label,href}, ctaSecondary?{label,href}, showScrollIndicator?, stats?[{value,label}]\n"
             "- HeroB: split hero (text left, image right). Props: badge?, headline, headlineAccent?, sub, cta, ctaSecondary?, imageUrl, imageAlt?, trustText?, avatarUrls?[]\n"
             "- HeroC: full-bleed background image hero. Props: headline, headlineAccent?, sub, cta, ctaSecondary?, backgroundImageUrl, overlayOpacity?, showScrollIndicator?\n"
+            "SECTORIAL HEROES (use only when composition directive specifies them):\n"
+            "- HeroBeaute: beauty/salon split layout. Props: badge?, headline, headlineAccent?, sub, cta, imageUrl?, stats?[{value,label}]\n"
+            "- HeroRestaurant: full-bleed bottom-anchored. Props: headline, headlineAccent?, sub?, cta, ctaSecondary?, backgroundImage?\n"
+            "- HeroArtisan: craftsman 50/50 + certifications. Props: badge?, headline, headlineAccent?, sub, cta, imageUrl?, certifications?[], guarantees?[{label}]\n"
+            "- HeroMedical: centered + trust badges. Props: badge?, headline, headlineAccent?, sub, cta, certifications?[], partnerLogos?[{name}]\n"
+            "- HeroCoach: photo left + benefits right. Props: badge?, headline, headlineAccent?, sub, cta, photoUrl?, benefits?[], socialProof?{count,label}\n"
+            "- HeroPhoto: masonry grid + dark overlay. Props: headline, headlineAccent?, sub?, cta, galleryImages?[]\n"
+            "- HeroMode: editorial split + season label. Props: headline, headlineAccent?, sub?, cta, featuredImage?, season?\n"
+            "- HeroSport: dark full-bleed + stats strip. Props: headline, headlineAccent?, sub?, cta, ctaSecondary?, backgroundImage?, stats?[{value,label}]\n"
+            "- HeroAssociation: centered + impact counters. Props: badge?, headline, headlineAccent?, sub, cta, ctaSecondary?, impact?[{value,label}]\n"
+            "- HeroImmobilier: split + floating price card. Props: badge?, headline, headlineAccent?, sub, cta, imageUrl?, stats?[{value,label}], location?\n"
+            "- HeroTech: grid-dots bg + terminal window. Props: badge?, headline, headlineAccent?, sub, cta, ctaSecondary?, techTags?[], terminalLines?[]\n"
             "- FeaturesGrid: 3-col icon grid. Props: badge?, headline, headlineAccent?, sub?, features[{icon,title,description}], columns?(2|3|4)\n"
             "- FeaturesCards: numbered or alternating steps. Props: badge?, headline, headlineAccent?, sub?, items[{icon?,title,description,imageUrl?}], layout?(\"numbered\"|\"alternating\")\n"
             "- TestimonialsGrid: masonry testimonials. Props: badge?, headline, headlineAccent?, items[{quote,author,role?,company?,avatarUrl?,rating?}]\n"

@@ -70,6 +70,26 @@ BLOCK_IMPORTS: dict[str, str] = {
     "ScrollChapter":    "import ScrollChapter from '@/blocks/scrollytelling/ScrollChapter';",
     "ScrollReveal":     "import ScrollReveal from '@/blocks/scrollytelling/ScrollReveal';",
     "ScrollOutro":      "import ScrollOutro from '@/blocks/scrollytelling/ScrollOutro';",
+    # Sectorial heroes
+    "HeroBeaute":       "import HeroBeaute from '@/blocks/hero/HeroBeaute';",
+    "HeroRestaurant":   "import HeroRestaurant from '@/blocks/hero/HeroRestaurant';",
+    "HeroArtisan":      "import HeroArtisan from '@/blocks/hero/HeroArtisan';",
+    "HeroMedical":      "import HeroMedical from '@/blocks/hero/HeroMedical';",
+    "HeroCoach":        "import HeroCoach from '@/blocks/hero/HeroCoach';",
+    "HeroPhoto":        "import HeroPhoto from '@/blocks/hero/HeroPhoto';",
+    "HeroMode":         "import HeroMode from '@/blocks/hero/HeroMode';",
+    "HeroSport":        "import HeroSport from '@/blocks/hero/HeroSport';",
+    "HeroAssociation":  "import HeroAssociation from '@/blocks/hero/HeroAssociation';",
+    "HeroImmobilier":   "import HeroImmobilier from '@/blocks/hero/HeroImmobilier';",
+    "HeroTech":         "import HeroTech from '@/blocks/hero/HeroTech';",
+    # Legal blocks
+    "MentionsLegales":          "import MentionsLegales from '@/blocks/legal/MentionsLegales';",
+    "PolitiqueConfidentialite": "import PolitiqueConfidentialite from '@/blocks/legal/PolitiqueConfidentialite';",
+    "CGV":                      "import CGV from '@/blocks/legal/CGV';",
+    "CookiesBanner":            "import CookiesBanner from '@/blocks/legal/CookiesBanner';",
+    # E-commerce blocks
+    "CartDrawer":       "import CartDrawer from '@/blocks/ecommerce/CartDrawer';",
+    "AdminDashboard":   "import AdminDashboard from '@/blocks/ecommerce/AdminDashboard';",
 }
 
 THREE_BLOCKS = {"Hero3D", "Scene3D", "ParallaxSection", "WaveSection", "MorphBlob"}
@@ -149,6 +169,7 @@ class Assembler:
         if is_scrollytelling:
             await add_log(project_id, "📜 Scrollytelling détecté — injection des dépendances GSAP...", "info")
             self._inject_gsap_deps()
+        self.inject_design_tokens()
 
         # 3. Generate siteConfig.ts
         await add_log(project_id, "⚙️  Génération de la configuration...", "info")
@@ -195,6 +216,7 @@ class Assembler:
         if is_scrollytelling:
             await add_log(project_id, "📜 Injection dépendances GSAP...", "info")
             self._inject_gsap_deps()
+        self.inject_design_tokens()
 
         await add_log(project_id, "⚙️  Génération de siteConfig.ts...", "info")
         self._write_site_config(spec)
@@ -226,6 +248,25 @@ class Assembler:
         pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
         pkg.setdefault("dependencies", {}).update(GSAP_DEPS)
         pkg_path.write_text(json.dumps(pkg, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    def inject_design_tokens(self) -> None:
+        """Append tokens.css import into src/index.css if tokens.css exists in template."""
+        tokens_src = TEMPLATE_DIR / "src" / "styles" / "tokens.css"
+        tokens_dst = self.workspace / "src" / "styles" / "tokens.css"
+        index_css = self.workspace / "src" / "index.css"
+        if not tokens_src.exists():
+            return
+        if not tokens_dst.exists():
+            import shutil as _sh
+            tokens_dst.parent.mkdir(parents=True, exist_ok=True)
+            _sh.copy2(tokens_src, tokens_dst)
+        if index_css.exists():
+            content = index_css.read_text(encoding="utf-8")
+            if "@/styles/tokens.css" not in content and "tokens.css" not in content:
+                index_css.write_text(
+                    '@import "./styles/tokens.css";\n' + content,
+                    encoding="utf-8"
+                )
 
     def _copy_template(self) -> None:
         if self.workspace.exists():

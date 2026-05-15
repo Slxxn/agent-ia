@@ -114,6 +114,14 @@ class StaticPostProcessor:
             await self._fix_invalid_lucide_icons(project_id)
         except Exception as e:
             await add_log(project_id, f"⚠️ Post-processor Lucide icons : {e}", "debug")
+        try:
+            await self.verify_completeness(project_id)
+        except Exception as e:
+            await add_log(project_id, f"⚠️ Post-processor completeness check : {e}", "debug")
+        try:
+            await self.verify_no_dead_links(project_id)
+        except Exception as e:
+            await add_log(project_id, f"⚠️ Post-processor dead links check : {e}", "debug")
 
     # ── NEW: missing React / Router imports ──────────────────────────────────
 
@@ -1335,3 +1343,48 @@ class StaticPostProcessor:
             if path:
                 return path
         return None
+
+    # ── Completeness & link verification ──────────────────────────────────────
+
+    async def verify_completeness(self, project_id: int) -> None:
+        """Warn if key files are missing (index.html, App.tsx, main.tsx)."""
+        required = ["index.html", "App.tsx", "main.tsx", "package.json"]
+        missing = []
+        for fname in required:
+            if not self._find_file(fname):
+                missing.append(fname)
+        if missing:
+            await add_log(project_id, f"⚠️ Fichiers manquants : {', '.join(missing)}", "warning")
+        else:
+            await add_log(project_id, "✅ Complétude vérifiée — tous les fichiers clés sont présents.", "info")
+
+    async def verify_no_dead_links(self, project_id: int) -> None:
+        """Check that all href values in App.tsx Route elements have a corresponding page file."""
+        app_path = self._find_file("App.tsx")
+        if not app_path:
+            return
+        content = open(app_path, encoding="utf-8").read()
+        import re as _re
+        route_paths = set(_re.findall(r'path=["\']([^"\']+)["\']', content))
+        if not route_paths:
+            return
+        pages_dir = os.path.join(self.workspace_path, "src", "pages")
+        if not os.path.isdir(pages_dir):
+            return
+        page_files = {os.path.splitext(f)[0] for f in os.listdir(pages_dir) if f.endswith((".tsx", ".jsx"))}
+        dead = []
+        for rp in route_paths:
+            if rp in ("/", "*"):
+                continue
+            stem = rp.strip("/").replace("/", "_").replace("-", "")
+            # check if any page file loosely matches
+            matches = any(
+                stem.lower() in pf.lower() or pf.lower() in stem.lower()
+                for pf in page_files
+            )
+            if not matches:
+                dead.append(rp)
+        if dead:
+            await add_log(project_id, f"⚠️ Liens potentiellement orphelins : {', '.join(dead)}", "warning")
+        else:
+            await add_log(project_id, "✅ Liens vérifiés — aucun lien mort détecté.", "info")

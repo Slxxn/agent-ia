@@ -383,11 +383,20 @@ class AgentRunner:
                 await add_log(project_id, "📜 Mode scrollytelling détecté — site une page.", "info")
 
             import re as _re_strip
+
+            # Extract sector/goal from brief for composition rules
+            _sector_match = _re_strip.search(r'sector[:\s]+([a-z_]+)', full_objective.lower())
+            _goal_match = _re_strip.search(r'goal[:\s]+([a-z_]+)', full_objective.lower())
+            _sector = _sector_match.group(1) if _sector_match else (saved_brief.get("sector", "") if saved_brief else "")
+            _goal = _goal_match.group(1) if _goal_match else (saved_brief.get("goal", "") if saved_brief else "")
+            if _sector:
+                await add_log(project_id, f"🏷️ Secteur détecté : {_sector} / objectif : {_goal or 'vitrine'}", "info")
+
             spec_objective = _re_strip.sub(
                 r'## (Absolute Technical Rules|Homepage Structure Rules)[\s\S]*?(?=## |\Z)',
                 '', full_objective
             ).strip()
-            site_spec = await llm.generate_site_spec(spec_objective, design_system, is_3d=is_3d, is_scrollytelling=is_scrollytelling, project_id=project_id)
+            site_spec = await llm.generate_site_spec(spec_objective, design_system, is_3d=is_3d, is_scrollytelling=is_scrollytelling, project_id=project_id, sector=_sector, goal=_goal)
 
             if not site_spec or not site_spec.get("pages"):
                 await add_log(project_id, "❌ Spec JSON invalide ou vide.", "error")
