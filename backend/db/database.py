@@ -106,11 +106,31 @@ async def init_db():
         """)
         await db.commit()
 
+        # guardian_sites table for Site Guardian
+        await db.executescript("""
+            CREATE TABLE IF NOT EXISTS guardian_sites (
+                id TEXT PRIMARY KEY,
+                project_id TEXT,
+                client_name TEXT DEFAULT '',
+                client_email TEXT DEFAULT '',
+                site_url TEXT DEFAULT '',
+                plan TEXT DEFAULT 'essential',
+                active INTEGER DEFAULT 1,
+                created_at TEXT
+            );
+        """)
+        await db.commit()
+
         for migration in [
             "ALTER TABLE projects ADD COLUMN objective TEXT DEFAULT ''",
             "ALTER TABLE projects ADD COLUMN tokens_used INTEGER DEFAULT 0",
             "ALTER TABLE projects ADD COLUMN brief TEXT DEFAULT ''",
             "ALTER TABLE projects ADD COLUMN deploy_url TEXT DEFAULT ''",
+            "ALTER TABLE projects ADD COLUMN slug TEXT DEFAULT ''",
+            "ALTER TABLE projects ADD COLUMN is_client INTEGER DEFAULT 0",
+            "ALTER TABLE projects ADD COLUMN client_name TEXT DEFAULT ''",
+            "ALTER TABLE projects ADD COLUMN client_email TEXT DEFAULT ''",
+            "ALTER TABLE projects ADD COLUMN notes TEXT DEFAULT ''",
         ]:
             try:
                 await db.execute(migration)

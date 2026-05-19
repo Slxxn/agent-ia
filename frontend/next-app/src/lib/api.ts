@@ -28,6 +28,11 @@ export interface Project {
   updated_at: string;
   workspace_path: string;
   deploy_url?: string;
+  slug?: string;
+  is_client?: number;
+  client_name?: string;
+  client_email?: string;
+  notes?: string;
 }
 
 export interface Task {

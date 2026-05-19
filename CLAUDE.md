@@ -65,6 +65,24 @@ Pipeline IA : Gemini Flash (planification/repair) + DeepSeek/Claude (génératio
 - Pour Prospect Hunter : firecrawl + brave-search + memory
 - Pour le dev de la plateforme : github + context7 + sqlite
 
+## Commande d'enregistrement rapide
+
+Après chaque génération de site, toujours lancer :
+```bash
+# Projet test
+python backend/tools/register_project.py \
+  --name "{NOM}" --slug "{SLUG}" \
+  --sector "{SECTEUR}" --type "{TYPE}" \
+  --is-client false --notes "{DESCRIPTION}"
+
+# Projet client
+python backend/tools/register_project.py \
+  --name "{NOM}" --slug "{SLUG}" \
+  --sector "{SECTEUR}" --type "{TYPE}" \
+  --is-client true \
+  --client-email "{EMAIL}" --client-name "{NOM_CLIENT}"
+```
+
 ## Points d'attention
 - Le static_post_processor applique 15+ corrections auto — ne pas dupliquer sa logique
 - Le build_validator tourne jusqu'à 2 passes de repair — les prompts doivent minimiser les erreurs TS

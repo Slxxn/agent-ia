@@ -106,9 +106,20 @@ export default function ProjectCard({ project, onDelete, index = 0 }: ProjectCar
         }}
         className="group"
       >
-        {/* ── Top: status badge + overflow menu ── */}
+        {/* ── Top: status badge + client/test badge + overflow menu ── */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-          <StatusBadge status={project.status as any} />
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <StatusBadge status={project.status as any} />
+            {project.is_client ? (
+              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 99, background: "rgba(16,185,129,0.1)", color: "#10B981", border: "1px solid rgba(16,185,129,0.2)" }}>
+                Client
+              </span>
+            ) : (
+              <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 99, background: "var(--surface3)", color: "var(--muted2)", border: "1px solid var(--bd-bright)" }}>
+                Test
+              </span>
+            )}
+          </div>
 
           <div style={{ position: "relative", flexShrink: 0 }}>
             <button
