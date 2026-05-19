@@ -27,6 +27,7 @@ Pipeline IA : Gemini Flash (planification/repair) + DeepSeek/Claude (génératio
 ### Skills projet (dans .claude/skills/)
 | Skill | Quand l'utiliser |
 |-------|-----------------|
+| `delivery-protocol.md` | À chaque création ou modification de site client |
 | `frontend-design.md` | Avant tout travail frontend ou prompts de génération |
 | `taste.md` | Pour les décisions visuelles |
 | `llm-routing.md` | Avant tout travail sur llm.py |
