@@ -53,6 +53,17 @@ class AgentRunner:
         if not project:
             return {"success": False, "error": "Projet non trouvé."}
 
+        # Vérifier qu'un brief ou un objectif est fourni avant de lancer
+        if not objective.strip():
+            from backend.db.database import get_brief as _get_brief
+            saved = await _get_brief(project_id)
+            if not saved:
+                return {
+                    "success": False,
+                    "error": "Impossible de démarrer : aucun objectif ni brief fourni. "
+                             "Remplissez le formulaire ou ajoutez une description au projet.",
+                }
+
         # Vérifier qu'il n'est pas déjà en cours
         if project_id in cls._running_tasks and not cls._running_tasks[project_id].done():
             return {"success": False, "error": "Le projet est déjà en cours d'exécution."}
@@ -358,6 +369,15 @@ class AgentRunner:
             is_3d = any(kw in full_objective.lower() for kw in _3d_keywords)
             is_scrollytelling = any(kw in full_objective.lower() for kw in _scroll_keywords)
 
+            # Extraire sector/goal AVANT la phase 1 pour les passer au design system
+            import re as _re_strip
+            _sector_match = _re_strip.search(r'sector[:\s]+([a-z_]+)', full_objective.lower())
+            _goal_match = _re_strip.search(r'goal[:\s]+([a-z_]+)', full_objective.lower())
+            _sector = _sector_match.group(1) if _sector_match else (saved_brief.get("sector", "") if saved_brief else "")
+            _goal = _goal_match.group(1) if _goal_match else (saved_brief.get("goal", "") if saved_brief else "")
+            if _sector:
+                await add_log(project_id, f"🏷️ Secteur : {_sector} / objectif : {_goal or 'vitrine'}", "info")
+
             # ── PHASE 1 : Design system ──────────────────────────────────
             await add_log(project_id, "═══ PHASE 1 : DESIGN SYSTEM ═══", "info")
             await project_manager.update_progress(project_id, 5.0)
@@ -366,11 +386,14 @@ class AgentRunner:
                 design_system = await llm.generate_design_system(
                     full_objective, project_id=project_id,
                     is_3d=is_3d, is_scrollytelling=is_scrollytelling,
+                    sector=_sector, goal=_goal,
                 )
                 if design_system and design_system.get("palette", {}).get("tokens"):
                     palette_name = design_system.get("palette", {}).get("name", "custom")
                     fonts = design_system.get("fonts", {})
                     await add_log(project_id, f"🎨 {palette_name} | {fonts.get('display','?')}/{fonts.get('body','?')}", "info")
+                    # Injecter le design_system dans le LLMTool pour toutes les générations suivantes
+                    llm._active_design_system = design_system
             except Exception as _ds_err:
                 await add_log(project_id, f"⚠️ Design system : {_ds_err}", "debug")
 
@@ -381,16 +404,6 @@ class AgentRunner:
                 await add_log(project_id, "🌐 Mode 3D détecté — blocs Three.js activés.", "info")
             if is_scrollytelling:
                 await add_log(project_id, "📜 Mode scrollytelling détecté — site une page.", "info")
-
-            import re as _re_strip
-
-            # Extract sector/goal from brief for composition rules
-            _sector_match = _re_strip.search(r'sector[:\s]+([a-z_]+)', full_objective.lower())
-            _goal_match = _re_strip.search(r'goal[:\s]+([a-z_]+)', full_objective.lower())
-            _sector = _sector_match.group(1) if _sector_match else (saved_brief.get("sector", "") if saved_brief else "")
-            _goal = _goal_match.group(1) if _goal_match else (saved_brief.get("goal", "") if saved_brief else "")
-            if _sector:
-                await add_log(project_id, f"🏷️ Secteur détecté : {_sector} / objectif : {_goal or 'vitrine'}", "info")
 
             spec_objective = _re_strip.sub(
                 r'## (Absolute Technical Rules|Homepage Structure Rules)[\s\S]*?(?=## |\Z)',

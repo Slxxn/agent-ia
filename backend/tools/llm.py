@@ -128,10 +128,12 @@ _VISUAL_QUALITY_RULES      = "\n\n".join(filter(None, [_SKILL_TASTE, _SKILL_FRON
 _SCROLLYTELLING_RULES      = "\n\n".join(filter(None, [_VISUAL_QUALITY_RULES, _SKILL_GSAP_SCROLLTRIGGER]))
 _3D_RULES                  = "\n\n".join(filter(None, [_VISUAL_QUALITY_RULES, _SKILL_THREEJS_R3F]))
 
-print(f"[Skills] frontend-design: {len(_SKILL_FRONTEND_DESIGN)} chars")
-print(f"[Skills] taste: {len(_SKILL_TASTE)} chars")
-print(f"[Skills] gsap-scrolltrigger: {len(_SKILL_GSAP_SCROLLTRIGGER)} chars")
-print(f"[Skills] threejs-r3f: {len(_SKILL_THREEJS_R3F)} chars")
+import logging as _logging
+_logging.getLogger(__name__).debug(
+    "[Skills] frontend-design=%d taste=%d gsap=%d threejs=%d",
+    len(_SKILL_FRONTEND_DESIGN), len(_SKILL_TASTE),
+    len(_SKILL_GSAP_SCROLLTRIGGER), len(_SKILL_THREEJS_R3F),
+)
 
 
 # ─── Système prompts ───────────────────────────────────────────────────────────
@@ -1348,6 +1350,7 @@ class LLMTool:
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
     ):
+        self._active_design_system: Optional[Dict[str, Any]] = None
         self.backend = (backend or LLM_BACKEND).lower()
         # Compatibilité : anciens .env avec LLM_BACKEND=openai
         if self.backend == "openai":
@@ -1918,7 +1921,9 @@ Format:
         if model_override is None:
             model_override = route_model(task_type=task_type, phase=phase)
 
-        system = get_system_prompt(task_type, brief=brief, task=task, design_system=design_system, is_3d=is_3d)
+        # Utiliser le design_system actif comme fallback si non passé explicitement
+        _effective_ds = design_system or self._active_design_system
+        system = get_system_prompt(task_type, brief=brief, task=task, design_system=_effective_ds, is_3d=is_3d)
 
         return await self.call_ollama(
             prompt,
@@ -2331,7 +2336,7 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
         _logging.warning(f"generate_site_spec: could not parse JSON. Raw[:400]: {raw[:400]}")
         return None
 
-    async def generate_design_system(self, objective: str, project_id: int | None = None, is_3d: bool = False, is_scrollytelling: bool = False) -> dict:
+    async def generate_design_system(self, objective: str, project_id: int | None = None, is_3d: bool = False, is_scrollytelling: bool = False, sector: str = "", goal: str = "") -> dict:
         """
         Generate a client-specific design system from the brief/objective text.
         Extracts explicit colors (#RRGGBB), visual style, sector, mood.
@@ -2379,7 +2384,25 @@ SCROLLYTELLING BLOCKS (use ONLY when is_scrollytelling=true — single page, no 
 - Mood: immersive, futuristic, tech-premium.
 """
 
-        _ds_skill_block = _taste_hint + _type_hint
+        _sector_hint = ""
+        if sector:
+            _sector_map = {
+                "beaute": "Warm, feminine, sensual. Light creams, warm roses, gold accents. Fonts: Cormorant or Playfair.",
+                "restaurant": "Warm, appetizing, premium. Deep warm backgrounds, amber/terracotta accents. Fonts: Lora or Cormorant.",
+                "artisan": "Earthy, authentic, craft. Stone/warm neutrals, bronze accents. Fonts: Playfair or Lora.",
+                "medical": "Clean, trustworthy, calm. Light blue/white, teal accents. Fonts: IBM Plex Sans or Plus Jakarta Sans.",
+                "immobilier": "Premium, minimal, aspirational. Champagne or stone backgrounds, dark accents. Fonts: Syne or Cabinet Grotesk.",
+                "coach": "Energetic, aspirational, bold. High contrast, bold accents. Fonts: Syne or Plus Jakarta Sans.",
+                "photo": "Editorial, dramatic. Dark background, minimal accent. Fonts: Cormorant or Space Grotesk.",
+                "mode": "Editorial, bold, trend. High contrast, strong typography. Fonts: Cabinet Grotesk or Bebas Neue.",
+                "sport": "Dynamic, energetic, bold. Dark bg, electric accents. Fonts: Syne or Space Grotesk.",
+                "tech": "Minimal, futuristic. Off-black/dark bg, cyan or electric accent. Fonts: Geist or Inter.",
+                "association": "Warm, human, accessible. Bright and hopeful palette. Fonts: Plus Jakarta Sans or Lora.",
+            }
+            _sector_desc = _sector_map.get(sector.lower(), f"Adapt the design to the '{sector}' sector.")
+            _sector_hint = f"\n## Sector: {sector} | Goal: {goal or 'showcase'}\n{_sector_desc}\n"
+
+        _ds_skill_block = _sector_hint + _taste_hint + _type_hint
         system = f"""You are an expert art director and brand designer.
 Given a client brief, generate a precise design system for their website.
 {_ds_skill_block}

@@ -250,17 +250,25 @@ class Assembler:
         pkg_path.write_text(json.dumps(pkg, indent=2, ensure_ascii=False), encoding="utf-8")
 
     def inject_design_tokens(self) -> None:
-        """Append tokens.css import into src/index.css if tokens.css exists in template."""
+        """Assure que tokens.css est présent dans le workspace et importé depuis index.css.
+
+        Source de vérité (par priorité) :
+        1. workspace/src/styles/tokens.css généré par brief_to_claude.py → jamais écrasé
+        2. workspace-template/src/styles/tokens.css → fallback si aucun fichier présent
+        """
         tokens_src = TEMPLATE_DIR / "src" / "styles" / "tokens.css"
         tokens_dst = self.workspace / "src" / "styles" / "tokens.css"
         index_css = self.workspace / "src" / "index.css"
-        if not tokens_src.exists():
-            return
+
+        # Si tokens.css existe déjà (généré par brief_to_claude), ne jamais l'écraser
         if not tokens_dst.exists():
-            import shutil as _sh
-            tokens_dst.parent.mkdir(parents=True, exist_ok=True)
-            _sh.copy2(tokens_src, tokens_dst)
-        if index_css.exists():
+            if tokens_src.exists():
+                import shutil as _sh
+                tokens_dst.parent.mkdir(parents=True, exist_ok=True)
+                _sh.copy2(tokens_src, tokens_dst)
+
+        # Assurer que index.css l'importe
+        if index_css.exists() and tokens_dst.exists():
             content = index_css.read_text(encoding="utf-8")
             if "@/styles/tokens.css" not in content and "tokens.css" not in content:
                 index_css.write_text(
@@ -282,7 +290,10 @@ class Assembler:
         return 0.299 * r + 0.587 * g + 0.114 * b
 
     def _apply_theme(self, theme: dict, fonts: dict | None = None) -> None:
-        css_path = self.workspace / "src" / "index.css"
+        # Source de vérité CSS : si tokens.css existe (généré par brief_to_claude),
+        # on y écrit les overrides. Sinon, fallback sur index.css (comportement historique).
+        tokens_css = self.workspace / "src" / "styles" / "tokens.css"
+        css_path = tokens_css if tokens_css.exists() else self.workspace / "src" / "index.css"
         if not css_path.exists() or not theme:
             return
 
