@@ -6,7 +6,7 @@ import { auth } from "@/lib/firebase";
 import { AuthProvider, useAuth } from "@/lib/authContext";
 import AuthGuard from "@/lib/AuthGuard";
 
-const PUBLIC_ROUTES = ["/form", "/login", "/p"];
+const PUBLIC_ROUTES = ["/form", "/login", "/p", "/app"];
 const PUBLIC_EXACT = ["/"];
 
 function Shell({ children }: { children: React.ReactNode }) {
