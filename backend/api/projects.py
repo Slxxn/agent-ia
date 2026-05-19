@@ -38,6 +38,8 @@ class ProjectResponse(BaseModel):
     workspace_path: str
     tokens_used: Optional[int] = 0
     deploy_url: Optional[str] = ""
+    generation_mode: Optional[str] = "agent"
+    brief: Optional[str] = ""
 
 class TaskResponse(BaseModel):
     id: int
@@ -111,8 +113,8 @@ async def start_project(project_id: int, data: ProjectStart):
     if not project:
         raise HTTPException(status_code=404, detail="Projet non trouvé.")
 
-    # Sauvegarder l'objectif en base
-    await project_manager.update(project_id, objective=data.objective)
+    # Sauvegarder l'objectif et le mode de génération
+    await project_manager.update(project_id, objective=data.objective, generation_mode="agent")
 
     result = await AgentRunner.start_project(project_id, data.objective)
     if not result.get("success"):
@@ -226,6 +228,99 @@ async def read_project_file(project_id: int, file_path: str):
         raise HTTPException(status_code=404, detail=result.get("error", "Fichier non trouvé."))
 
     return result
+
+
+@router.post("/{project_id}/generate-claude-prompt")
+async def generate_claude_prompt(project_id: int):
+    """Génère un prompt prêt à coller dans Claude Code VS Code."""
+    import json as _json
+    from datetime import datetime, timezone
+
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+        row = await cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Projet non trouvé")
+        project = dict(row)
+    finally:
+        await db.close()
+
+    brief = {}
+    if project.get("brief"):
+        try:
+            brief = _json.loads(project["brief"])
+        except Exception:
+            pass
+
+    business_name = brief.get("businessName", project.get("name", ""))
+    sector = brief.get("sector", "")
+    site_type = brief.get("siteType", "standard")
+    goal = brief.get("siteGoal", "showcase")
+    slug = project.get("slug", "") or business_name.lower().replace(" ", "-")
+
+    prompt = f"""# Génération site — {business_name}
+
+## Contexte
+Tu vas générer un site web professionnel pour un client builderz.shop.
+Lis d'abord le brief complet avant d'écrire la moindre ligne de code.
+
+## Brief client
+- **Nom** : {business_name}
+- **Secteur** : {sector}
+- **Type de site** : {site_type}
+- **Objectif** : {goal}
+- **Description** : {brief.get('description', 'Non renseigné')}
+- **Cible client** : {brief.get('targetAudience', 'Non renseigné')}
+- **Valeur unique** : {brief.get('uniqueValue', 'Non renseigné')}
+- **Style visuel** : {brief.get('visualStyle', 'Professionnel')}
+- **Thème** : {brief.get('colorTheme', 'Sombre (noir)')}
+- **Couleurs** : {', '.join(brief.get('colors', [])) or 'Palette par défaut'}
+- **Pages** : {', '.join(brief.get('pages', ['accueil']))}
+- **Fonctionnalités** : {', '.join(brief.get('features', [])) or 'Standard'}
+- **Références** : {brief.get('references', 'Aucune')}
+
+## Instructions
+
+1. Lance d'abord :
+```bash
+python backend/tools/brief_to_claude.py --project-id {project_id}
+```
+Cela va préparer le workspace `workspace/{slug}/`
+avec le bon starter et les tokens CSS générés.
+
+2. Ouvre le workspace dans VS Code :
+```bash
+code workspace/{slug}/
+```
+
+3. Génère le site en suivant `.claude/skills/site-generator.md`
+
+4. Après génération, enregistre dans le dashboard :
+```bash
+python backend/tools/register_project.py \\
+  --slug "{slug}" \\
+  --update \\
+  --status "ready"
+```
+
+## Rappel skills à charger
+- `.claude/skills/site-generator.md` — instructions génération
+- `.claude/skills/delivery-protocol.md` — protocole livraison
+- `.claude/skills/frontend-design.md` — règles qualité visuelle
+"""
+
+    db = await get_db()
+    try:
+        await db.execute(
+            "UPDATE projects SET generation_mode = 'manual', updated_at = ? WHERE id = ?",
+            (datetime.now(timezone.utc).isoformat(), project_id),
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+    return {"prompt": prompt, "slug": slug}
 
 
 @router.post("/{project_id}/prepare-workspace")

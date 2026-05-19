@@ -33,6 +33,8 @@ export interface Project {
   client_name?: string;
   client_email?: string;
   notes?: string;
+  generation_mode?: "agent" | "manual";
+  brief?: string;
 }
 
 export interface Task {
@@ -94,6 +96,12 @@ export async function deleteProject(id: number): Promise<void> {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Erreur lors de la suppression du projet");
+}
+
+export async function generateClaudePrompt(id: number): Promise<{ prompt: string; slug: string }> {
+  const res = await fetch(`${API_BASE}/projects/${id}/generate-claude-prompt`, { method: "POST" });
+  if (!res.ok) throw new Error("Erreur lors de la génération du prompt");
+  return res.json();
 }
 
 export async function prepareWorkspace(id: number): Promise<{ success: boolean; slug: string; workspace: string }> {

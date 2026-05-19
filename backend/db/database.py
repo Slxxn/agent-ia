@@ -131,6 +131,7 @@ async def init_db():
             "ALTER TABLE projects ADD COLUMN client_name TEXT DEFAULT ''",
             "ALTER TABLE projects ADD COLUMN client_email TEXT DEFAULT ''",
             "ALTER TABLE projects ADD COLUMN notes TEXT DEFAULT ''",
+            "ALTER TABLE projects ADD COLUMN generation_mode TEXT DEFAULT 'agent'",
         ]:
             try:
                 await db.execute(migration)

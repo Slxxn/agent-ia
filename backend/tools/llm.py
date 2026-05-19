@@ -1233,20 +1233,50 @@ def _gemini_or(fallback: str) -> str:
 
 _ROUTE_TABLE: dict[str, dict[str, str]] = {
     # task_type -> {economy, balanced, quality}
-    # Gemini Flash used for short structured tasks (planning, repair, validation)
-    # DeepSeek used for long code generation (components, sections)
+    # Agent auto pipeline: Gemini Flash + DeepSeek UNIQUEMENT (pas de Claude)
+    # Claude Sonnet reste disponible pour usage manuel uniquement
     "brief_creation":    {"economy": _gemini_or(DEEPSEEK_MODEL_FLASH), "balanced": _gemini_or(DEEPSEEK_MODEL_FLASH),    "quality": _gemini_or(DEEPSEEK_MODEL_FLASH)},
     "planning":          {"economy": _gemini_or(DEEPSEEK_MODEL_FLASH), "balanced": _gemini_or(DEEPSEEK_MODEL_FLASH),    "quality": DEEPSEEK_MODEL_REASONER},
     "scaffold":          {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_FLASH},
     "config":            {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_FLASH},
-    "component_ui":      {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": CLAUDE_MODEL},
-    "critical_structure":{"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_REASONER, "quality": CLAUDE_MODEL},
-    "section_emotional": {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": CLAUDE_MODEL},
-    "section_complex":   {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_REASONER, "quality": CLAUDE_MODEL},
+    "component_ui":      {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_PRO},
+    "critical_structure":{"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_REASONER, "quality": DEEPSEEK_MODEL_REASONER},
+    "section_emotional": {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_FLASH,    "quality": DEEPSEEK_MODEL_PRO},
+    "section_complex":   {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_REASONER, "quality": DEEPSEEK_MODEL_REASONER},
     "validator_check":   {"economy": _gemini_or(DEEPSEEK_MODEL_FLASH), "balanced": _gemini_or(DEEPSEEK_MODEL_FLASH),    "quality": _gemini_or(DEEPSEEK_MODEL_FLASH)},
-    "polish_final":      {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_PRO,      "quality": CLAUDE_MODEL},
-    "repair":            {"economy": _gemini_or(DEEPSEEK_MODEL_FLASH), "balanced": _gemini_or(DEEPSEEK_MODEL_FLASH),    "quality": CLAUDE_MODEL},
+    "polish_final":      {"economy": DEEPSEEK_MODEL_FLASH, "balanced": DEEPSEEK_MODEL_PRO,      "quality": DEEPSEEK_MODEL_PRO},
+    "repair":            {"economy": _gemini_or(DEEPSEEK_MODEL_FLASH), "balanced": _gemini_or(DEEPSEEK_MODEL_FLASH),    "quality": _gemini_or(DEEPSEEK_MODEL_FLASH)},
 }
+
+# Routing explicite agent auto — utilisé par get_model_for_task()
+AGENT_ROUTE_TABLE: dict[str, str] = {
+    "design_system":        _gemini_or(DEEPSEEK_MODEL_FLASH),
+    "site_spec":            _gemini_or(DEEPSEEK_MODEL_FLASH),
+    "planner":              _gemini_or(DEEPSEEK_MODEL_FLASH),
+    "component_ui":         DEEPSEEK_MODEL_FLASH,
+    "section_emotional":    DEEPSEEK_MODEL_FLASH,
+    "section_complex":      DEEPSEEK_MODEL_FLASH,
+    "section_standard":     DEEPSEEK_MODEL_FLASH,
+    "critical_structure":   DEEPSEEK_MODEL_REASONER,
+    "types_file":           DEEPSEEK_MODEL_REASONER,
+    "app_tsx":              DEEPSEEK_MODEL_REASONER,
+    "store_file":           DEEPSEEK_MODEL_REASONER,
+    "repair":               _gemini_or(DEEPSEEK_MODEL_FLASH),
+    "validation":           _gemini_or(DEEPSEEK_MODEL_FLASH),
+    "polish_final":         DEEPSEEK_MODEL_FLASH,
+}
+
+
+def get_model_for_task(task_type: str, mode: str = "agent") -> str:
+    """
+    Retourne le modèle à utiliser selon le type de tâche et le mode.
+
+    mode="agent"  → Gemini Flash + DeepSeek uniquement (pipeline auto VPS)
+    mode="manual" → non applicable (Claude Code gère directement)
+    """
+    if mode == "agent":
+        return AGENT_ROUTE_TABLE.get(task_type, DEEPSEEK_MODEL_FLASH)
+    return DEEPSEEK_MODEL_FLASH
 
 # Tâches section_emotional phase-4 : en balanced on force PRO pour le polish
 _POLISH_OVERRIDE_TYPES = {"section_emotional"}

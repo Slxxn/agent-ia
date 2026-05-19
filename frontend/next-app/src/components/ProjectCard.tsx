@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Trash2, MoreHorizontal, ExternalLink, FolderOpen } from "lucide-react";
-import { Project, prepareWorkspace } from "@/lib/api";
+import { ArrowRight, Trash2, MoreHorizontal, ExternalLink, FolderOpen, Copy, Check, Bot } from "lucide-react";
+import { Project, prepareWorkspace, generateClaudePrompt } from "@/lib/api";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Modal from "@/components/ui/Modal";
 
@@ -72,6 +72,35 @@ export default function ProjectCard({ project, onDelete, index = 0 }: ProjectCar
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [preparingWorkspace, setPreparingWorkspace] = useState(false);
+  const [copyingPrompt, setCopyingPrompt] = useState(false);
+  const [promptCopied, setPromptCopied] = useState(false);
+  const [launchingAgent, setLaunchingAgent] = useState(false);
+
+  const handleCopyPrompt = async () => {
+    setCopyingPrompt(true);
+    try {
+      const { prompt } = await generateClaudePrompt(project.id);
+      await navigator.clipboard.writeText(prompt);
+      setPromptCopied(true);
+      setTimeout(() => setPromptCopied(false), 3000);
+    } catch {
+      alert("❌ Erreur lors de la génération du prompt. Le projet doit avoir un brief JSON.");
+    } finally {
+      setCopyingPrompt(false);
+    }
+  };
+
+  const handleLaunchAgent = async () => {
+    if (!confirm("Lancer la génération automatique avec Gemini + DeepSeek ?")) return;
+    setLaunchingAgent(true);
+    try {
+      await fetch(`/api/projects/${project.id}/start`, { method: "POST" });
+    } catch {
+      alert("❌ Erreur lors du lancement de l'agent.");
+    } finally {
+      setLaunchingAgent(false);
+    }
+  };
 
   const handlePrepareWorkspace = async () => {
     setMenuOpen(false);
@@ -124,6 +153,15 @@ export default function ProjectCard({ project, onDelete, index = 0 }: ProjectCar
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <StatusBadge status={project.status as any} />
+            {project.generation_mode === "manual" ? (
+              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 99, background: "rgba(139,92,246,0.1)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.2)" }}>
+                Manuel
+              </span>
+            ) : project.generation_mode === "agent" ? (
+              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 99, background: "rgba(59,130,246,0.1)", color: "#3B82F6", border: "1px solid rgba(59,130,246,0.2)" }}>
+                Agent
+              </span>
+            ) : null}
             {project.is_client ? (
               <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 99, background: "rgba(16,185,129,0.1)", color: "#10B981", border: "1px solid rgba(16,185,129,0.2)" }}>
                 Client
@@ -301,6 +339,41 @@ export default function ProjectCard({ project, onDelete, index = 0 }: ProjectCar
             <ExternalLink size={10} style={{ flexShrink: 0 }} />
             {project.deploy_url.replace("https://", "")}
           </a>
+        )}
+
+        {/* ── Dual-mode generation buttons (only if brief present and not running) ── */}
+        {project.brief && project.status !== "running" && (
+          <div style={{ display: "flex", gap: 6, borderTop: "1px solid var(--bd)", paddingTop: 12 }}>
+            <button
+              onClick={handleCopyPrompt}
+              disabled={copyingPrompt}
+              style={{
+                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                padding: "6px 10px", borderRadius: 7, border: "1px solid", fontSize: 11, fontWeight: 500,
+                cursor: copyingPrompt ? "default" : "pointer", transition: "all 0.15s",
+                background: promptCopied ? "rgba(16,185,129,0.08)" : "rgba(139,92,246,0.08)",
+                color: promptCopied ? "var(--success)" : "#8B5CF6",
+                borderColor: promptCopied ? "rgba(16,185,129,0.2)" : "rgba(139,92,246,0.2)",
+                opacity: copyingPrompt ? 0.6 : 1,
+              }}
+            >
+              {promptCopied ? <Check size={11} /> : copyingPrompt ? null : <Copy size={11} />}
+              {promptCopied ? "Copié !" : copyingPrompt ? "Génération…" : "Prompt Claude"}
+            </button>
+            <button
+              onClick={handleLaunchAgent}
+              disabled={launchingAgent}
+              style={{
+                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(59,130,246,0.2)", fontSize: 11, fontWeight: 500,
+                cursor: launchingAgent ? "default" : "pointer", transition: "all 0.15s",
+                background: "rgba(59,130,246,0.08)", color: "#3B82F6", opacity: launchingAgent ? 0.6 : 1,
+              }}
+            >
+              <Bot size={11} />
+              {launchingAgent ? "Lancement…" : "Agent auto"}
+            </button>
+          </div>
         )}
 
         {/* ── Footer ── */}

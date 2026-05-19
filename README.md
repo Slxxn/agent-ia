@@ -6,8 +6,9 @@ Décrivez votre projet via le formulaire client, l'agent planifie, structure, co
 ## Fonctionnalités
 
 - **3 types de sites** : Standard (React/Vite), Immersif 3D (Three.js/WebGL), Scrollytelling (narration scroll)
+- **Deux modes de génération** : Agent auto (Gemini Flash + DeepSeek, pipeline VPS) ou Manuel (prompt Claude Code prêt à coller)
 - **Génération full-stack** : React/Vite + Tailwind CSS, animations Framer Motion, composants UI complets
-- **Pipeline IA hybride** : Gemini Flash (planification, repair, validation) + DeepSeek Chat/Reasoner (génération de code)
+- **Pipeline IA hybride** : Gemini Flash (planification, repair, validation) + DeepSeek Chat/Reasoner (génération de code) — Claude Sonnet disponible en manuel uniquement
 - **Structuration automatique du brief** : Gemini transforme la demande client en spec technique avant génération
 - **Dashboard temps réel** : progression, logs en direct via SSE, copilote IA intégré
 - **CRM client** : formulaire multi-étapes, gestion des demandes, lancement de projets depuis le dashboard
@@ -60,21 +61,30 @@ agent-platform/
 │   ├── templates/
 │   │   └── react-vite/            # Configs canoniques pré-validées (tsconfig, vite, postcss)
 │   ├── tools/
-│   │   ├── llm.py                 # LLMTool — routing Gemini/DeepSeek/Reasoner
+│   │   ├── llm.py                 # LLMTool — routing Gemini/DeepSeek/Reasoner + AGENT_ROUTE_TABLE
+│   │   ├── brief_to_claude.py     # Prépare workspace depuis brief JSON (tokens CSS, brief.md)
+│   │   ├── register_project.py    # Enregistre un site généré dans le dashboard
 │   │   ├── filesystem.py          # Lecture/écriture fichiers workspace
 │   │   └── terminal.py            # Exécution commandes (npm install, build)
 │   └── main.py                    # Point d'entrée FastAPI (port 8000)
 ├── frontend/
 │   └── next-app/                  # Dashboard Next.js (port 3000)
-│       ├── src/app/
-│       │   ├── page.tsx           # Dashboard principal
-│       │   ├── project/           # Page détail projet (logs, fichiers, copilote)
-│       │   ├── crm/               # CRM demandes clients
-│       │   ├── form/              # Formulaire client multi-étapes
-│       │   └── settings/          # Réglages clés API
+│       ├── src/app/app/
+│       │   ├── platform/          # Web Platform — liste projets + boutons Prompt/Agent
+│       │   ├── prospects/         # Prospect Hunter
+│       │   └── guardian/          # Site Guardian
 │       └── src/components/
+│           ├── ProjectCard.tsx    # Carte projet + badges Mode/Client + boutons dual-mode
 │           ├── LogViewer.tsx      # Logs temps réel SSE
 │           └── FileExplorer.tsx   # Explorateur de fichiers
+├── starters/
+│   ├── vitrine-standard/          # Starter React/Vite + Tailwind + Framer Motion + React Router
+│   ├── scrollytelling/            # Starter + GSAP ScrollTrigger (pas de React Router)
+│   └── 3d-immersif/               # Starter + Three.js / React Three Fiber + GSAP
+├── .claude/skills/                # Skills Claude Code (chargés automatiquement)
+│   ├── site-generator.md          # Protocole génération site depuis brief.md
+│   ├── delivery-protocol.md       # Checklist livraison client
+│   └── ...                        # frontend-design, taste, llm-routing, etc.
 └── workspace/                     # Projets générés (sandboxé)
 ```
 
@@ -106,13 +116,38 @@ ProjectMemory — Sauvegarde design/types/état build dans .agent_memory.json
 Déploiement Firebase (optionnel)
 ```
 
-## Routing LLM par mode et type de tâche
+## Deux modes de génération
+
+### Mode Agent Auto (pipeline VPS)
+Déclenché depuis le dashboard — bouton **Agent auto** sur chaque projet avec brief.
+Gemini Flash + DeepSeek uniquement. Claude n'est pas dans ce pipeline.
+
+| Type de tâche | Modèle |
+|---------------|--------|
+| Planification / Design system | Gemini Flash |
+| Sections UI (Hero, Features…) | DeepSeek Chat |
+| Fichiers critiques (types, App.tsx, store) | DeepSeek Reasoner |
+| Repair / Validation | Gemini Flash |
+| Polish final | DeepSeek Chat |
+
+### Mode Manuel (Claude Code VS Code)
+Bouton **Prompt Claude** — génère et copie un prompt complet dans le presse-papier.
+À coller dans Claude Code (VS Code). Suit les skills `.claude/skills/site-generator.md`.
+
+```bash
+# Ou depuis la CLI directement :
+python backend/tools/brief_to_claude.py --project-id {id}
+# → prépare workspace/{slug}/ + brief.md + tokens.css
+# → "Lis workspace/{slug}/brief.md et génère le site complet"
+```
+
+## Routing LLM par budget (mode agent)
 
 | Type de tâche | `economy` | `balanced` | `quality` |
 |---------------|-----------|------------|-----------|
-| Sections UI (Hero, Features…) | DeepSeek Chat | DeepSeek Chat | DeepSeek Chat |
-| Fichiers critiques (types, App.tsx, cartStore) | DeepSeek Chat | DeepSeek Reasoner | DeepSeek Reasoner |
-| Planification | Gemini Flash | Gemini Flash | Gemini Flash |
+| Sections UI (Hero, Features…) | DeepSeek Flash | DeepSeek Flash | DeepSeek Pro |
+| Fichiers critiques (types, App.tsx, cartStore) | DeepSeek Flash | DeepSeek Reasoner | DeepSeek Reasoner |
+| Planification | Gemini Flash | Gemini Flash | DeepSeek Reasoner |
 | Repair / Validation | Gemini Flash | Gemini Flash | Gemini Flash |
 
 ## Installation locale
@@ -196,7 +231,9 @@ cd ~/agent-platform && git pull origin master && pm2 restart backend
 |----------|-------------|
 | `GET /api/stats/fixes` | Fréquence des corrections automatiques par type |
 | `GET /api/projects` | Liste des projets |
-| `POST /api/projects/{id}/start` | Lancer la génération |
+| `POST /api/projects/{id}/start` | Lancer la génération (mode agent) |
+| `POST /api/projects/{id}/generate-claude-prompt` | Générer le prompt Claude Code (mode manuel) |
+| `POST /api/projects/{id}/prepare-workspace` | Préparer le workspace depuis le brief |
 | `GET /api/projects/{id}/logs/stream` | SSE — logs en temps réel |
 | `POST /api/projects/{id}/deploy` | Déploiement Firebase |
 | `GET /api/settings` | Clés API (chiffrées) |
