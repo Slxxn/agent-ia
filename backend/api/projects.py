@@ -228,6 +228,29 @@ async def read_project_file(project_id: int, file_path: str):
     return result
 
 
+@router.post("/{project_id}/prepare-workspace")
+async def prepare_workspace_route(project_id: int):
+    """Prépare le workspace Claude Code depuis le brief JSON d'un projet."""
+    import asyncio, json
+    from backend.db.database import get_db
+
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT brief FROM projects WHERE id = ?", (project_id,))
+        row = await cursor.fetchone()
+    finally:
+        await db.close()
+
+    if not row or not row[0]:
+        raise HTTPException(status_code=404, detail="Brief non trouvé pour ce projet.")
+
+    brief = json.loads(row[0])
+
+    from backend.tools.brief_to_claude import prepare_workspace
+    slug = await prepare_workspace(brief)
+    return {"success": True, "slug": slug, "workspace": f"workspace/{slug}"}
+
+
 @router.post("/{project_id}/validate-visual")
 async def validate_visual(project_id: int):
     """Lancer la validation visuelle manuellement sur un projet terminé."""

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Trash2, MoreHorizontal, ExternalLink } from "lucide-react";
-import { Project } from "@/lib/api";
+import { ArrowRight, Trash2, MoreHorizontal, ExternalLink, FolderOpen } from "lucide-react";
+import { Project, prepareWorkspace } from "@/lib/api";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Modal from "@/components/ui/Modal";
 
@@ -71,6 +71,20 @@ function ProgressBar({ progress, status }: { progress: number; status: string })
 export default function ProjectCard({ project, onDelete, index = 0 }: ProjectCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [preparingWorkspace, setPreparingWorkspace] = useState(false);
+
+  const handlePrepareWorkspace = async () => {
+    setMenuOpen(false);
+    setPreparingWorkspace(true);
+    try {
+      const { workspace } = await prepareWorkspace(project.id);
+      alert(`✅ Workspace prêt : ${workspace}\n\nDis à Claude Code :\n"Lis ${workspace}/brief.md et génère le site complet"`);
+    } catch {
+      alert("❌ Erreur lors de la préparation du workspace. Le projet doit avoir un brief JSON.");
+    } finally {
+      setPreparingWorkspace(false);
+    }
+  };
 
   const handleDeleteConfirm = () => {
     setDeleteModalOpen(false);
@@ -187,6 +201,19 @@ export default function ProjectCard({ project, onDelete, index = 0 }: ProjectCar
                       Ouvrir
                     </div>
                   </Link>
+                  <div
+                    onClick={handlePrepareWorkspace}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "7px 10px", borderRadius: 6,
+                      color: preparingWorkspace ? "var(--muted)" : "var(--text2)", fontSize: 13, cursor: preparingWorkspace ? "default" : "pointer",
+                    }}
+                    onMouseEnter={(e) => { if (!preparingWorkspace) (e.currentTarget as HTMLElement).style.background = "var(--surface3)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                  >
+                    <FolderOpen size={13} />
+                    {preparingWorkspace ? "Préparation…" : "Préparer workspace"}
+                  </div>
                   {canDelete && (
                     <div
                       onClick={() => { setMenuOpen(false); setDeleteModalOpen(true); }}

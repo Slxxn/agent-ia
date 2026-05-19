@@ -96,6 +96,12 @@ export async function deleteProject(id: number): Promise<void> {
   if (!res.ok) throw new Error("Erreur lors de la suppression du projet");
 }
 
+export async function prepareWorkspace(id: number): Promise<{ success: boolean; slug: string; workspace: string }> {
+  const res = await fetch(`${API_BASE}/projects/${id}/prepare-workspace`, { method: "POST" });
+  if (!res.ok) throw new Error("Erreur lors de la préparation du workspace");
+  return res.json();
+}
+
 // ─── Contrôle de projet ──────────────────────────────────────────────────
 
 export async function startProject(id: number, objective: string): Promise<void> {

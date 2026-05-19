@@ -1,0 +1,25 @@
+/* Tokens injectés dynamiquement depuis le brief client */
+/* Ce fichier est écrasé par brief_to_claude.py */
+:root {
+  --bg-primary: #050505;
+  --bg-secondary: #111111;
+  --bg-surface: #1a1a1a;
+  --bg-muted: #222222;
+  --color-primary: #ffffff;
+  --color-accent: #6366f1;
+  --color-accent-hover: #5558e8;
+  --color-accent-muted: rgba(99, 102, 241, 0.15);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-muted: rgba(255, 255, 255, 0.3);
+  --text-inverted: #000000;
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --font-display: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --section-padding-y: 6rem;
+  --section-padding-x: 1.5rem;
+  --container-max: 80rem;
+  --radius-card: 1.5rem;
+  --radius-button: 9999px;
+}

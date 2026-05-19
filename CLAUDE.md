@@ -83,6 +83,28 @@ python backend/tools/register_project.py \
   --client-email "{EMAIL}" --client-name "{NOM_CLIENT}"
 ```
 
+## Workflow de génération de site
+
+### Quand un brief.md est présent dans workspace/
+1. Lire immédiatement `.claude/skills/site-generator.md`
+2. Suivre le protocole `.claude/skills/delivery-protocol.md`
+
+### Préparer un workspace depuis un brief client
+```bash
+# Depuis le formulaire (JSON direct)
+python backend/tools/brief_to_claude.py --brief '{"businessName": "...", "sector": "beaute", ...}'
+
+# Depuis un fichier JSON
+python backend/tools/brief_to_claude.py --file briefs/salon-emma.json
+
+# Depuis la DB (via l'ID projet)
+python backend/tools/brief_to_claude.py --project-id abc123
+```
+→ Génère `workspace/{slug}/brief.md` + `tokens.css` depuis le starter adapté.
+→ Puis : _"Lis workspace/{slug}/brief.md et génère le site complet"_
+
+---
+
 ## Points d'attention
 - Le static_post_processor applique 15+ corrections auto — ne pas dupliquer sa logique
 - Le build_validator tourne jusqu'à 2 passes de repair — les prompts doivent minimiser les erreurs TS
