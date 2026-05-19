@@ -1708,11 +1708,11 @@ class LLMTool:
     ) -> Dict[str, Any]:
         """Appelle Claude via le SDK Anthropic officiel."""
         if not ANTHROPIC_API_KEY:
-            print("⚠️  [LLM] ANTHROPIC_API_KEY manquante — fallback DeepSeek. Vérifiez les settings.")
+            _logging.getLogger(__name__).warning("[LLM] ANTHROPIC_API_KEY manquante — fallback DeepSeek.")
             return await self._call_deepseek_with_continuation(
                 prompt, system_prompt, 0.4, max_tokens, None
             )
-        print(f"🤖 [LLM] Appel Claude ({model_override or ANTHROPIC_MODEL})…")
+        _logging.getLogger(__name__).info("[LLM] Appel Claude (%s)", model_override or ANTHROPIC_MODEL)
         try:
             import anthropic as _anthropic
             client = _anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
@@ -1737,7 +1737,7 @@ class LLMTool:
                 "completion_tokens": usage.output_tokens if usage else 0,
             }
         except Exception as e:
-            print(f"❌ [LLM] Claude exception: {e}")
+            _logging.getLogger(__name__).error("[LLM] Claude exception: %s", e)
             return {"success": False, "error": f"Erreur Claude inattendue : {str(e)}"}
 
     # ─── Méthodes de haut niveau ───────────────────────────────────────────
