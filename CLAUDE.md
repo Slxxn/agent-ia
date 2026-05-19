@@ -22,12 +22,27 @@ Pipeline IA : Gemini Flash (planification/repair) + DeepSeek/Claude (génératio
 - Toujours TypeScript strict
 - Tailwind CSS pour le style, pas de CSS custom sauf si nécessaire
 
-## Skills à charger selon la tâche
-- Avant tout travail sur les prompts de génération → lire skills/frontend-design.md
-- Avant tout travail sur llm.py → lire skills/llm-routing.md
-- Avant tout travail sur Prospect Hunter → lire skills/prospect-hunter.md
-- Avant tout travail sur Site Guardian → lire skills/site-guardian.md
-- Avant tout travail sur video_generator.py ou l'intégration vidéo → lire skills/video-generation.md
+## Skills disponibles
+
+### Skills projet (dans .claude/skills/)
+| Skill | Quand l'utiliser |
+|-------|-----------------|
+| `frontend-design.md` | Avant tout travail frontend ou prompts de génération |
+| `taste.md` | Pour les décisions visuelles |
+| `llm-routing.md` | Avant tout travail sur llm.py |
+| `prospect-hunter.md` | Développement Prospect Hunter |
+| `site-guardian.md` | Développement Site Guardian |
+| `video-generation.md` | Avant tout travail sur video_generator.py |
+| `gsap-scrolltrigger.md` | Sites scrollytelling |
+| `threejs-r3f.md` | Sites 3D (Three.js / React Three Fiber) |
+
+### Skills globaux (~/.claude/skills/)
+| Skill | Quand l'utiliser |
+|-------|-----------------|
+| `systematic-debugging` | Quand un bug est difficile à résoudre |
+| `verification-before-completion` | Avant de terminer une tâche |
+| `finishing-a-development-branch` | Avant un commit |
+| `code-review-skill` | Review du code généré |
 
 ## MCPs installés et leur usage
 

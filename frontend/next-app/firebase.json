@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "agent-ia-2d81a",
     "public": "out",
     "cleanUrls": true,
     "ignore": [

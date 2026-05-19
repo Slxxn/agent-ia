@@ -6,7 +6,7 @@ import { auth } from "@/lib/firebase";
 import { AuthProvider, useAuth } from "@/lib/authContext";
 import AuthGuard from "@/lib/AuthGuard";
 
-const PUBLIC_ROUTES = ["/form", "/login", "/p", "/app"];
+const PUBLIC_ROUTES = ["/form", "/login", "/p"];
 const PUBLIC_EXACT = ["/"];
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -14,7 +14,12 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const isPublic = PUBLIC_EXACT.includes(pathname) || PUBLIC_ROUTES.some(r => pathname.startsWith(r));
 
+  const isAppRoute = pathname.startsWith('/app');
+
   if (isPublic) return <>{children}</>;
+
+  // /app/* routes: auth guard but no header (sidebar layout handles chrome)
+  if (isAppRoute) return <AuthGuard>{children}</AuthGuard>;
 
   return (
     <AuthGuard>
