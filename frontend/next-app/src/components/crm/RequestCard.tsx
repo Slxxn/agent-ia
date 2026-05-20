@@ -10,7 +10,7 @@ import { ClientRequest, RequestStatus } from '@/types/clientRequest';
 const STATUS_CONFIG: Record<RequestStatus, { label: string; color: string; bg: string; border: string }> = {
   pending:    { label: 'En attente',   color: '#F59E0B', bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.25)' },
   validated:  { label: 'Validé',       color: '#3B82F6', bg: 'rgba(59,130,246,0.1)',  border: 'rgba(59,130,246,0.25)' },
-  in_progress:{ label: 'En cours',     color: '#22C55E', bg: 'rgba(34,197,94,0.1)',   border: 'rgba(34,197,94,0.25)'  },
+  in_progress:{ label: 'En cours',     color: '#3B82F6', bg: 'rgba(59,130,246,0.1)',  border: 'rgba(59,130,246,0.25)' },
   completed:  { label: 'Terminé',      color: '#A78BFA', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.25)'},
   rejected:   { label: 'Rejeté',       color: '#EF4444', bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.25)'  },
 };

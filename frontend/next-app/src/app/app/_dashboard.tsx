@@ -17,7 +17,7 @@ type BudgetMode = "fast" | "balanced" | "quality";
 const BUDGET_MODES: { key: BudgetMode; label: string; color: string }[] = [
   { key: "fast",     label: "Rapide",    color: "#6B7280" },
   { key: "balanced", label: "Équilibré", color: "#6366F1" },
-  { key: "quality",  label: "Qualité",   color: "#10B981" },
+  { key: "quality",  label: "Qualité",   color: "#6366F1" },
 ];
 
 function LlmModeToggle() {
