@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { AuthProvider, useAuth } from "@/lib/authContext";
@@ -11,7 +11,9 @@ const PUBLIC_EXACT = ["/"];
 
 function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
+  const isCrm = pathname === "/crm";
   const isPublic = PUBLIC_EXACT.includes(pathname) || PUBLIC_ROUTES.some(r => pathname.startsWith(r));
 
   const isAppRoute = pathname.startsWith('/app');
@@ -57,22 +59,38 @@ function Shell({ children }: { children: React.ReactNode }) {
               </a>
 
               <div className="flex items-center gap-2">
-                <a href="/crm" className="settings-link" style={{ display: "flex", alignItems: "center", gap: 5 }}>CRM</a>
-                <a href="/settings" className="settings-link">Réglages</a>
-                {user && (
+                {isCrm ? (
                   <button
-                    onClick={() => signOut(auth)}
-                    className="settings-link"
-                    style={{ background: "none", border: "none", cursor: "pointer" }}
+                    onClick={() => router.back()}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      background: "none", border: "1px solid var(--bd-bright)",
+                      borderRadius: 7, padding: "5px 12px", cursor: "pointer",
+                      color: "var(--text2)", fontSize: 13, fontFamily: "inherit",
+                    }}
                   >
-                    Déconnexion
+                    ← Retour
                   </button>
+                ) : (
+                  <>
+                    <a href="/crm" className="settings-link" style={{ display: "flex", alignItems: "center", gap: 5 }}>CRM</a>
+                    <a href="/settings" className="settings-link">Réglages</a>
+                    {user && (
+                      <button
+                        onClick={() => signOut(auth)}
+                        className="settings-link"
+                        style={{ background: "none", border: "none", cursor: "pointer" }}
+                      >
+                        Déconnexion
+                      </button>
+                    )}
+                    <span style={{
+                      fontSize: 11, color: "var(--muted2)",
+                      background: "var(--surface3)", border: "1px solid var(--bd-bright)",
+                      borderRadius: 5, padding: "2px 7px", fontWeight: 500,
+                    }}>v1.0</span>
+                  </>
                 )}
-                <span style={{
-                  fontSize: 11, color: "var(--muted2)",
-                  background: "var(--surface3)", border: "1px solid var(--bd-bright)",
-                  borderRadius: 5, padding: "2px 7px", fontWeight: 500,
-                }}>v1.0</span>
               </div>
             </div>
           </div>
