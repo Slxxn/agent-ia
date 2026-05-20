@@ -132,6 +132,11 @@ async def init_db():
             "ALTER TABLE projects ADD COLUMN client_email TEXT DEFAULT ''",
             "ALTER TABLE projects ADD COLUMN notes TEXT DEFAULT ''",
             "ALTER TABLE projects ADD COLUMN generation_mode TEXT DEFAULT 'agent'",
+            "ALTER TABLE projects ADD COLUMN suggested_price REAL DEFAULT 0",
+            "ALTER TABLE projects ADD COLUMN final_price REAL DEFAULT 0",
+            "ALTER TABLE projects ADD COLUMN form_status TEXT DEFAULT ''",
+            "ALTER TABLE projects ADD COLUMN client_phone TEXT DEFAULT ''",
+            "ALTER TABLE projects ADD COLUMN stripe_session_id TEXT DEFAULT ''",
         ]:
             try:
                 await db.execute(migration)

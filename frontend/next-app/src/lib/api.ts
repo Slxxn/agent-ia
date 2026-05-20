@@ -35,6 +35,10 @@ export interface Project {
   notes?: string;
   generation_mode?: "agent" | "manual";
   brief?: string;
+  suggested_price?: number;
+  final_price?: number;
+  form_status?: string;
+  client_phone?: string;
 }
 
 export interface Task {
@@ -372,3 +376,42 @@ export async function deleteSetting(key: string): Promise<void> {
   if (!res.ok) throw new Error(`Erreur lors de la suppression de '${key}'`);
 }
 
+
+// ─── Formulaire conversationnel ──────────────────────────────────────────────
+
+export async function calculatePrice(answers: Record<string, unknown>): Promise<{
+  suggested: number; base: number; options_total: number;
+  breakdown: { base: { label: string; price: number }; options: { key: string; label: string; price: number }[] };
+}> {
+  const res = await fetch(`${API_BASE}/form/calculate-price`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(answers),
+  });
+  if (!res.ok) throw new Error("Erreur calcul prix");
+  return res.json();
+}
+
+export async function submitConversationalForm(answers: Record<string, unknown>): Promise<{
+  project_id: number; slug: string; pricing: { suggested: number }; message: string;
+}> {
+  const res = await fetch(`${API_BASE}/form/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(answers),
+  });
+  if (!res.ok) throw new Error("Erreur soumission formulaire");
+  return res.json();
+}
+
+export async function sendPaymentLink(projectId: number, finalPrice: number): Promise<{
+  success: boolean; payment_url?: string; amount: number; message: string;
+}> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/send-payment-link`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ final_price: finalPrice }),
+  });
+  if (!res.ok) throw new Error("Erreur envoi lien paiement");
+  return res.json();
+}

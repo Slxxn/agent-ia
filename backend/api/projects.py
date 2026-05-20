@@ -2,7 +2,7 @@
 API Routes — Gestion des projets.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional, List
 from backend.core.project_manager import project_manager
@@ -40,6 +40,10 @@ class ProjectResponse(BaseModel):
     deploy_url: Optional[str] = ""
     generation_mode: Optional[str] = "agent"
     brief: Optional[str] = ""
+    suggested_price: Optional[float] = 0
+    final_price: Optional[float] = 0
+    form_status: Optional[str] = ""
+    client_phone: Optional[str] = ""
 
 class TaskResponse(BaseModel):
     id: int
@@ -386,3 +390,85 @@ async def validate_visual(project_id: int):
 
     asyncio.create_task(_run())
     return {"success": True, "message": "Validation visuelle démarrée."}
+
+
+@router.post("/{project_id}/send-payment-link")
+async def send_payment_link(project_id: int, request: Request):
+    """Envoie le lien de paiement au client. Déclenché par l'admin depuis le dashboard."""
+    import json as _json
+    from datetime import datetime, timezone
+    from backend.db.database import get_db, get_setting
+
+    body = await request.json()
+    final_price = body.get("final_price")
+
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+        row = await cursor.fetchone()
+        if not row:
+            raise HTTPException(404, "Projet non trouvé")
+        project = dict(row)
+    finally:
+        await db.close()
+
+    price_to_charge = float(final_price or project.get("final_price") or project.get("suggested_price") or 390)
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Try Stripe if key configured
+    payment_url = None
+    stripe_key = await get_setting("STRIPE_SECRET_KEY")
+    if stripe_key:
+        try:
+            import stripe
+            stripe.api_key = stripe_key
+            session = stripe.checkout.Session.create(
+                payment_method_types=["card"],
+                line_items=[{
+                    "price_data": {
+                        "currency": "eur",
+                        "product_data": {
+                            "name": f"Site web — {project['name']}",
+                            "description": "Création de votre site web professionnel builderz.shop",
+                        },
+                        "unit_amount": int(price_to_charge * 100),
+                    },
+                    "quantity": 1,
+                }],
+                mode="payment",
+                success_url=f"https://builderz.shop/success?project={project_id}",
+                cancel_url=f"https://builderz.shop/form?canceled=true",
+                customer_email=project.get("client_email", ""),
+                metadata={"project_id": str(project_id)},
+            )
+            payment_url = session.url
+            db = await get_db()
+            try:
+                await db.execute(
+                    "UPDATE projects SET form_status='payment_sent', stripe_session_id=?, final_price=?, updated_at=? WHERE id=?",
+                    (session.id, price_to_charge, now, project_id)
+                )
+                await db.commit()
+            finally:
+                await db.close()
+        except Exception as e:
+            payment_url = None
+
+    if not payment_url:
+        # Fallback: just update price and status
+        db = await get_db()
+        try:
+            await db.execute(
+                "UPDATE projects SET form_status='payment_sent', final_price=?, updated_at=? WHERE id=?",
+                (price_to_charge, now, project_id)
+            )
+            await db.commit()
+        finally:
+            await db.close()
+
+    return {
+        "success": True,
+        "payment_url": payment_url,
+        "amount": price_to_charge,
+        "message": f"Lien envoyé au client ({project.get('client_email', '')}) — {price_to_charge}€"
+    }

@@ -10,7 +10,7 @@ import ProjectCard from "@/components/ProjectCard";
 import Modal from "@/components/ui/Modal";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { SkeletonCard } from "@/components/ui/Skeleton";
-import { Project, getProjects, createProject, deleteProject, startProject, streamProjects, getSettings, saveSetting } from "@/lib/api";
+import { Project, getProjects, createProject, deleteProject, startProject, streamProjects, getSettings, saveSetting, sendPaymentLink } from "@/lib/api";
 import { useClientRequests } from "@/hooks/useClientRequests";
 
 type BudgetMode = "fast" | "balanced" | "quality";
@@ -249,6 +249,27 @@ export default function AppDashboard() {
     setProjects((prev) => prev.filter((p) => p.id !== id));
   };
 
+  const [finalPrices, setFinalPrices] = useState<Record<number, number>>({});
+  const [sendingPayment, setSendingPayment] = useState<number | null>(null);
+  const [paymentSent, setPaymentSent] = useState<Set<number>>(new Set());
+
+  const pendingValidation = useMemo(
+    () => projects.filter((p) => p.form_status === "pending_validation"),
+    [projects]
+  );
+
+  const handleSendPayment = async (project: Project) => {
+    setSendingPayment(project.id);
+    try {
+      const price = finalPrices[project.id] ?? project.suggested_price ?? project.final_price ?? 390;
+      const res = await sendPaymentLink(project.id, price);
+      if (res.payment_url) window.open(res.payment_url, "_blank");
+      setPaymentSent((prev) => { const next = new Set(prev); next.add(project.id); return next; });
+      setProjects((prev) => prev.map((p) => p.id === project.id ? { ...p, form_status: "payment_sent" } : p));
+    } catch { alert("Erreur lors de l'envoi du lien de paiement."); }
+    finally { setSendingPayment(null); }
+  };
+
   const stats = useMemo(() => ({
     total:  projects.length,
     active: projects.filter((p) => p.status === "running" || p.status === "paused").length,
@@ -317,7 +338,7 @@ export default function AppDashboard() {
           )}
 
           {pendingRequests.length > 0 && (
-            <a href="/crm" style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 99, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", textDecoration: "none", marginLeft: 4 }}>
+            <a href="/app/crm" style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 99, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", textDecoration: "none", marginLeft: 4 }}>
               <Users size={11} color="#F59E0B" />
               <span style={{ fontSize: 11, fontWeight: 600, color: "#F59E0B" }}>
                 {pendingRequests.length} demande{pendingRequests.length !== 1 ? "s" : ""} en attente
@@ -404,6 +425,41 @@ export default function AppDashboard() {
             </span>
           )}
         </div>
+
+        {/* ── Devis en attente de validation ── */}
+        {pendingValidation.length > 0 && (
+          <div style={{ marginBottom: 10, flexShrink: 0 }}>
+            <div style={{ padding: "10px 14px 0", borderRadius: 10, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.18)", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#F59E0B" }}>
+                  {pendingValidation.length} devis en attente de validation
+                </span>
+                <span style={{ fontSize: 11, color: "var(--muted)" }}>— Validez le prix et envoyez le lien Stripe au client</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
+                {pendingValidation.map((p) => (
+                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", minWidth: 140, flex: "0 0 auto" }}>{p.name}</span>
+                    <span style={{ fontSize: 12, color: "var(--muted)" }}>{p.client_email}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
+                      <input type="number" defaultValue={p.suggested_price || p.final_price || 390}
+                        onChange={(e) => setFinalPrices((prev) => ({ ...prev, [p.id]: Number(e.target.value) }))}
+                        style={{ width: 72, height: 28, padding: "0 8px", borderRadius: 6, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--text)", fontSize: 12, outline: "none", fontFamily: "inherit" }}
+                      />
+                      <span style={{ fontSize: 12, color: "var(--muted)" }}>€</span>
+                      <button
+                        onClick={() => handleSendPayment(p)}
+                        disabled={sendingPayment === p.id || paymentSent.has(p.id)}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 7, border: "none", background: paymentSent.has(p.id) ? "var(--success-bg)" : "var(--primary)", color: paymentSent.has(p.id) ? "var(--success)" : "white", fontSize: 12, fontWeight: 600, cursor: sendingPayment === p.id ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: sendingPayment === p.id ? 0.6 : 1, transition: "all 0.15s" }}>
+                        {paymentSent.has(p.id) ? "✓ Envoyé" : sendingPayment === p.id ? "Envoi…" : "💳 Envoyer le lien"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
           {loading ? (

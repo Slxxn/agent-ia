@@ -22,6 +22,7 @@ from backend.api.gemini_preview import router as gemini_preview_router
 from backend.api.portal import router as portal_router
 from backend.api.stripe_checkout import router as stripe_router
 from backend.api.analyze_logo import router as analyze_logo_router
+from backend.api.form import router as form_router
 from backend.tools.llm import LLMTool
 
 
@@ -95,6 +96,7 @@ app.include_router(gemini_preview_router, prefix="/api")
 app.include_router(portal_router, prefix="/api")
 app.include_router(stripe_router, prefix="/api")
 app.include_router(analyze_logo_router, prefix="/api")
+app.include_router(form_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")
 
 
