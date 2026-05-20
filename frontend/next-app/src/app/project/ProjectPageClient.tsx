@@ -128,7 +128,7 @@ export default function ProjectPageClient() {
   if (error || !project) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 20 }}>
-        <Link href="/app" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--accent)", fontSize: 13, textDecoration: "none" }}>
+        <Link href="/app/platform" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--accent)", fontSize: 13, textDecoration: "none" }}>
           <ArrowLeft size={13} /> Retour au dashboard
         </Link>
         <div style={{ background: "var(--error-bg)", border: "1px solid var(--error-border)", borderRadius: 10, padding: 14, color: "var(--error)", fontSize: 13 }}>
@@ -173,7 +173,7 @@ export default function ProjectPageClient() {
       <div style={{ flex: 1, overflow: "hidden", display: "flex", gap: 12 }}>
       <div style={{ width: isMobile ? "100%" : 300, flexShrink: 0, display: isMobile && mobilePanel !== "controls" ? "none" : "flex", flexDirection: "column", gap: 8, overflowY: "auto", paddingRight: 4 }}>
         <div>
-          <Link href="/app" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--muted)", fontSize: 11, textDecoration: "none", marginBottom: 8 }}>
+          <Link href="/app/platform" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--muted)", fontSize: 11, textDecoration: "none", marginBottom: 8 }}>
             <ArrowLeft size={11} /> Dashboard
           </Link>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
