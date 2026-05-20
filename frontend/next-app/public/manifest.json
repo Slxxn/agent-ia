@@ -1,0 +1,12 @@
+{
+  "name": "builderz",
+  "short_name": "builderz",
+  "description": "Votre site web pro, livré en 72h",
+  "theme_color": "#6366f1",
+  "background_color": "#050505",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
+    { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

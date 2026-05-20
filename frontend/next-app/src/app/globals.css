@@ -163,3 +163,14 @@ body {
 .status-paused  { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
 .status-done    { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
 .status-error   { background: var(--error-bg);   color: var(--error);   border: 1px solid var(--error-border); }
+
+/* ── Logo builderz — animations pixels ── */
+@keyframes px1 { 0%,100%{opacity:1} 50%{opacity:0.2} }
+@keyframes px2 { 0%,100%{opacity:0.45} 25%{opacity:1} 75%{opacity:0.15} }
+@keyframes px3 { 0%,100%{opacity:0.2} 40%{opacity:0.9} }
+@keyframes px4 { 0%,100%{opacity:0.1} 60%{opacity:0.7} }
+@keyframes px5 { 0%,100%{opacity:0.7} 30%{opacity:0.15} 70%{opacity:1} }
+@keyframes px6 { 0%,100%{opacity:0.35} 50%{opacity:1} }
+@keyframes px7 { 0%,100%{opacity:0.15} 35%{opacity:0.8} }
+@keyframes px8 { 0%,100%{opacity:0.9} 45%{opacity:0.25} }
+@keyframes px9 { 0%,100%{opacity:0.4} 55%{opacity:1} }

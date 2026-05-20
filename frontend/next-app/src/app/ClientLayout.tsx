@@ -39,22 +39,20 @@ function Shell({ children }: { children: React.ReactNode }) {
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-[56px]">
-              <a href="/app" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{
-                  width: 30, height: 30,
-                  background: "linear-gradient(135deg, #6366F1 0%, #818CF8 100%)",
-                  borderRadius: 8,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                  boxShadow: "0 0 18px rgba(99,102,241,0.3)",
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M7 1L12.5 4V10L7 13L1.5 10V4L7 1Z" stroke="white" strokeWidth="1.4" strokeLinejoin="round"/>
-                    <circle cx="7" cy="7" r="1.8" fill="white"/>
-                  </svg>
-                </div>
-                <span style={{ color: "var(--text)", fontWeight: 600, fontSize: 14, letterSpacing: "-0.015em" }}>
-                  Agent Platform
+              <a href="/app/platform" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 9 }}>
+                <svg width="28" height="28" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                  <rect x="3" y="3" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: 'px1 3.2s ease-in-out infinite' }}/>
+                  <rect x="19" y="3" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: 'px2 2.8s ease-in-out infinite' }}/>
+                  <rect x="35" y="3" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: 'px3 3.5s ease-in-out infinite' }}/>
+                  <rect x="3" y="19" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: 'px4 2.6s ease-in-out infinite' }}/>
+                  <rect x="19" y="19" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: 'px5 3.8s ease-in-out infinite' }}/>
+                  <rect x="35" y="19" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: 'px6 2.9s ease-in-out infinite' }}/>
+                  <rect x="3" y="35" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: 'px7 3.1s ease-in-out infinite' }}/>
+                  <rect x="19" y="35" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: 'px8 2.7s ease-in-out infinite' }}/>
+                  <rect x="35" y="35" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: 'px9 3.4s ease-in-out infinite' }}/>
+                </svg>
+                <span style={{ color: "var(--text)", fontWeight: 800, fontSize: 15, letterSpacing: "-0.04em" }}>
+                  builderz
                 </span>
               </a>
 

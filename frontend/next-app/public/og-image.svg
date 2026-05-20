@@ -1,0 +1,44 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond -->
+  <rect width="1200" height="630" fill="#050505"/>
+
+  <!-- Grain subtil (lignes diagonales très légères) -->
+  <rect width="1200" height="630" fill="url(#grain)" opacity="0.03"/>
+
+  <!-- Lueur violette centrale -->
+  <ellipse cx="600" cy="315" rx="400" ry="250" fill="#6366f1" opacity="0.06"/>
+
+  <!-- Logo icône 80×80 centré -->
+  <rect x="563" y="195" width="21" height="21" rx="4.5" fill="#6366f1"/>
+  <rect x="590" y="195" width="21" height="21" rx="4.5" fill="#818cf8"/>
+  <rect x="617" y="195" width="21" height="21" rx="4.5" fill="#6366f1"/>
+  <rect x="563" y="222" width="21" height="21" rx="4.5" fill="#818cf8"/>
+  <rect x="590" y="222" width="21" height="21" rx="4.5" fill="#6366f1"/>
+  <rect x="617" y="222" width="21" height="21" rx="4.5" fill="#818cf8"/>
+  <rect x="563" y="249" width="21" height="21" rx="4.5" fill="#6366f1"/>
+  <rect x="590" y="249" width="21" height="21" rx="4.5" fill="#818cf8"/>
+  <rect x="617" y="249" width="21" height="21" rx="4.5" fill="#6366f1"/>
+
+  <!-- builderz wordmark -->
+  <text x="600" y="330" font-family="Inter, system-ui, sans-serif" font-size="64" font-weight="800"
+        fill="white" letter-spacing="-0.05em" text-anchor="middle">builderz</text>
+
+  <!-- Tagline -->
+  <text x="600" y="375" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="400"
+        fill="rgba(255,255,255,0.5)" letter-spacing="-0.01em" text-anchor="middle">
+    Votre site web pro, livré en 72h
+  </text>
+
+  <!-- Séparateur bas -->
+  <line x1="480" y1="420" x2="720" y2="420" stroke="rgba(99,102,241,0.3)" stroke-width="1"/>
+
+  <!-- URL -->
+  <text x="600" y="450" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="500"
+        fill="rgba(255,255,255,0.25)" letter-spacing="0.05em" text-anchor="middle">builderz.shop</text>
+
+  <defs>
+    <pattern id="grain" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="4" x2="4" y2="0" stroke="white" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+</svg>

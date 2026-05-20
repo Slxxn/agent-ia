@@ -18,8 +18,25 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "Builderz — Sites web professionnels en 72h",
-  description: "Builderz génère des sites React premium sur mesure grâce à l'IA. Livraison en 72h, à partir de 450€.",
+  title: "builderz — Votre site web pro, livré en 72h",
+  description: "Site web professionnel créé par IA en 72h pour les TPE/PME",
+  openGraph: {
+    title: "builderz — Votre site web pro, livré en 72h",
+    description: "Site web professionnel créé par IA en 72h pour les TPE/PME",
+    url: "https://builderz.shop",
+    siteName: "builderz",
+    images: [{ url: "/og-image.svg", width: 1200, height: 630, alt: "builderz" }],
+    locale: "fr_FR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "builderz — Votre site web pro, livré en 72h",
+    description: "Site web professionnel créé par IA en 72h pour les TPE/PME",
+    images: ["/og-image.svg"],
+  },
+  manifest: "/manifest.json",
+  icons: { icon: "/logo.svg", apple: "/logo.svg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
