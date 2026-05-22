@@ -1,24 +1,29 @@
 """Notifications email via Resend API."""
 import httpx
+from typing import Optional
 from backend.db.database import get_setting
 
 
-async def send_email(to: str, subject: str, body: str) -> bool:
+async def send_email(to: str, subject: str, body: str, html: Optional[str] = None) -> bool:
     api_key = await get_setting("RESEND_API_KEY")
     if not api_key:
         print(f"[Notifier] RESEND_API_KEY manquante — email non envoyé à {to}")
         return False
 
+    payload: dict = {
+        "from": "builderz <noreply@builderz.shop>",
+        "to": [to],
+        "subject": subject,
+        "text": body,
+    }
+    if html:
+        payload["html"] = html
+
     async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {api_key}"},
-            json={
-                "from": "builderz <noreply@builderz.shop>",
-                "to": [to],
-                "subject": subject,
-                "text": body,
-            },
+            json=payload,
         )
         return resp.status_code == 200
 
