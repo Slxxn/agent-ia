@@ -1,5 +1,6 @@
 """Génération de pitch email via Claude Haiku."""
-from backend.tools.llm import call_llm
+import json
+from backend.tools.llm import LLMTool
 
 async def generate_pitch(prospect: dict) -> tuple[str, str]:
     """Retourne (subject, body)."""
@@ -8,10 +9,7 @@ async def generate_pitch(prospect: dict) -> tuple[str, str]:
     city = prospect.get("city", "Montpellier")
     website = prospect.get("website", "")
 
-    if not website:
-        situation = "n'a pas encore de site web"
-    else:
-        situation = "a un site web qui pourrait être modernisé"
+    situation = "n'a pas encore de site web" if not website else "a un site web qui pourrait être modernisé"
 
     prompt = f"""Tu es un consultant web local à Montpellier.
 Rédige un email de prospection court pour :
@@ -31,14 +29,15 @@ Règles :
 Réponds en JSON uniquement :
 {{"subject": "objet de l'email", "body": "corps de l'email"}}"""
 
-    response = await call_llm(
+    llm = LLMTool()
+    result = await llm._call_claude(
         prompt=prompt,
-        model="claude-haiku",
+        system_prompt="Tu génères des emails de prospection efficaces. Réponds uniquement en JSON valide.",
         max_tokens=400,
-        system="Tu génères des emails de prospection efficaces. Réponds uniquement en JSON valide."
+        model_override="claude-haiku-4-5-20251001",
     )
 
-    import json
+    response = result.get("content", "") if result.get("success") else ""
     try:
         clean = response.strip().replace("```json", "").replace("```", "").strip()
         data = json.loads(clean)
