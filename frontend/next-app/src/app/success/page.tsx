@@ -4,6 +4,10 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 
+const API = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+  : '/api';
+
 function SuccessContent() {
   const params = useSearchParams();
   const projectId = params.get('project');
@@ -13,6 +17,15 @@ function SuccessContent() {
     const interval = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 600);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!projectId) return;
+    fetch(`${API}/payment/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project_id: parseInt(projectId, 10) }),
+    }).catch(() => {});
+  }, [projectId]);
 
   return (
     <div style={{

@@ -23,6 +23,7 @@ from backend.api.portal import router as portal_router
 from backend.api.stripe_checkout import router as stripe_router
 from backend.api.analyze_logo import router as analyze_logo_router
 from backend.api.form import router as form_router
+from backend.api.payment_confirm import router as payment_confirm_router
 from backend.prospect_hunter.api import router as prospects_router
 from backend.site_guardian.api import router as guardian_router
 from backend.tools.llm import LLMTool
@@ -99,6 +100,7 @@ app.include_router(portal_router, prefix="/api")
 app.include_router(stripe_router, prefix="/api")
 app.include_router(analyze_logo_router, prefix="/api")
 app.include_router(form_router, prefix="/api")
+app.include_router(payment_confirm_router, prefix="/api")
 app.include_router(prospects_router)
 app.include_router(guardian_router)
 app.include_router(projects_router, prefix="/api")
