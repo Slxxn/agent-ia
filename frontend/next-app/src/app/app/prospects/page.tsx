@@ -148,9 +148,9 @@ export default function ProspectsPage() {
   };
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: 0, overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
       {/* Header */}
-      <div style={{ padding: "16px 24px 12px", borderBottom: "1px solid var(--bd)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+      <div style={{ padding: "16px 24px 12px", borderBottom: "1px solid var(--bd)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, position: "sticky", top: 0, background: "var(--bg)", zIndex: 10 }}>
         <div>
           <h1 style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", display: "flex", alignItems: "center", gap: 7 }}>
             <Target size={16} style={{ color: "#EF4444" }} /> Prospect Hunter
@@ -172,15 +172,13 @@ export default function ProspectsPage() {
         </button>
       </div>
 
-      {/* Map + content */}
-      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
-        {/* Map */}
-        <div style={{ height: 280, flexShrink: 0, margin: "12px 16px 0", borderRadius: 10, overflow: "hidden", border: "1px solid var(--bd)" }}>
-          <ProspectsMap prospects={filtered} onSelect={setSelected} selected={selected} />
-        </div>
+      {/* Map */}
+      <div style={{ height: 300, margin: "12px 16px 0", borderRadius: 10, overflow: "hidden", border: "1px solid var(--bd)", flexShrink: 0 }}>
+        <ProspectsMap prospects={filtered} onSelect={setSelected} selected={selected} />
+      </div>
 
-        {/* Stats chips */}
-        <div style={{ display: "flex", gap: 6, padding: "12px 16px 8px", flexShrink: 0, flexWrap: "wrap" }}>
+      {/* Stats chips */}
+      <div style={{ display: "flex", gap: 6, padding: "12px 16px 8px", flexWrap: "wrap" }}>
           {(["all", "hot", "warm", "cold"] as const).map(f => {
             const count = f === "all" ? stats.total : stats[f];
             const label = f === "all" ? "Tous" : PRIORITY_COLORS[f].label;
@@ -203,8 +201,8 @@ export default function ProspectsPage() {
           })}
         </div>
 
-        {/* Table */}
-        <div style={{ padding: "0 16px 24px", flex: 1 }}>
+      {/* Table */}
+      <div style={{ padding: "0 16px 24px" }}>
           {loading ? (
             <div style={{ textAlign: "center", padding: 40, color: "var(--muted)", fontSize: 13 }}>Chargement…</div>
           ) : filtered.length === 0 ? (
@@ -300,7 +298,6 @@ export default function ProspectsPage() {
               })}
             </div>
           )}
-        </div>
       </div>
 
       {/* Scan Modal */}
