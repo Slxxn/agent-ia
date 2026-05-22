@@ -8,7 +8,7 @@ from typing import Optional, List
 from backend.core.project_manager import project_manager
 from backend.core.task_manager import task_manager
 from backend.agent.runner import AgentRunner
-from backend.db.database import get_tasks_by_project, get_brief, get_tokens_used
+from backend.db.database import get_tasks_by_project, get_brief, get_tokens_used, get_db
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -81,6 +81,32 @@ async def get_project(project_id: int):
     if not project:
         raise HTTPException(status_code=404, detail="Projet non trouvé.")
     return project
+
+
+@router.patch("/{project_id}")
+async def patch_project(project_id: int, data: dict):
+    """Mettre à jour les métadonnées d'un projet (slug, is_client, deploy_url, etc.)."""
+    db = await get_db()
+    try:
+        allowed = {"slug", "is_client", "client_name", "client_email", "client_phone",
+                   "deploy_url", "status", "progress", "notes", "generation_mode",
+                   "suggested_price", "final_price", "description", "objective"}
+        fields = {k: v for k, v in data.items() if k in allowed}
+        if not fields:
+            raise HTTPException(400, "Aucun champ valide à mettre à jour.")
+        from datetime import datetime
+        fields["updated_at"] = datetime.now().isoformat()
+        set_clause = ", ".join(f"{k} = ?" for k in fields)
+        await db.execute(
+            f"UPDATE projects SET {set_clause} WHERE id = ?",
+            list(fields.values()) + [project_id]
+        )
+        await db.commit()
+        cursor = await db.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+        row = await cursor.fetchone()
+        return dict(row) if row else {}
+    finally:
+        await db.close()
 
 
 @router.delete("/{project_id}")
