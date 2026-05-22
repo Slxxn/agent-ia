@@ -1,60 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  FolderOpen, Plus, Search, Loader2, LayoutGrid, List, X, ChevronDown,
+  FolderOpen, Search, LayoutGrid, List, X, ChevronDown,
   Trash2, ArrowRight, Users,
 } from "lucide-react";
 import ProjectCard from "@/components/ProjectCard";
 import Modal from "@/components/ui/Modal";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { SkeletonCard } from "@/components/ui/Skeleton";
-import { Project, getProjects, createProject, deleteProject, startProject, streamProjects, getSettings, saveSetting, sendPaymentLink } from "@/lib/api";
+import { Project, getProjects, deleteProject, streamProjects, sendPaymentLink } from "@/lib/api";
 import { useClientRequests } from "@/hooks/useClientRequests";
-
-type BudgetMode = "fast" | "balanced" | "quality";
-const BUDGET_MODES: { key: BudgetMode; label: string; color: string }[] = [
-  { key: "fast",     label: "Rapide",    color: "#6B7280" },
-  { key: "balanced", label: "Équilibré", color: "#6366F1" },
-  { key: "quality",  label: "Qualité",   color: "#6366F1" },
-];
-
-function LlmModeToggle() {
-  const [mode, setMode] = useState<BudgetMode>("balanced");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    getSettings().then((settings) => {
-      const s = settings.find((s) => s.key === "LLM_BUDGET_MODE");
-      if (s?.value && ["fast","balanced","quality"].includes(s.value)) setMode(s.value as BudgetMode);
-    }).catch(() => {});
-  }, []);
-
-  const handleSelect = async (m: BudgetMode) => {
-    if (m === mode || saving) return;
-    setMode(m);
-    setSaving(true);
-    try { await saveSetting("LLM_BUDGET_MODE", m); } catch {} finally { setSaving(false); }
-  };
-
-  const active = BUDGET_MODES.find((m) => m.key === mode)!;
-  void active;
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px", borderRadius: 9, background: "var(--surface2)", border: "1px solid var(--bd-bright)", opacity: saving ? 0.7 : 1, transition: "opacity 0.15s" }}>
-      {BUDGET_MODES.map((m) => (
-        <button key={m.key} onClick={() => handleSelect(m.key)}
-          style={{ height: 26, padding: "0 10px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 11, fontWeight: mode === m.key ? 700 : 500, fontFamily: "inherit", transition: "all 0.15s",
-            background: mode === m.key ? `${m.color}22` : "transparent",
-            color: mode === m.key ? m.color : "var(--muted)",
-            boxShadow: mode === m.key ? `inset 0 0 0 1px ${m.color}44` : "none",
-          }}>
-          {m.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 type SortKey = "newest" | "oldest" | "progress";
 type FilterStatus = "all" | "running" | "done" | "error" | "idle" | "paused";
@@ -129,102 +86,9 @@ function ProjectRow({ project, onDelete, index }: { project: Project; onDelete: 
   );
 }
 
-function CreatePanel({ open, onClose, onCreate }: {
-  open: boolean; onClose: () => void;
-  onCreate: (name: string, desc: string, objective: string) => Promise<void>;
-}) {
-  const [name, setName] = useState("");
-  const [desc, setDesc] = useState("");
-  const [objective, setObjective] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
-  const reset = () => { setName(""); setDesc(""); setObjective(""); setErr(""); };
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) { setErr("Le nom est requis."); return; }
-    setLoading(true); setErr("");
-    try { await onCreate(name.trim(), desc.trim(), objective.trim()); reset(); onClose(); }
-    catch (ex) { setErr(ex instanceof Error ? ex.message : "Erreur lors de la création."); }
-    finally { setLoading(false); }
-  };
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => { onClose(); reset(); }}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", zIndex: 40 }}
-          />
-          <motion.div
-            initial={{ opacity: 0, x: 340 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 340 }}
-            transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.38 }}
-            style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 380, background: "var(--surface)", borderLeft: "1px solid var(--bd-bright)", zIndex: 41, display: "flex", flexDirection: "column", boxShadow: "-24px 0 80px rgba(0,0,0,0.6)" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", borderBottom: "1px solid var(--bd)" }}>
-              <div>
-                <h2 style={{ fontWeight: 600, fontSize: 14, color: "var(--text)" }}>Nouveau projet</h2>
-                <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>L'agent génèrera votre projet automatiquement</p>
-              </div>
-              <button onClick={() => { onClose(); reset(); }} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid var(--bd-bright)", background: "var(--surface3)", color: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <X size={13} />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16, flex: 1, overflowY: "auto" }}>
-              {[
-                { label: "Nom du projet *", value: name, onChange: setName, type: "text", placeholder: "Ex : Mon application React", rows: undefined },
-                { label: "Description (optionnel)", value: desc, onChange: setDesc, type: "textarea", placeholder: "Décrivez brièvement…", rows: 2 },
-              ].map(({ label, value, onChange, type, placeholder, rows }) => (
-                <div key={label}>
-                  <label style={{ fontSize: 12, fontWeight: 500, color: "var(--text2)", display: "block", marginBottom: 5 }}>{label}</label>
-                  {type === "textarea" ? (
-                    <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows}
-                      style={{ width: "100%", padding: "8px 11px", borderRadius: 8, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--text)", fontSize: 13, outline: "none", resize: "none", fontFamily: "inherit", lineHeight: 1.5 }}
-                      onFocus={(e) => { e.target.style.borderColor = "var(--primary)"; }} onBlur={(e) => { e.target.style.borderColor = "var(--bd-bright)"; }}
-                    />
-                  ) : (
-                    <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} autoFocus
-                      style={{ width: "100%", padding: "8px 11px", borderRadius: 8, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--text)", fontSize: 13, outline: "none", fontFamily: "inherit" }}
-                      onFocus={(e) => { e.target.style.borderColor = "var(--primary)"; }} onBlur={(e) => { e.target.style.borderColor = "var(--bd-bright)"; }}
-                    />
-                  )}
-                </div>
-              ))}
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: "var(--text2)", display: "block", marginBottom: 5 }}>
-                  Objectif de l'agent{" "}
-                  <span style={{ color: "var(--muted2)", fontWeight: 400 }}>(démarre automatiquement)</span>
-                </label>
-                <textarea value={objective} onChange={(e) => setObjective(e.target.value)}
-                  placeholder="Ex : Crée une landing page SaaS premium…"
-                  rows={5}
-                  style={{ width: "100%", padding: "8px 11px", borderRadius: 8, border: `1px solid ${objective ? "var(--primary-border)" : "var(--bd-bright)"}`, background: objective ? "rgba(99,102,241,0.04)" : "var(--surface2)", color: "var(--text)", fontSize: 13, outline: "none", resize: "none", lineHeight: 1.55, fontFamily: "inherit", transition: "border-color 0.15s" }}
-                  onFocus={(e) => { e.target.style.borderColor = "var(--primary)"; }} onBlur={(e) => { e.target.style.borderColor = objective ? "var(--primary-border)" : "var(--bd-bright)"; }}
-                />
-                {objective && <p style={{ fontSize: 11, color: "var(--primary)", marginTop: 4 }}>L'agent démarrera automatiquement</p>}
-              </div>
-              {err && <div style={{ fontSize: 12, color: "var(--error)", padding: "7px 11px", background: "var(--error-bg)", border: "1px solid var(--error-border)", borderRadius: 7 }}>{err}</div>}
-              <div style={{ marginTop: "auto", display: "flex", gap: 8 }}>
-                <button type="button" onClick={() => { onClose(); reset(); }}
-                  style={{ flex: 1, height: 36, borderRadius: 8, border: "1px solid var(--bd-bright)", background: "var(--surface3)", color: "var(--text2)", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
-                  Annuler
-                </button>
-                <button type="submit" disabled={loading || !name.trim()}
-                  style={{ flex: 2, height: 36, borderRadius: 8, border: "none", background: !name.trim() ? "var(--surface3)" : "var(--primary)", color: !name.trim() ? "var(--muted)" : "white", fontSize: 13, fontWeight: 600, cursor: loading || !name.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "inherit" }}>
-                  {loading ? <><Loader2 size={13} className="animate-spin" />Création…</> : <><Plus size={13} />{objective ? "Créer & démarrer" : "Créer"}</>}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
 export default function AppDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [panelOpen, setPanelOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [sort, setSort] = useState<SortKey>("newest");
@@ -237,12 +101,6 @@ export default function AppDashboard() {
     const unsub = streamProjects((data) => setProjects(data));
     return () => { if (typeof unsub === "function") unsub(); };
   }, []);
-
-  const handleCreate = async (name: string, desc: string, objective: string) => {
-    const p = await createProject(name, desc);
-    setProjects((prev) => [p, ...prev]);
-    if (objective) { try { await startProject(p.id, objective); } catch {} }
-  };
 
   const handleDelete = async (id: number) => {
     await deleteProject(id);
@@ -347,15 +205,6 @@ export default function AppDashboard() {
           )}
 
           <div style={{ flex: 1 }} />
-
-          <LlmModeToggle />
-
-          <button onClick={() => setPanelOpen(true)}
-            style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 13px", borderRadius: 8, background: "var(--primary)", color: "white", fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", flexShrink: 0, boxShadow: "0 0 18px var(--primary-glow)" }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--primary-hover)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--primary)"; }}>
-            <Plus size={13} /> Nouveau projet
-          </button>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexShrink: 0 }}>
@@ -473,13 +322,9 @@ export default function AppDashboard() {
                 <FolderOpen size={20} />
               </div>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 5 }}>Aucun projet</h3>
-              <p style={{ fontSize: 13, color: "var(--muted)", maxWidth: 260, lineHeight: 1.6, marginBottom: 20 }}>
-                Créez votre premier projet et laissez l'agent IA générer le code.
+              <p style={{ fontSize: 13, color: "var(--muted)", maxWidth: 260, lineHeight: 1.6 }}>
+                Les projets arrivent automatiquement via le CRM.
               </p>
-              <button onClick={() => setPanelOpen(true)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 8, background: "var(--primary)", color: "white", fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", boxShadow: "0 0 20px var(--primary-glow)" }}>
-                <Plus size={13} /> Créer un projet
-              </button>
             </motion.div>
           ) : filtered.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -508,7 +353,6 @@ export default function AppDashboard() {
 
       </div>
 
-      <CreatePanel open={panelOpen} onClose={() => setPanelOpen(false)} onCreate={handleCreate} />
     </>
   );
 }
