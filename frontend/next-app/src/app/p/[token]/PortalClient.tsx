@@ -1,11 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL
   ? `${process.env.NEXT_PUBLIC_API_URL}/api`
   : "http://localhost:8000/api";
+
+interface GuardianSite { id: string; client_name: string; }
+interface GuardianRequest {
+  id: string; message: string; status: string; admin_response: string; created_at: string;
+}
+
+const ACTIONS = [
+  { label: "Modifier un texte", desc: "Titre, description, horaires, tarifs…" },
+  { label: "Changer une photo", desc: "Ajouter ou remplacer une image" },
+  { label: "Mettre à jour mes infos", desc: "Adresse, téléphone, email…" },
+  { label: "Autre demande", desc: "Ajout d'une section, couleurs…" },
+];
+
+const REQUEST_STATUS: Record<string, { icon: string; label: string; color: string }> = {
+  pending:  { icon: "⏳", label: "En attente",  color: "#F59E0B" },
+  approved: { icon: "✓",  label: "Validée",     color: "#6366F1" },
+  done:     { icon: "✅", label: "Appliquée",   color: "#10B981" },
+  rejected: { icon: "✕",  label: "Refusée",     color: "#EF4444" },
+};
 
 interface PortalOrder {
   token: string;
@@ -104,6 +123,39 @@ export default function PortalClient() {
   const [paymentFailed, setPaymentFailed] = useState(false);
   const verified = useRef(false);
 
+  // Guardian state
+  const [guardianSite, setGuardianSite] = useState<GuardianSite | null>(null);
+  const [guardianRequests, setGuardianRequests] = useState<GuardianRequest[]>([]);
+  const [requestText, setRequestText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const loadGuardian = useCallback(async (tok: string) => {
+    try {
+      const site = await fetch(`${API_BASE}/guardian/portal/${tok}`).then(r => r.ok ? r.json() : null);
+      if (!site) return;
+      setGuardianSite(site);
+      const reqs = await fetch(`${API_BASE}/guardian/sites/${site.id}/requests`).then(r => r.ok ? r.json() : []);
+      setGuardianRequests(reqs);
+    } catch {}
+  }, []);
+
+  const submitRequest = async () => {
+    if (!guardianSite || !requestText.trim()) return;
+    setSubmitting(true);
+    try {
+      await fetch(`${API_BASE}/guardian/requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ site_id: guardianSite.id, message: requestText.trim() }),
+      });
+      setRequestText("");
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 5000);
+      await loadGuardian(token);
+    } finally { setSubmitting(false); }
+  };
+
   useEffect(() => {
     if (!sessionId || verified.current) return;
     verified.current = true;
@@ -124,7 +176,7 @@ export default function PortalClient() {
       } catch { setNotFound(true); }
       finally { setLoading(false); }
     };
-    load();
+    load().then(() => loadGuardian(token));
     const iv = setInterval(load, 10000);
     return () => clearInterval(iv);
   }, [token]);
@@ -217,6 +269,78 @@ export default function PortalClient() {
             <div style={{ marginTop: 24, padding: "14px 18px", borderRadius: 10, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.15)", fontSize: 12, color: "rgba(226,226,234,0.45)", lineHeight: 1.6 }}>
               Conservez ce lien pour suivre l'avancement de votre site. La page se met à jour automatiquement.
             </div>
+
+            {/* Guardian — section demandes de modification */}
+            {guardianSite && (
+              <div style={{ marginTop: 32 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(226,226,234,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
+                  Demander une modification
+                </div>
+
+                {/* Action buttons */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                  {ACTIONS.map(a => (
+                    <button key={a.label} onClick={() => setRequestText(prev => prev ? prev : a.label + " : ")}
+                      style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(19,19,28,0.8)", color: "#E2E2EA", textAlign: "left", cursor: "pointer", transition: "border-color 0.15s" }}
+                      onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.4)")}
+                      onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}>
+                      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{a.label}</div>
+                      <div style={{ fontSize: 11, color: "rgba(226,226,234,0.4)" }}>{a.desc}</div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Textarea + submit */}
+                <textarea
+                  value={requestText}
+                  onChange={e => setRequestText(e.target.value)}
+                  placeholder="Décrivez votre demande en détail…"
+                  rows={4}
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(19,19,28,0.9)", color: "#E2E2EA", fontSize: 13, resize: "vertical", outline: "none", boxSizing: "border-box", lineHeight: 1.5 }}
+                />
+
+                {submitted ? (
+                  <div style={{ marginTop: 10, padding: "12px 16px", borderRadius: 10, background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", fontSize: 13, fontWeight: 600, color: "#10B981", textAlign: "center" }}>
+                    ✓ Votre demande a été envoyée. Nous vous répondons sous 24h.
+                  </div>
+                ) : (
+                  <button onClick={submitRequest} disabled={submitting || !requestText.trim()}
+                    style={{ marginTop: 10, width: "100%", padding: "11px", borderRadius: 10, background: requestText.trim() ? "#6366F1" : "rgba(99,102,241,0.2)", color: requestText.trim() ? "#fff" : "rgba(226,226,234,0.3)", border: "none", fontSize: 13, fontWeight: 600, cursor: requestText.trim() ? "pointer" : "default", transition: "all 0.15s" }}>
+                    {submitting ? "Envoi en cours…" : "Soumettre ma demande →"}
+                  </button>
+                )}
+
+                {/* Historique des demandes */}
+                {guardianRequests.length > 0 && (
+                  <div style={{ marginTop: 24 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(226,226,234,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
+                      Mes demandes
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {guardianRequests.map(req => {
+                        const s = REQUEST_STATUS[req.status] ?? REQUEST_STATUS.pending;
+                        return (
+                          <div key={req.id} style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.07)", background: "rgba(19,19,28,0.6)" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                              <span style={{ fontSize: 12, color: "rgba(226,226,234,0.5)" }}>
+                                {new Date(req.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                              </span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: s.color }}>{s.icon} {s.label}</span>
+                            </div>
+                            <p style={{ fontSize: 13, color: "#E2E2EA", margin: 0, lineHeight: 1.5 }}>{req.message}</p>
+                            {req.admin_response && (
+                              <p style={{ fontSize: 12, color: "rgba(226,226,234,0.5)", marginTop: 6, paddingTop: 6, borderTop: "1px solid rgba(255,255,255,0.06)", margin: "6px 0 0" }}>
+                                Notre réponse : {req.admin_response}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

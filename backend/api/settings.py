@@ -25,6 +25,9 @@ KNOWN_SETTINGS = [
     {"key": "FIREBASE_API_KEY",      "label": "Firebase API Key",           "encrypted": True,  "placeholder": "AIza..."},
     {"key": "FIREBASE_TOKEN",        "label": "Firebase CI Token",          "encrypted": True,  "placeholder": "1//0g..."},
     {"key": "FIREBASE_PROJECT_ID",   "label": "Firebase Project ID",        "encrypted": False, "placeholder": "mon-projet-abc"},
+    # ── Site Guardian ───────────────────────────────────────────────────────────
+    {"key": "RESEND_API_KEY",        "label": "Resend API Key (emails)",    "encrypted": True,  "placeholder": "re_..."},
+    {"key": "ADMIN_EMAIL",           "label": "Email admin (notifications)", "encrypted": False, "placeholder": "toi@example.com"},
 ]
 
 

@@ -130,7 +130,7 @@ async def init_db():
         """)
         await db.commit()
 
-        # guardian_sites table for Site Guardian
+        # guardian tables for Site Guardian
         await db.executescript("""
             CREATE TABLE IF NOT EXISTS guardian_sites (
                 id TEXT PRIMARY KEY,
@@ -141,6 +141,25 @@ async def init_db():
                 plan TEXT DEFAULT 'essential',
                 active INTEGER DEFAULT 1,
                 created_at TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS guardian_requests (
+                id TEXT PRIMARY KEY,
+                site_id TEXT REFERENCES guardian_sites(id),
+                message TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                admin_response TEXT DEFAULT '',
+                created_at TEXT,
+                updated_at TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS guardian_checks (
+                id TEXT PRIMARY KEY,
+                site_id TEXT REFERENCES guardian_sites(id),
+                check_type TEXT,
+                status TEXT,
+                details TEXT,
+                checked_at TEXT
             );
         """)
         await db.commit()
