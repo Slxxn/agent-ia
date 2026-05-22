@@ -74,6 +74,8 @@ export default function ProspectsPage() {
     try {
       const res = await fetch(`${API}/prospects/`);
       if (res.ok) setProspects(await res.json());
+    } catch {
+      // API not reachable
     } finally {
       setLoading(false);
     }
@@ -219,7 +221,7 @@ export default function ProspectsPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {filtered.map(p => {
-                const pri = PRIORITY_COLORS[p.priority];
+                const pri = PRIORITY_COLORS[p.priority] ?? PRIORITY_COLORS.cold;
                 return (
                   <div
                     key={p.id}
