@@ -404,7 +404,7 @@ function ActionBtn({ label, icon, color, onClick }: { label: string; icon: React
 
 function Modal({ children, onClose, wide }: { children: React.ReactNode; onClose: () => void; wide?: boolean }) {
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={onClose} />
       <div style={{ position: "relative", background: "var(--surface)", border: "1px solid var(--bd-bright)", borderRadius: 12, padding: 24, width: "100%", maxWidth: wide ? 520 : 360, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", zIndex: 1 }}>
         <button onClick={onClose} style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}>
