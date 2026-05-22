@@ -195,7 +195,7 @@ export default function SettingsPage() {
   const total      = settings.length;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, height: "100%", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
       {/* ── Header ── */}
       <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
@@ -235,7 +235,7 @@ export default function SettingsPage() {
         </div>
       ) : (
         /* ── 2-column grid ── */
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, flex: 1, alignContent: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {SECTIONS.map((sec) => (
             <SectionCard key={sec.key} icon={sec.icon} title={sec.title} description={sec.description}
               color={sec.color} keys={sec.keys} settings={settings} onSaved={handleSaved} />
