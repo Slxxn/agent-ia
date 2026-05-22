@@ -27,9 +27,12 @@ class ProspectUpdate(BaseModel):
 
 @router.post("/scan")
 async def scan_prospects(req: ScanRequest):
-    raw = await scrape_pages_jaunes(req.sector, req.city, req.max_results)
-    results = []
+    try:
+        raw = await scrape_pages_jaunes(req.sector, req.city, req.max_results)
+    except Exception as e:
+        raise HTTPException(500, f"Erreur scraping : {str(e)}")
 
+    results = []
     db = await get_db()
     try:
         for biz in raw:
@@ -41,13 +44,15 @@ async def scan_prospects(req: ScanRequest):
 
             await db.execute("""
                 INSERT OR IGNORE INTO prospects
-                (id, name, sector, address, city, phone, website,
+                (id, name, sector, address, city, lat, lng, phone, website,
                  score, priority, status, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)
             """, (
                 prospect_id, biz.get("name", ""), req.sector,
-                biz.get("address", ""), req.city, biz.get("phone", ""),
-                biz.get("website", ""), score, priority, now, now
+                biz.get("address", ""), req.city,
+                biz.get("lat"), biz.get("lng"),
+                biz.get("phone", ""), biz.get("website", ""),
+                score, priority, now, now
             ))
             await db.commit()
             results.append({
@@ -59,6 +64,8 @@ async def scan_prospects(req: ScanRequest):
                 "city": req.city,
                 "address": biz.get("address"),
                 "phone": biz.get("phone"),
+                "lat": biz.get("lat"),
+                "lng": biz.get("lng"),
                 "sector": req.sector,
                 "status": "new",
             })

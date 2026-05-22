@@ -1,50 +1,95 @@
-"""Scraping prospects via Firecrawl."""
+"""Scraping prospects via l'API Recherche Entreprises (data.gouv.fr) — sans clé API."""
 import httpx
-from backend.db.database import get_setting
 
-FIRECRAWL_API_URL = "https://api.firecrawl.dev/v1"
+# Mapping ville → code département
+CITY_TO_DEP: dict[str, str] = {
+    "montpellier": "34", "paris": "75", "lyon": "69", "marseille": "13",
+    "bordeaux": "33", "toulouse": "31", "nantes": "44", "nice": "06",
+    "strasbourg": "67", "lille": "59", "rennes": "35", "grenoble": "38",
+    "tours": "37", "nîmes": "30", "nimes": "30", "perpignan": "66",
+    "béziers": "34", "beziers": "34", "sète": "34", "sete": "34",
+    "agde": "34", "lunel": "34", "clermont-ferrand": "63",
+}
 
-SECTORS = [
-    "coiffeur", "restaurant", "boulangerie", "plombier",
-    "électricien", "menuisier", "médecin", "dentiste",
-    "avocat", "comptable", "agence immobilière", "fleuriste",
-    "garage automobile", "photographe"
-]
+# Codes NAF approchés par secteur (pour enrichir le scoring)
+SECTOR_NAF: dict[str, list[str]] = {
+    "coiffeur": ["9602A", "9602B"],
+    "restaurant": ["5610A", "5610B", "5610C"],
+    "boulangerie": ["1071A", "1071B", "4724Z"],
+    "plombier": ["4322A"],
+    "électricien": ["4321A"],
+    "menuisier": ["4332A", "1623Z"],
+    "médecin": ["8621Z", "8622A", "8622B"],
+    "dentiste": ["8623Z"],
+    "avocat": ["6910Z"],
+    "comptable": ["6920Z"],
+    "agence immobilière": ["6831Z", "6832A"],
+    "fleuriste": ["4776Z"],
+    "garage automobile": ["4520A", "4520B"],
+    "photographe": ["7420Z"],
+}
+
+
+def _get_dep(city: str) -> str:
+    return CITY_TO_DEP.get(city.lower().strip(), "34")
+
 
 async def scrape_pages_jaunes(sector: str, city: str, max_results: int = 20) -> list[dict]:
-    api_key = await get_setting("FIRECRAWL_API_KEY")
-    if not api_key:
-        raise ValueError("FIRECRAWL_API_KEY manquante dans les réglages")
+    """
+    Recherche des entreprises via l'API officielle recherche-entreprises.api.gouv.fr.
+    Aucune clé API requise.
+    """
+    dep = _get_dep(city)
+    results: list[dict] = []
 
-    url = f"https://www.pagesjaunes.fr/pagesblanches/recherche?quoiqui={sector.replace(' ', '+')}&ou={city}"
+    async with httpx.AsyncClient(timeout=15) as client:
+        # Première passe : recherche par nom de secteur + département
+        params = {
+            "q": sector,
+            "departement": dep,
+            "per_page": max_results,
+            "page": 1,
+            "etat_administratif": "A",  # entreprises actives uniquement
+        }
+        try:
+            resp = await client.get(
+                "https://recherche-entreprises.api.gouv.fr/search",
+                params=params,
+            )
+            data = resp.json()
+        except Exception:
+            return []
 
-    async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.post(
-            f"{FIRECRAWL_API_URL}/scrape",
-            headers={"Authorization": f"Bearer {api_key}"},
-            json={
-                "url": url,
-                "formats": ["extract"],
-                "extract": {
-                    "schema": {
-                        "type": "object",
-                        "properties": {
-                            "businesses": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "name": {"type": "string"},
-                                        "address": {"type": "string"},
-                                        "phone": {"type": "string"},
-                                        "website": {"type": "string"}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        )
-        data = response.json()
-        return data.get("data", {}).get("extract", {}).get("businesses", [])[:max_results]
+        for item in data.get("results", []):
+            siege = item.get("siege", {})
+            name = (
+                item.get("nom_complet")
+                or (item.get("liste_enseignes") or [None])[0]
+                or item.get("nom_raison_sociale", "")
+            )
+            address_parts = [
+                siege.get("adresse_ligne_1", ""),
+                siege.get("code_postal", ""),
+                siege.get("commune", ""),
+            ]
+            address = ", ".join(p for p in address_parts if p)
+
+            results.append({
+                "name": name.title(),
+                "address": address,
+                "phone": "",   # API gouvernement ne fournit pas les téléphones
+                "website": _guess_website(name),
+                "lat": siege.get("latitude"),
+                "lng": siege.get("longitude"),
+                "siren": item.get("siren", ""),
+            })
+
+    return results[:max_results]
+
+
+def _guess_website(name: str) -> str:
+    """
+    On ne peut pas deviner un site web avec certitude sans scraping.
+    Retourne une chaîne vide — le scorer traitera ça comme "pas de site" (score élevé).
+    """
+    return ""
