@@ -21,6 +21,8 @@ Décrivez votre projet via le formulaire client, l'agent planifie, structure, co
 - **ProjectMemory** : mémoire persistante par projet — design system, types, état build sauvegardés pour le copilote
 - **Déploiement Firebase** : publication automatique en un clic depuis le dashboard
 - **Auth Firebase** : accès sécurisé au dashboard
+- **Prospect Hunter** : scraping Pages Jaunes, scoring opportunité 0-100, génération de pitch email via Claude Haiku, carte Leaflet interactive, conversion prospect → projet
+- **Site Guardian** : surveillance des sites livrés (uptime, perf, alertes)
 
 ## Stack technique
 
@@ -30,7 +32,9 @@ Décrivez votre projet via le formulaire client, l'agent planifie, structure, co
 | Backend API | Python 3.10+, FastAPI, SQLite (aiosqlite), SSE |
 | IA génération | DeepSeek Chat (sections) / DeepSeek Reasoner (fichiers critiques) |
 | IA rapide | Gemini Flash 2.0 (planification, repair, validation, copilote) |
+| IA prospection | Claude Haiku (pitch emails) |
 | Projets générés | React + Vite + Tailwind + Framer Motion |
+| Scraping | Firecrawl API (Pages Jaunes, analyse concurrence) |
 | Frontend hosting | Firebase Hosting (builderz.shop), export statique Next.js |
 | Déploiement backend | Oracle Cloud VPS, Cloudflare Tunnel (`api.builderz.shop`), pm2 |
 
@@ -53,6 +57,11 @@ agent-platform/
 │   │   ├── logs.py                # Streaming SSE des logs
 │   │   ├── settings.py            # Gestion des clés API (chiffrées)
 │   │   └── crm.py                 # Demandes clients
+│   ├── prospect_hunter/
+│   │   ├── scraper.py             # Scraping Pages Jaunes via Firecrawl
+│   │   ├── scorer.py              # Score opportunité 0-100 (HTTP, viewport, date)
+│   │   ├── pitch_generator.py     # Email de prospection via Claude Haiku
+│   │   └── api.py                 # Routes /api/prospects (scan, list, pitch, convert)
 │   ├── core/
 │   │   ├── project_manager.py     # Gestion workspace + état
 │   │   └── settings_crypto.py     # Chiffrement AES des secrets
@@ -237,6 +246,11 @@ cd ~/agent-platform && git pull origin master && pm2 restart backend
 | `GET /api/projects/{id}/logs/stream` | SSE — logs en temps réel |
 | `POST /api/projects/{id}/deploy` | Déploiement Firebase |
 | `GET /api/settings` | Clés API (chiffrées) |
+| `POST /api/prospects/scan` | Scraper Pages Jaunes et scorer les prospects |
+| `GET /api/prospects/` | Lister les prospects (filtres status, priority, sector) |
+| `POST /api/prospects/{id}/pitch` | Générer un pitch email via Claude Haiku |
+| `PATCH /api/prospects/{id}` | Mettre à jour status ou notes d'un prospect |
+| `POST /api/prospects/{id}/convert` | Convertir un prospect en projet |
 
 ## Licence
 

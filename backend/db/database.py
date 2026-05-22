@@ -106,6 +106,30 @@ async def init_db():
         """)
         await db.commit()
 
+        # prospects table for Prospect Hunter
+        await db.executescript("""
+            CREATE TABLE IF NOT EXISTS prospects (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                sector TEXT,
+                address TEXT,
+                city TEXT DEFAULT 'Montpellier',
+                lat REAL,
+                lng REAL,
+                phone TEXT,
+                email TEXT,
+                website TEXT,
+                score INTEGER DEFAULT 0,
+                priority TEXT DEFAULT 'cold',
+                status TEXT DEFAULT 'new',
+                pitch TEXT,
+                notes TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+        """)
+        await db.commit()
+
         # guardian_sites table for Site Guardian
         await db.executescript("""
             CREATE TABLE IF NOT EXISTS guardian_sites (
