@@ -1,6 +1,6 @@
 """Scraping prospects via Firecrawl."""
 import httpx
-from backend.core.settings_crypto import get_setting
+from backend.db.database import get_setting
 
 FIRECRAWL_API_URL = "https://api.firecrawl.dev/v1"
 
