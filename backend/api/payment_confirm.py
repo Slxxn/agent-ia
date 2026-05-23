@@ -316,7 +316,7 @@ async def confirm_payment(data: ConfirmPayload):
             await db.execute(
                 """INSERT INTO portal_orders
                    (token, client_email, business_name, status, project_id, created_at, updated_at)
-                   VALUES (?, ?, ?, 'paid', ?, ?, ?)""",
+                   VALUES (?, ?, ?, 'pending', ?, ?, ?)""",
                 (portal_token, client_email_tmp, business_name_tmp, data.project_id, now, now),
             )
 
