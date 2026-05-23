@@ -277,36 +277,86 @@ export default function AppDashboard() {
 
         {/* ── Devis en attente de validation ── */}
         {pendingValidation.length > 0 && (
-          <div style={{ marginBottom: 10, flexShrink: 0 }}>
-            <div style={{ padding: "10px 14px 0", borderRadius: 10, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.18)", marginBottom: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#F59E0B" }}>
-                  {pendingValidation.length} devis en attente de validation
-                </span>
-                <span style={{ fontSize: 11, color: "var(--muted)" }}>— Validez le prix et envoyez le lien Stripe au client</span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
-                {pendingValidation.map((p) => (
-                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", minWidth: 140, flex: "0 0 auto" }}>{p.name}</span>
-                    <span style={{ fontSize: 12, color: "var(--muted)" }}>{p.client_email}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
+          <div style={{ marginBottom: 10, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#F59E0B", boxShadow: "0 0 6px #F59E0B", display: "inline-block" }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#F59E0B", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                {pendingValidation.length} devis à valider
+              </span>
+            </div>
+            {pendingValidation.map((p) => {
+              let brief: Record<string, unknown> = {};
+              try { if (p.brief) brief = JSON.parse(p.brief); } catch {}
+              const sector     = brief.sector as string || "";
+              const siteType   = (brief.siteType || brief.site_type) as string || "standard";
+              const desc       = (brief.description as string || p.description || "").slice(0, 100);
+              const pages      = (brief.pages as string[] || []).slice(0, 4);
+              const features   = (brief.features as string[] || []).slice(0, 3);
+              const goal       = brief.siteGoal as string || "";
+              const SECTOR_EMOJI: Record<string, string> = { beaute: "💅", restaurant: "🍽️", mode: "👗", artisan: "🎨", coach: "🧠", photo: "📸", medical: "🩺", immobilier: "🏠", sport: "💪", tech: "💻", association: "🤝" };
+              const TYPE_LABEL: Record<string, string> = { standard: "Vitrine", "3d": "3D / WebGL", scrollytelling: "Scrollytelling" };
+              const GOAL_LABEL: Record<string, string> = { bookings: "Réservations", ecommerce: "Vente en ligne", portfolio: "Portfolio", leads: "Génération leads", showcase: "Vitrine" };
+              return (
+                <div key={p.id} style={{ background: "var(--surface)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 12, padding: "14px 16px", display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+
+                  {/* ── Infos brief ── */}
+                  <div style={{ flex: 1, minWidth: 260 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
+                        {SECTOR_EMOJI[sector] || "✨"} {p.name}
+                      </span>
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 99, background: "rgba(99,102,241,0.12)", color: "#818CF8", border: "1px solid rgba(99,102,241,0.2)" }}>
+                        {TYPE_LABEL[siteType] || siteType}
+                      </span>
+                      {goal && (
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 99, background: "rgba(16,185,129,0.08)", color: "#10B981", border: "1px solid rgba(16,185,129,0.2)" }}>
+                          {GOAL_LABEL[goal] || goal}
+                        </span>
+                      )}
+                    </div>
+
+                    {p.client_email && (
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: desc ? 5 : 0 }}>
+                        {p.client_email}{p.client_phone ? ` · ${p.client_phone}` : ""}
+                      </div>
+                    )}
+
+                    {desc && (
+                      <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.55, margin: "0 0 8px", maxWidth: 480 }}>
+                        {desc}{(brief.description as string || "").length > 100 ? "…" : ""}
+                      </p>
+                    )}
+
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      {pages.map(pg => (
+                        <span key={pg} style={{ fontSize: 10, padding: "2px 6px", borderRadius: 5, background: "var(--surface2)", color: "var(--muted2)", border: "1px solid var(--bd)" }}>{pg}</span>
+                      ))}
+                      {features.map(ft => (
+                        <span key={ft} style={{ fontSize: 10, padding: "2px 6px", borderRadius: 5, background: "var(--surface2)", color: "var(--muted2)", border: "1px solid var(--bd)" }}>{ft}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── Prix + CTA ── */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", textAlign: "right" }}>
+                      Suggéré : <strong style={{ color: "var(--text)" }}>{p.suggested_price || 390}€</strong>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <input type="number" defaultValue={p.suggested_price || p.final_price || 390}
                         onChange={(e) => setFinalPrices((prev) => ({ ...prev, [p.id]: Number(e.target.value) }))}
-                        style={{ width: 72, height: 28, padding: "0 8px", borderRadius: 6, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--text)", fontSize: 12, outline: "none", fontFamily: "inherit" }}
+                        style={{ width: 76, height: 32, padding: "0 8px", borderRadius: 7, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--text)", fontSize: 13, fontWeight: 600, outline: "none", fontFamily: "inherit", textAlign: "center" }}
                       />
                       <span style={{ fontSize: 12, color: "var(--muted)" }}>€</span>
-                      <button
-                        onClick={() => handleSendPayment(p)}
-                        disabled={sendingPayment === p.id || paymentSent.has(p.id)}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 7, border: "none", background: paymentSent.has(p.id) ? "var(--success-bg)" : "var(--primary)", color: paymentSent.has(p.id) ? "var(--success)" : "white", fontSize: 12, fontWeight: 600, cursor: sendingPayment === p.id ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: sendingPayment === p.id ? 0.6 : 1, transition: "all 0.15s" }}>
+                      <button onClick={() => handleSendPayment(p)} disabled={sendingPayment === p.id || paymentSent.has(p.id)}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 14px", borderRadius: 7, border: "none", background: paymentSent.has(p.id) ? "rgba(16,185,129,0.15)" : "var(--primary)", color: paymentSent.has(p.id) ? "#10B981" : "white", fontSize: 12, fontWeight: 600, cursor: sendingPayment === p.id ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: sendingPayment === p.id ? 0.6 : 1, transition: "all 0.15s", whiteSpace: "nowrap" }}>
                         {paymentSent.has(p.id) ? "✓ Envoyé" : sendingPayment === p.id ? "Envoi…" : "💳 Envoyer le lien"}
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
