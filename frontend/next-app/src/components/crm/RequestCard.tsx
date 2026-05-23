@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, CheckCircle, XCircle, Rocket, Calendar, DollarSign, Tag, RotateCcw, Trash2, Pencil } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, Rocket, Calendar, DollarSign, Tag, RotateCcw, Trash2, Pencil, CreditCard } from 'lucide-react';
 import { ClientRequest, RequestStatus } from '@/types/clientRequest';
 
 const STATUS_CONFIG: Record<RequestStatus, { label: string; color: string; bg: string; border: string }> = {
@@ -25,11 +25,14 @@ interface Props {
   onRegenerate: (r: ClientRequest) => void;
   onEdit: (r: ClientRequest) => void;
   onDelete: (id: string) => void;
+  onSendStripe: (r: ClientRequest, price: number) => Promise<void>;
   deleting?: boolean;
 }
 
-export default function RequestCard({ request, index, onViewDetails, onValidate, onReject, onLaunch, onRegenerate, onEdit, onDelete, deleting }: Props) {
+export default function RequestCard({ request, index, onViewDetails, onValidate, onReject, onLaunch, onRegenerate, onEdit, onDelete, onSendStripe, deleting }: Props) {
   const [acting, setActing] = useState(false);
+  const [stripePrice, setStripePrice] = useState(request.suggestedPrice || 490);
+  const [stripeSent, setStripeSent] = useState(false);
   const status = STATUS_CONFIG[request.status];
 
   const act = async (fn: () => Promise<void>) => {
@@ -147,13 +150,38 @@ export default function RequestCard({ request, index, onViewDetails, onValidate,
         )}
 
         {request.status === 'validated' && (
-          <div style={{ display: 'flex' }}>
-            <ActionBtn
-              icon={<Rocket size={12} />} label="Lancer le projet" color="#6366F1"
-              onClick={() => onLaunch(request)} disabled={acting}
-              primary
-            />
-          </div>
+          request.projectId ? (
+            /* came via form → send Stripe link */
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                type="number"
+                value={stripePrice}
+                onChange={e => setStripePrice(Number(e.target.value))}
+                style={{ width: 70, height: 28, padding: '0 8px', borderRadius: 6, border: '1px solid var(--bd-bright)', background: 'var(--surface2)', color: 'var(--text)', fontSize: 12, outline: 'none', fontFamily: 'inherit', textAlign: 'center' }}
+              />
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>€</span>
+              <ActionBtn
+                icon={<CreditCard size={12} />}
+                label={stripeSent ? '✓ Lien envoyé' : '💳 Lien Stripe'}
+                color={stripeSent ? '#10B981' : '#6366F1'}
+                disabled={acting || stripeSent}
+                onClick={() => act(async () => {
+                  await onSendStripe(request, stripePrice);
+                  setStripeSent(true);
+                })}
+                primary
+              />
+            </div>
+          ) : (
+            /* came via Firestore manual → launch project */
+            <div style={{ display: 'flex' }}>
+              <ActionBtn
+                icon={<Rocket size={12} />} label="Lancer le projet" color="#6366F1"
+                onClick={() => onLaunch(request)} disabled={acting}
+                primary
+              />
+            </div>
+          )
         )}
 
         {(request.status === 'in_progress' || request.status === 'completed') && (

@@ -51,6 +51,10 @@ export function useClientRequests(): UseClientRequestsReturn {
             features:         raw.features ?? [],
             budget:           raw.budget ?? '',
             notes:            raw.notes ?? '',
+            projectId:        raw.projectId ?? undefined,
+            suggestedPrice:   raw.suggestedPrice ?? undefined,
+            clientEmail:      raw.clientEmail ?? raw.email ?? '',
+            clientPhone:      raw.clientPhone ?? raw.phone ?? '',
           } satisfies ClientRequest;
         });
         setRequests(data);

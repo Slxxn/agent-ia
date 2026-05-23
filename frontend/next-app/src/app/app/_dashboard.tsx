@@ -97,8 +97,8 @@ export default function AppDashboard() {
   const [sortOpen, setSortOpen] = useState(false);
 
   useEffect(() => {
-    getProjects().then(setProjects).catch(() => {}).finally(() => setLoading(false));
-    const unsub = streamProjects((data) => setProjects(data));
+    getProjects().then(p => setProjects(p.filter(x => x.form_status !== 'crm_pending'))).catch(() => {}).finally(() => setLoading(false));
+    const unsub = streamProjects((data) => setProjects(data.filter(x => x.form_status !== 'crm_pending')));
     return () => { if (typeof unsub === "function") unsub(); };
   }, []);
 

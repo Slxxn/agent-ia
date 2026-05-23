@@ -6,6 +6,9 @@ import { Users, Clock, CheckCircle, Loader2, XCircle, AlertCircle, Plus } from '
 import { useRouter } from 'next/navigation';
 import { useClientRequests } from '@/hooks/useClientRequests';
 import { ClientRequest, RequestStatus } from '@/types/clientRequest';
+import { sendPaymentLink } from '@/lib/api';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import RequestCard from '@/components/crm/RequestCard';
 import RequestDetailModal from '@/components/crm/RequestDetailModal';
 import LaunchProjectModal from '@/components/crm/LaunchProjectModal';
@@ -28,6 +31,13 @@ export default function CRMPage() {
   const [launchRequest, setLaunchRequest]     = useState<ClientRequest | null>(null);
   const [editRequest, setEditRequest]         = useState<ClientRequest | null>(null);
   const [deletingId, setDeletingId]           = useState<string | null>(null);
+
+  const handleSendStripe = async (request: ClientRequest, price: number) => {
+    if (!request.projectId) return;
+    const res = await sendPaymentLink(request.projectId, price);
+    if (res.payment_url) window.open(res.payment_url, '_blank');
+    await updateDoc(doc(db, 'client_requests', request.id), { status: 'payment_link_sent' });
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer cette demande définitivement ?')) return;
@@ -155,6 +165,7 @@ export default function CRMPage() {
               onReject={(id) => updateStatus(id, 'rejected')}
               onLaunch={(req) => setLaunchRequest(req)}
               onRegenerate={(req) => setLaunchRequest(req)}
+              onSendStripe={handleSendStripe}
               onDelete={(id) => handleDelete(id)}
               deleting={deletingId === r.id}
             />

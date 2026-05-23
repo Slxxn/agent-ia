@@ -188,11 +188,13 @@ export default function PortalClient() {
   return (
     <div style={{ minHeight: "100vh", background: "#08080C", color: "#E2E2EA", fontFamily: "inherit", display: "flex", flexDirection: "column" }}>
       <nav style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "0 24px", height: 56, display: "flex", alignItems: "center" }}>
-        <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-          <div style={{ width: 28, height: 28, background: "linear-gradient(135deg, #6366F1, #818CF8)", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1L12.5 4V10L7 13L1.5 10V4L7 1Z" stroke="white" strokeWidth="1.4" strokeLinejoin="round"/><circle cx="7" cy="7" r="1.8" fill="white"/></svg>
-          </div>
-          <span style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>Builderz</span>
+        <a href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            {([[3,3,"#6366f1"],[19,3,"#818cf8"],[35,3,"#6366f1"],[3,19,"#818cf8"],[19,19,"#6366f1"],[35,19,"#818cf8"],[3,35,"#6366f1"],[19,35,"#818cf8"],[35,35,"#6366f1"]] as [number,number,string][]).map(([x,y,c],i) => (
+              <rect key={i} x={x} y={y} width="13" height="13" rx="3" fill={c} />
+            ))}
+          </svg>
+          <span style={{ fontWeight: 700, fontSize: 14, color: "#fff", letterSpacing: "-0.01em" }}>builderz</span>
         </a>
       </nav>
 

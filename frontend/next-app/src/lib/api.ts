@@ -393,7 +393,7 @@ export async function calculatePrice(answers: Record<string, unknown>): Promise<
 }
 
 export async function submitConversationalForm(answers: Record<string, unknown>): Promise<{
-  project_id: number; slug: string; pricing: { suggested: number }; message: string;
+  project_id: number; slug: string; pricing: { suggested: number }; site_type: string; message: string;
 }> {
   const res = await fetch(`${API_BASE}/form/submit`, {
     method: "POST",

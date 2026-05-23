@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calculatePrice, submitConversationalForm } from '@/lib/api';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 type Answers = Record<string, unknown>;
 interface Choice { value: string; label: string; icon?: string }
@@ -272,6 +274,35 @@ export default function FormPage() {
       const flat = { ...answers, email: contact.email || '', phone: contact.phone || '' };
       const data = await submitConversationalForm(flat as Record<string, unknown>);
       setPricing(data.pricing as unknown as PricingData);
+
+      // Write to Firestore so the CRM sees this lead
+      try {
+        await addDoc(collection(db, 'client_requests'), {
+          businessName:   answers.business_name || '',
+          sector:         answers.sector || '',
+          siteGoal:       answers.goal || '',
+          siteType:       data.site_type || 'standard',
+          description:    answers.description || '',
+          targetAudience: answers.target_audience || '',
+          uniqueValue:    answers.unique_value || '',
+          references:     answers.references || '',
+          visualStyle:    answers.style || '',
+          colorTheme:     answers.color_theme || 'dark',
+          colors:         answers.colors || [],
+          pages:          answers.pages || [],
+          features:       answers.features || [],
+          budget:         String((data.pricing as unknown as PricingData)?.suggested || ''),
+          notes:          answers.notes || '',
+          logoUrl:        '',
+          status:         'pending',
+          projectId:      data.project_id,
+          suggestedPrice: (data.pricing as unknown as PricingData)?.suggested || 0,
+          clientEmail:    contact.email || '',
+          clientPhone:    contact.phone || '',
+          createdAt:      Timestamp.now(),
+        });
+      } catch { /* Firestore write failure doesn't block the user */ }
+
       setSubmitted(true);
     } catch { alert('Une erreur est survenue. Réessayez.'); }
     finally { setSubmitting(false); }

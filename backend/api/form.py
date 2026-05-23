@@ -48,7 +48,7 @@ async def submit_form(request: Request):
                 suggested_price, final_price, form_status,
                 slug, created_at, updated_at)
                VALUES (?, ?, 'idle', 0, '', ?, 'pending', 1, ?,
-                       ?, ?, 'pending_validation', ?, ?, ?)""",
+                       ?, ?, 'crm_pending', ?, ?, ?)""",
             (
                 business_name,
                 answers.get("description", ""),
@@ -72,6 +72,7 @@ async def submit_form(request: Request):
         "project_id": db_id,
         "slug": slug,
         "pricing": pricing,
+        "site_type": site_type,
         "message": "Votre demande a été reçue. Nous vous contacterons sous 24h.",
     }
 

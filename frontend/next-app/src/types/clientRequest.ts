@@ -23,6 +23,10 @@ export interface ClientRequest {
   features: string[];
   budget: string;
   notes: string;
+  projectId?: number;
+  suggestedPrice?: number;
+  clientEmail?: string;
+  clientPhone?: string;
 }
 
 export const SITE_TYPES: { key: SiteType; label: string; desc: string; icon: string }[] = [

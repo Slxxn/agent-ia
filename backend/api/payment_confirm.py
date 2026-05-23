@@ -13,6 +13,8 @@ from pydantic import BaseModel
 from backend.db.database import get_db, get_setting
 from backend.site_guardian.notifier import send_email
 
+GUARDIAN_PLAN = "standard"
+
 router = APIRouter(prefix="/payment", tags=["payment"])
 
 ADMIN_FALLBACK = "sloan.dlrz@gmail.com"
@@ -295,11 +297,6 @@ async def confirm_payment(data: ConfirmPayload):
 
         already_paid = project.get("form_status") == "paid"
 
-        await db.execute(
-            "UPDATE projects SET form_status = 'paid', updated_at = ? WHERE id = ?",
-            (now, data.project_id),
-        )
-
         cursor2 = await db.execute(
             "SELECT token FROM portal_orders WHERE project_id = ? LIMIT 1",
             (data.project_id,),
@@ -318,6 +315,30 @@ async def confirm_payment(data: ConfirmPayload):
                    (token, client_email, business_name, status, project_id, created_at, updated_at)
                    VALUES (?, ?, ?, 'pending', ?, ?, ?)""",
                 (portal_token, client_email_tmp, business_name_tmp, data.project_id, now, now),
+            )
+
+        # Rendre le projet visible dans Web Platform
+        await db.execute(
+            "UPDATE projects SET form_status = 'paid', updated_at = ? WHERE id = ?",
+            (now, data.project_id),
+        )
+
+        # Auto-register in Site Guardian if not already there
+        cursor3 = await db.execute(
+            "SELECT id FROM guardian_sites WHERE project_id = ? LIMIT 1",
+            (data.project_id,),
+        )
+        guardian_exists = await cursor3.fetchone()
+        if not guardian_exists:
+            guardian_id = uuid.uuid4().hex
+            client_name_g = project.get("name", "")
+            client_email_g = project.get("client_email", "")
+            site_url_g = project.get("deploy_url", "") or ""
+            await db.execute(
+                """INSERT INTO guardian_sites
+                   (id, project_id, client_name, client_email, site_url, plan, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (guardian_id, data.project_id, client_name_g, client_email_g, site_url_g, GUARDIAN_PLAN, now),
             )
 
         await db.commit()
