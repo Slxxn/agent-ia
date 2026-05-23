@@ -5,6 +5,7 @@ Met à jour le statut projet et envoie les emails client + admin.
 """
 
 import json
+import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -304,7 +305,20 @@ async def confirm_payment(data: ConfirmPayload):
             (data.project_id,),
         )
         token_row = await cursor2.fetchone()
-        portal_token = token_row["token"] if token_row else None
+
+        if token_row:
+            portal_token = token_row["token"]
+        else:
+            # Aucun token portal — en créer un lié à ce projet
+            portal_token = uuid.uuid4().hex[:16]
+            client_email_tmp = project.get("client_email", "")
+            business_name_tmp = project.get("name", "")
+            await db.execute(
+                """INSERT INTO portal_orders
+                   (token, client_email, business_name, status, project_id, created_at, updated_at)
+                   VALUES (?, ?, ?, 'paid', ?, ?, ?)""",
+                (portal_token, client_email_tmp, business_name_tmp, data.project_id, now, now),
+            )
 
         await db.commit()
     finally:
