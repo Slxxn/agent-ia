@@ -9,21 +9,23 @@ import { useAuth } from "@/lib/authContext";
 const provider = new GoogleAuthProvider();
 
 export default function LoginPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) router.replace("/app");
-  }, [user, loading, router]);
+    if (!loading && user) router.replace(isAdmin ? "/app" : "/mon-espace");
+  }, [user, loading, isAdmin, router]);
 
   async function handleGoogle() {
     setError("");
     setSubmitting(true);
     try {
-      await signInWithPopup(auth, provider);
-      router.replace("/app");
+      const result = await signInWithPopup(auth, provider);
+      const email = result.user.email?.toLowerCase() || "";
+      const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "sloan.dlrz@gmail.com").toLowerCase();
+      router.replace(email === adminEmail ? "/app" : "/mon-espace");
     } catch {
       setError("Connexion annulée ou refusée.");
     } finally {
@@ -64,7 +66,7 @@ export default function LoginPage() {
         </div>
 
         <h1 style={{ color: "var(--text)", fontSize: 20, fontWeight: 600, marginBottom: 8 }}>Connexion</h1>
-        <p style={{ color: "var(--muted2)", fontSize: 13, marginBottom: 28 }}>Accès réservé à l'administrateur.</p>
+        <p style={{ color: "var(--muted2)", fontSize: 13, marginBottom: 28 }}>Accédez à votre espace builderz.</p>
 
         {error && <p style={{ color: "#f87171", fontSize: 13, marginBottom: 16 }}>{error}</p>}
 
