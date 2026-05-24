@@ -5,13 +5,16 @@ import { motion } from 'framer-motion';
 import { Eye, CheckCircle, XCircle, Rocket, DollarSign, Globe, RotateCcw, Trash2, Pencil, CreditCard } from 'lucide-react';
 import { ClientRequest, RequestStatus } from '@/types/clientRequest';
 
-const STATUS_CONFIG: Record<RequestStatus, { label: string; color: string; bg: string; border: string }> = {
-  pending:    { label: 'En attente',   color: '#F59E0B', bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.25)' },
-  validated:  { label: 'Validé',       color: '#3B82F6', bg: 'rgba(59,130,246,0.1)',  border: 'rgba(59,130,246,0.25)' },
-  in_progress:{ label: 'En cours',     color: '#6366F1', bg: 'rgba(99,102,241,0.1)',  border: 'rgba(99,102,241,0.25)' },
-  completed:  { label: 'Terminé',      color: '#22C55E', bg: 'rgba(34,197,94,0.1)',   border: 'rgba(34,197,94,0.25)'  },
-  rejected:   { label: 'Rejeté',       color: '#EF4444', bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.25)'  },
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  pending:           { label: 'En attente',      color: '#F59E0B', bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.25)' },
+  validated:         { label: 'Validé',           color: '#3B82F6', bg: 'rgba(59,130,246,0.1)',  border: 'rgba(59,130,246,0.25)' },
+  in_progress:       { label: 'En cours',         color: '#6366F1', bg: 'rgba(99,102,241,0.1)',  border: 'rgba(99,102,241,0.25)' },
+  completed:         { label: 'Terminé',          color: '#22C55E', bg: 'rgba(34,197,94,0.1)',   border: 'rgba(34,197,94,0.25)'  },
+  rejected:          { label: 'Rejeté',           color: '#EF4444', bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.25)'  },
+  payment_link_sent: { label: '💳 Lien envoyé',   color: '#A78BFA', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.25)'},
 };
+
+const DEFAULT_STATUS = { label: 'Inconnu', color: '#64748B', bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.25)' };
 
 const SITE_TYPE_LABEL: Record<string, string> = {
   standard:      'Vitrine',
@@ -38,7 +41,7 @@ export default function RequestCard({ request, index, onViewDetails, onValidate,
   const [acting, setActing] = useState(false);
   const [stripePrice, setStripePrice] = useState(request.suggestedPrice || 490);
   const [stripeSent, setStripeSent] = useState(false);
-  const status = STATUS_CONFIG[request.status];
+  const status = STATUS_CONFIG[request.status] ?? DEFAULT_STATUS;
 
   const act = async (fn: () => Promise<void>) => {
     setActing(true);

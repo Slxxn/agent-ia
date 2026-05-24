@@ -1,4 +1,4 @@
-export type RequestStatus = 'pending' | 'validated' | 'in_progress' | 'completed' | 'rejected';
+export type RequestStatus = 'pending' | 'validated' | 'in_progress' | 'completed' | 'rejected' | 'payment_link_sent';
 export type SiteType = 'standard' | '3d' | 'scrollytelling';
 
 export interface ClientRequest {

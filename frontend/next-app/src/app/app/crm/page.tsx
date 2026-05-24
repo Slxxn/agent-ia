@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Clock, CheckCircle, Loader2, XCircle, AlertCircle, Plus } from 'lucide-react';
+import { Users, Clock, CheckCircle, Loader2, XCircle, AlertCircle, Plus, CreditCard } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useClientRequests } from '@/hooks/useClientRequests';
 import { ClientRequest, RequestStatus } from '@/types/clientRequest';
@@ -20,7 +20,8 @@ const TABS: { key: RequestStatus | 'all'; label: string; icon: React.ReactNode }
   { key: 'validated',  label: 'Validées',    icon: <CheckCircle size={13} /> },
   { key: 'in_progress',label: 'En cours',    icon: <Loader2 size={13} /> },
   { key: 'completed',  label: 'Terminées',   icon: <CheckCircle size={13} /> },
-  { key: 'rejected',   label: 'Rejetées',    icon: <XCircle size={13} /> },
+  { key: 'rejected',          label: 'Rejetées',     icon: <XCircle size={13} /> },
+  { key: 'payment_link_sent', label: 'Lien envoyé',  icon: <CreditCard size={13} /> },
 ];
 
 export default function CRMPage() {
