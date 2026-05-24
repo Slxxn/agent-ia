@@ -75,6 +75,15 @@ export function useClientRequests(): UseClientRequestsReturn {
   };
 
   const deleteRequest = async (id: string) => {
+    // Supprimer d'abord le projet SQLite lié (tâches, logs, guardian, portal_orders, workspace)
+    const request = requests.find(r => r.id === id);
+    if (request?.projectId) {
+      const API = process.env.NEXT_PUBLIC_API_URL
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+        : '/api';
+      await fetch(`${API}/projects/${request.projectId}`, { method: 'DELETE' }).catch(() => {});
+    }
+    // Puis supprimer le doc Firestore
     await deleteDoc(doc(db, 'client_requests', id));
   };
 

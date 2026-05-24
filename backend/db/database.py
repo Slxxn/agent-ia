@@ -256,9 +256,28 @@ async def update_project(project_id: int, **kwargs) -> Optional[Dict[str, Any]]:
 
 
 async def delete_project(project_id: int) -> bool:
-    """Supprimer un projet."""
+    """Supprimer un projet et toutes ses données associées."""
     db = await get_db()
     try:
+        # Récupérer les IDs guardian liés pour cascader
+        cursor_g = await db.execute(
+            "SELECT id FROM guardian_sites WHERE project_id = ?", (project_id,)
+        )
+        guardian_rows = await cursor_g.fetchall()
+        guardian_ids = [r[0] for r in guardian_rows]
+
+        for gid in guardian_ids:
+            await db.execute("DELETE FROM guardian_checks WHERE site_id = ?", (gid,))
+            await db.execute("DELETE FROM guardian_requests WHERE site_id = ?", (gid,))
+        if guardian_ids:
+            await db.execute(
+                f"DELETE FROM guardian_sites WHERE id IN ({','.join('?'*len(guardian_ids))})",
+                guardian_ids
+            )
+
+        await db.execute("DELETE FROM tasks WHERE project_id = ?", (project_id,))
+        await db.execute("DELETE FROM logs WHERE project_id = ?", (project_id,))
+        await db.execute("DELETE FROM portal_orders WHERE project_id = ?", (project_id,))
         cursor = await db.execute("DELETE FROM projects WHERE id = ?", (project_id,))
         await db.commit()
         return cursor.rowcount > 0
