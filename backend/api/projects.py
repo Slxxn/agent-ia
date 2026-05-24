@@ -477,6 +477,30 @@ async def send_payment_link(project_id: int, request: Request):
                 await db.commit()
             finally:
                 await db.close()
+
+            # Envoyer l'email au client avec le lien de paiement
+            client_email = project.get("client_email", "")
+            client_name = project.get("client_name") or project.get("name", "")
+            if client_email:
+                try:
+                    from backend.site_guardian.notifier import send_email
+                    html = _payment_link_html(client_name, project["name"], payment_url, price_to_charge)
+                    text = (
+                        f"Bonjour {client_name},\n\n"
+                        f"Votre devis pour « {project['name']} » a été validé.\n\n"
+                        f"Montant : {price_to_charge:.0f}€\n"
+                        f"Lien de paiement : {payment_url}\n\n"
+                        f"— L'équipe builderz"
+                    )
+                    await send_email(
+                        to=client_email,
+                        subject=f"Votre lien de paiement — {project['name']}",
+                        body=text,
+                        html=html,
+                    )
+                except Exception:
+                    pass  # email failure ne bloque pas la réponse
+
         except Exception as e:
             payment_url = None
 
@@ -498,3 +522,66 @@ async def send_payment_link(project_id: int, request: Request):
         "amount": price_to_charge,
         "message": f"Lien envoyé au client ({project.get('client_email', '')}) — {price_to_charge}€"
     }
+
+
+def _payment_link_html(client_name: str, project_name: str, payment_url: str, amount: float) -> str:
+    return f"""<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0a0a0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#111118;border:1px solid #1e1e2e;border-radius:16px;overflow:hidden;max-width:560px;width:100%;">
+
+        <!-- Header -->
+        <tr><td style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:32px 40px;text-align:center;">
+          <table cellpadding="0" cellspacing="0" style="margin:0 auto 12px;">
+            <tr>
+              {''.join(f'<td style="padding:2px;"><div style="width:10px;height:10px;border-radius:3px;background:{"#6366f1" if (i+j)%2==0 else "#818cf8"};"></div></td>' for i in range(3) for j in range(3))}
+            </tr>
+          </table>
+          <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.025em;">builderz</div>
+          <div style="font-size:12px;color:#6366f1;margin-top:4px;letter-spacing:0.05em;text-transform:uppercase;">Votre devis est validé</div>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:36px 40px;">
+          <p style="color:#e2e8f0;font-size:16px;margin:0 0 8px;">Bonjour {client_name} 👋</p>
+          <p style="color:#94a3b8;font-size:14px;line-height:1.7;margin:0 0 28px;">
+            Bonne nouvelle ! Votre projet <strong style="color:#e2e8f0;">« {project_name} »</strong> a été validé par notre équipe.
+            Vous pouvez maintenant finaliser votre commande en procédant au paiement sécurisé.
+          </p>
+
+          <!-- Amount badge -->
+          <div style="background:#0f2027;border:1px solid #22c55e44;border-radius:12px;padding:20px 24px;text-align:center;margin-bottom:28px;">
+            <div style="font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Montant total</div>
+            <div style="font-size:36px;font-weight:800;color:#22c55e;letter-spacing:-0.03em;">{amount:.0f}<span style="font-size:20px;">€</span></div>
+            <div style="font-size:11px;color:#64748b;margin-top:4px;">TTC · Paiement unique · Remboursement sous 14 jours</div>
+          </div>
+
+          <!-- CTA -->
+          <div style="text-align:center;margin-bottom:28px;">
+            <a href="{payment_url}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:10px;letter-spacing:-0.01em;">
+              💳 Payer maintenant →
+            </a>
+          </div>
+
+          <p style="color:#64748b;font-size:12px;line-height:1.6;text-align:center;margin:0;">
+            Ce lien est sécurisé et traité par <strong>Stripe</strong>.<br>
+            Une fois le paiement confirmé, vous recevrez un email avec le suivi de votre projet.
+          </p>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="border-top:1px solid #1e1e2e;padding:20px 40px;text-align:center;">
+          <p style="color:#475569;font-size:11px;margin:0;">
+            builderz.shop · Des sites web professionnels en 48h<br>
+            <a href="mailto:contact@builderz.shop" style="color:#6366f1;text-decoration:none;">contact@builderz.shop</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
