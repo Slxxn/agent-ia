@@ -35,7 +35,7 @@ export default function CRMPage() {
 
   const handleSendStripe = async (request: ClientRequest, price: number) => {
     if (!request.projectId) return;
-    const res = await sendPaymentLink(request.projectId, price);
+    const res = await sendPaymentLink(request.projectId, price, request.clientEmail);
     if (res.payment_url) window.open(res.payment_url, '_blank');
     await updateDoc(doc(db, 'client_requests', request.id), { status: 'payment_link_sent' });
   };

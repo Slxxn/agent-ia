@@ -404,13 +404,13 @@ export async function submitConversationalForm(answers: Record<string, unknown>)
   return res.json();
 }
 
-export async function sendPaymentLink(projectId: number, finalPrice: number): Promise<{
+export async function sendPaymentLink(projectId: number, finalPrice: number, clientEmail?: string): Promise<{
   success: boolean; payment_url?: string; amount: number; message: string;
 }> {
   const res = await fetch(`${API_BASE}/projects/${projectId}/send-payment-link`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ final_price: finalPrice }),
+    body: JSON.stringify({ final_price: finalPrice, client_email: clientEmail }),
   });
   if (!res.ok) throw new Error("Erreur envoi lien paiement");
   return res.json();

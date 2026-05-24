@@ -427,6 +427,7 @@ async def send_payment_link(project_id: int, request: Request):
 
     body = await request.json()
     final_price = body.get("final_price")
+    client_email_override = body.get("client_email", "")  # fallback depuis Firestore
 
     db = await get_db()
     try:
@@ -437,6 +438,10 @@ async def send_payment_link(project_id: int, request: Request):
         project = dict(row)
     finally:
         await db.close()
+
+    # Utiliser l'email du corps si la DB est vide (anciens projets)
+    if client_email_override and not project.get("client_email"):
+        project["client_email"] = client_email_override
 
     price_to_charge = float(final_price or project.get("final_price") or project.get("suggested_price") or 390)
     now = datetime.now(timezone.utc).isoformat()

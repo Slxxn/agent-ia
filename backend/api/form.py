@@ -38,22 +38,33 @@ async def submit_form(request: Request):
     slug = business_name.lower().replace(" ", "-").replace("'", "")[:40]
     now = datetime.now(timezone.utc).isoformat()
 
+    # L'email est dans contact_info (objet imbriqué)
+    contact_info = answers.get("contact_info", {}) or {}
+    if isinstance(contact_info, str):
+        try:
+            contact_info = json.loads(contact_info)
+        except Exception:
+            contact_info = {}
+    client_email = contact_info.get("email", "") or answers.get("email", "")
+    client_phone = contact_info.get("phone", "") or answers.get("phone", "")
+
     db = await get_db()
     try:
         # Insert into projects table (status='idle', form_status='pending_validation')
         await db.execute(
             """INSERT INTO projects
                (name, description, status, progress, workspace_path,
-                brief, generation_mode, is_client, client_email,
+                brief, generation_mode, is_client, client_email, client_phone,
                 suggested_price, final_price, form_status,
                 slug, created_at, updated_at)
-               VALUES (?, ?, 'idle', 0, '', ?, 'pending', 1, ?,
+               VALUES (?, ?, 'idle', 0, '', ?, 'pending', 1, ?, ?,
                        ?, ?, 'crm_pending', ?, ?, ?)""",
             (
                 business_name,
                 answers.get("description", ""),
                 json.dumps(answers),
-                answers.get("email", ""),
+                client_email,
+                client_phone,
                 pricing["suggested"],
                 pricing["suggested"],
                 slug,
