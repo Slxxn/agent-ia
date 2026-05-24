@@ -109,6 +109,35 @@ async def patch_project(project_id: int, data: dict):
         await db.close()
 
 
+@router.post("/{project_id}/set-status")
+async def set_project_status_manual(project_id: int, request: Request):
+    """Change manuellement le statut d'un projet (mode manuel / VS Code)."""
+    from datetime import datetime, timezone
+    from backend.db.database import get_db
+    body = await request.json()
+    status = body.get("status")
+    if status not in ("idle", "running", "done", "paused", "error"):
+        raise HTTPException(400, "Statut invalide")
+    now = datetime.now(timezone.utc).isoformat()
+    progress = body.get("progress")
+    db = await get_db()
+    try:
+        if progress is not None:
+            await db.execute(
+                "UPDATE projects SET status = ?, progress = ?, updated_at = ? WHERE id = ?",
+                (status, progress, now, project_id)
+            )
+        else:
+            await db.execute(
+                "UPDATE projects SET status = ?, updated_at = ? WHERE id = ?",
+                (status, now, project_id)
+            )
+        await db.commit()
+    finally:
+        await db.close()
+    return {"success": True, "status": status}
+
+
 @router.post("/{project_id}/portal-status")
 async def set_portal_status(project_id: int, request: Request):
     """Met à jour le statut portal_orders pour un projet (appelé depuis le CRM)."""

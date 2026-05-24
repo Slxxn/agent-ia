@@ -11,13 +11,23 @@ import Modal from "@/components/ui/Modal";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { Project, getProjects, deleteProject, streamProjects, sendPaymentLink } from "@/lib/api";
+
+const API = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : "/api";
+
+async function setProjectStatus(id: number, status: string, progress?: number) {
+  await fetch(`${API}/projects/${id}/set-status`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status, ...(progress !== undefined ? { progress } : {}) }),
+  });
+}
 import { useClientRequests } from "@/hooks/useClientRequests";
 
 type SortKey = "newest" | "oldest" | "progress";
 type FilterStatus = "all" | "running" | "done" | "error" | "idle" | "paused";
 type ViewMode = "grid" | "list";
 
-function ProjectRow({ project, onDelete, index }: { project: Project; onDelete: (id: number) => void; index: number }) {
+function ProjectRow({ project, onDelete, onStatusChange, index }: { project: Project; onDelete: (id: number) => void; onStatusChange: (id: number, status: string) => void; index: number }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const color =
     project.status === "error"  ? "var(--error)"
@@ -62,10 +72,38 @@ function ProjectRow({ project, onDelete, index }: { project: Project; onDelete: 
         <div style={{ fontSize: 11, color: "var(--muted2)" }}>
           {new Date(project.created_at).toLocaleDateString("fr-FR")}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
           <a href={`/project?id=${project.id}`} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 500, color: "var(--accent)", textDecoration: "none", padding: "4px 8px", borderRadius: 6 }}>
             Voir <ArrowRight size={10} />
           </a>
+          {/* Contrôles statut manuel */}
+          {project.status !== "running" && project.status !== "done" && (
+            <button
+              onClick={async () => { await setProjectStatus(project.id, "running", 10); onStatusChange(project.id, "running"); }}
+              title="Marquer en cours"
+              style={{ fontSize: 10, padding: "2px 7px", borderRadius: 5, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: "#818cf8", cursor: "pointer", fontFamily: "inherit" }}
+            >
+              🔨 En cours
+            </button>
+          )}
+          {project.status !== "done" && (
+            <button
+              onClick={async () => { await setProjectStatus(project.id, "done", 100); onStatusChange(project.id, "done"); }}
+              title="Marquer comme livré"
+              style={{ fontSize: 10, padding: "2px 7px", borderRadius: 5, border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.08)", color: "#22c55e", cursor: "pointer", fontFamily: "inherit" }}
+            >
+              ✓ Livré
+            </button>
+          )}
+          {project.status === "done" && (
+            <button
+              onClick={async () => { await setProjectStatus(project.id, "idle", 0); onStatusChange(project.id, "idle"); }}
+              title="Réinitialiser le statut"
+              style={{ fontSize: 10, padding: "2px 7px", borderRadius: 5, border: "1px solid var(--bd-bright)", background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit" }}
+            >
+              ↺ Reset
+            </button>
+          )}
           {project.status !== "running" && (
             <button onClick={() => setDeleteOpen(true)} style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: "var(--muted2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Trash2 size={11} />
@@ -395,7 +433,7 @@ export default function AppDashboard() {
                 ))}
               </div>
               <div style={{ overflowY: "auto", flex: 1 }}>
-                {filtered.map((p, i) => <ProjectRow key={p.id} project={p} onDelete={handleDelete} index={i} />)}
+                {filtered.map((p, i) => <ProjectRow key={p.id} project={p} onDelete={handleDelete} onStatusChange={(id, status) => setProjects(prev => prev.map(x => x.id === id ? { ...x, status: status as Project["status"], progress: status === "done" ? 100 : status === "idle" ? 0 : 10 } : x))} index={i} />)}
               </div>
             </div>
           )}
