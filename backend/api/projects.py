@@ -109,6 +109,28 @@ async def patch_project(project_id: int, data: dict):
         await db.close()
 
 
+@router.post("/{project_id}/portal-status")
+async def set_portal_status(project_id: int, request: Request):
+    """Met à jour le statut portal_orders pour un projet (appelé depuis le CRM)."""
+    from datetime import datetime, timezone
+    from backend.db.database import get_db
+    body = await request.json()
+    status = body.get("status")
+    if not status:
+        raise HTTPException(400, "status requis")
+    now = datetime.now(timezone.utc).isoformat()
+    db = await get_db()
+    try:
+        await db.execute(
+            "UPDATE portal_orders SET status = ?, updated_at = ? WHERE project_id = ?",
+            (status, now, project_id)
+        )
+        await db.commit()
+    finally:
+        await db.close()
+    return {"success": True}
+
+
 @router.delete("/{project_id}")
 async def delete_project(project_id: int):
     """Supprimer un projet."""

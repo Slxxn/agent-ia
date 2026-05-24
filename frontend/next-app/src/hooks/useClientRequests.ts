@@ -72,6 +72,27 @@ export function useClientRequests(): UseClientRequestsReturn {
 
   const updateStatus = async (id: string, status: RequestStatus) => {
     await updateDoc(doc(db, 'client_requests', id), { status });
+
+    // Synchroniser le statut portal si le projet est lié
+    const request = requests.find(r => r.id === id);
+    if (request?.projectId) {
+      const API = process.env.NEXT_PUBLIC_API_URL
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+        : '/api';
+      const PORTAL_STATUS_MAP: Partial<Record<RequestStatus, string>> = {
+        validated:   'validated',
+        in_progress: 'in_progress',
+        completed:   'completed',
+      };
+      const portalStatus = PORTAL_STATUS_MAP[status];
+      if (portalStatus) {
+        fetch(`${API}/projects/${request.projectId}/portal-status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: portalStatus }),
+        }).catch(() => {});
+      }
+    }
   };
 
   const deleteRequest = async (id: string) => {
