@@ -234,6 +234,45 @@ async def handle_request(request_id: str, action: RequestAction):
     return {"ok": True, "status": new_status}
 
 
+class SitePatch(BaseModel):
+    client_email: Optional[str] = None
+    client_name: Optional[str] = None
+    site_url: Optional[str] = None
+
+@router.patch("/sites/{site_id}")
+async def patch_site(site_id: str, body: SitePatch):
+    """Met à jour les infos d'un site (email client, nom, URL)."""
+    from datetime import datetime, timezone
+    fields = {k: v for k, v in body.dict().items() if v is not None}
+    if not fields:
+        return {"success": True}
+
+    now = datetime.now(timezone.utc).isoformat()
+    set_clause = ", ".join(f"{k} = ?" for k in fields)
+    values = list(fields.values()) + [now, site_id]
+
+    db = await get_db()
+    try:
+        await db.execute(
+            f"UPDATE guardian_sites SET {set_clause}, updated_at = ? WHERE id = ?",
+            values
+        )
+        # Sync client_email vers projects si lié
+        if "client_email" in fields:
+            cursor = await db.execute("SELECT project_id FROM guardian_sites WHERE id = ?", (site_id,))
+            row = await cursor.fetchone()
+            if row and row[0]:
+                await db.execute(
+                    "UPDATE projects SET client_email = ? WHERE id = ?",
+                    (fields["client_email"], row[0])
+                )
+        await db.commit()
+    finally:
+        await db.close()
+
+    return {"success": True}
+
+
 @router.get("/sites/{site_id}/requests")
 async def site_requests(site_id: str):
     db = await get_db()

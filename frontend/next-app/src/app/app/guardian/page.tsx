@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Shield, RefreshCw, Check, X, Clock, ExternalLink, AlertTriangle, Zap } from "lucide-react";
+import { Shield, RefreshCw, Check, X, Clock, ExternalLink, AlertTriangle, Zap, Pencil, Save } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL
   ? `${process.env.NEXT_PUBLIC_API_URL}/api`
@@ -66,6 +66,9 @@ export default function GuardianPage() {
   const [checking, setChecking] = useState<string | null>(null);
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [acting, setActing] = useState<string | null>(null);
+  const [editingEmail, setEditingEmail] = useState<string | null>(null);
+  const [emailDraft, setEmailDraft] = useState<Record<string, string>>({});
+  const [savingEmail, setSavingEmail] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -87,6 +90,19 @@ export default function GuardianPage() {
       await fetch(`${API}/guardian/sites/${siteId}/check`, { method: "POST" });
       await load();
     } finally { setChecking(null); }
+  };
+
+  const saveEmail = async (siteId: string) => {
+    setSavingEmail(siteId);
+    try {
+      await fetch(`${API}/guardian/sites/${siteId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_email: emailDraft[siteId] }),
+      });
+      await load();
+      setEditingEmail(null);
+    } finally { setSavingEmail(null); }
   };
 
   const handleAction = async (reqId: string, action: string) => {
@@ -217,6 +233,38 @@ export default function GuardianPage() {
                       </span>
                     )}
                   </div>
+
+                  {/* Email client + édition */}
+                  {editingEmail === site.id ? (
+                    <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
+                      <input
+                        autoFocus
+                        type="email"
+                        value={emailDraft[site.id] ?? site.client_email}
+                        onChange={e => setEmailDraft(p => ({ ...p, [site.id]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === "Enter") saveEmail(site.id); if (e.key === "Escape") setEditingEmail(null); }}
+                        style={{ flex: 1, padding: "5px 9px", borderRadius: 6, border: "1px solid #6366f1", background: "var(--surface2)", color: "var(--text)", fontSize: 12, outline: "none" }}
+                      />
+                      <button onClick={() => saveEmail(site.id)} disabled={savingEmail === site.id}
+                        style={{ padding: "5px 9px", borderRadius: 6, border: "1px solid rgba(16,185,129,0.3)", background: "rgba(16,185,129,0.1)", color: "#10B981", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                        <Save size={11} />
+                      </button>
+                      <button onClick={() => setEditingEmail(null)}
+                        style={{ padding: "5px 9px", borderRadius: 6, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                        <X size={11} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setEditingEmail(site.id); setEmailDraft(p => ({ ...p, [site.id]: site.client_email })); }}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 5, padding: "5px 9px", marginBottom: 8, borderRadius: 6, border: "1px solid var(--bd)", background: "transparent", color: "var(--muted)", fontSize: 11, cursor: "pointer", textAlign: "left" }}
+                    >
+                      <Pencil size={10} />
+                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {site.client_email || "Ajouter un email client…"}
+                      </span>
+                    </button>
+                  )}
 
                   <button onClick={() => runCheck(site.id)} disabled={checking === site.id}
                     style={{ width: "100%", padding: "7px", borderRadius: 7, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--text2)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, opacity: checking === site.id ? 0.6 : 1 }}>
