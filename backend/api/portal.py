@@ -63,6 +63,18 @@ async def get_portal_order(token: str):
             data["project_progress"] = project["progress"]
             data["deploy_url"] = project.get("deploy_url", "")
 
+            # Dériver le statut portal depuis le statut projet (source de vérité)
+            ps = project["status"]
+            if ps == "done":
+                data["status"] = "completed"
+            elif ps in ("running", "paused"):
+                data["status"] = "in_progress"
+            elif ps == "error":
+                data["status"] = "in_progress"
+            else:
+                # idle → paiement reçu, en attente de démarrage
+                data["status"] = "pending"
+
     return data
 
 

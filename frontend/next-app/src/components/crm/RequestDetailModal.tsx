@@ -12,11 +12,15 @@ const STATUS_TIMELINE: { status: RequestStatus; label: string }[] = [
 ];
 const STATUS_ORDER: RequestStatus[] = ['pending', 'validated', 'in_progress', 'completed'];
 
+// Statuts qui comptent comme "validé" dans la timeline
+const STATUS_AS_VALIDATED = new Set(['payment_link_sent']);
+
 const SITE_TYPE_LABEL: Record<string, string> = {
-  standard:      'Site Vitrine',
-  ecommerce:     'E-commerce',
-  '3d':          'Expérience 3D',
-  scrollytelling:'Scrollytelling',
+  standard:        'Site Vitrine',
+  vitrine_complet: 'Site Vitrine',
+  ecommerce:       'E-commerce',
+  '3d':            'Expérience 3D',
+  scrollytelling:  'Scrollytelling',
 };
 
 interface Props {
@@ -26,7 +30,8 @@ interface Props {
 
 export default function RequestDetailModal({ request, onClose }: Props) {
   if (!request) return null;
-  const currentStep = STATUS_ORDER.indexOf(request.status);
+  const effectiveStatus = STATUS_AS_VALIDATED.has(request.status) ? 'validated' : request.status;
+  const currentStep = STATUS_ORDER.indexOf(effectiveStatus as RequestStatus);
   const price = request.suggestedPrice || (request.budget ? parseFloat(request.budget) : null);
 
   return (
