@@ -140,7 +140,8 @@ async def init_db():
                 site_url TEXT DEFAULT '',
                 plan TEXT DEFAULT 'essential',
                 active INTEGER DEFAULT 1,
-                created_at TEXT
+                created_at TEXT,
+                updated_at TEXT
             );
 
             CREATE TABLE IF NOT EXISTS guardian_requests (
@@ -180,6 +181,7 @@ async def init_db():
             "ALTER TABLE projects ADD COLUMN form_status TEXT DEFAULT ''",
             "ALTER TABLE projects ADD COLUMN client_phone TEXT DEFAULT ''",
             "ALTER TABLE projects ADD COLUMN stripe_session_id TEXT DEFAULT ''",
+            "ALTER TABLE guardian_sites ADD COLUMN updated_at TEXT",
         ]:
             try:
                 await db.execute(migration)
