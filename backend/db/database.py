@@ -162,6 +162,13 @@ async def init_db():
                 details TEXT,
                 checked_at TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS portal_tokens (
+                token TEXT PRIMARY KEY,
+                email TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
         """)
         await db.commit()
 
@@ -188,6 +195,42 @@ async def init_db():
                 await db.commit()
             except Exception:
                 pass  # colonne déjà présente
+    finally:
+        await db.close()
+
+
+# ─── Tokens portail client ───
+
+async def generate_portal_token(email: str) -> str:
+    """Génère un token d'accès au portail client valable 90 jours."""
+    import secrets
+    from datetime import timedelta
+    token = secrets.token_urlsafe(32)
+    now = datetime.now()
+    expires_at = (now + timedelta(days=90)).isoformat()
+    db = await get_db()
+    try:
+        await db.execute(
+            "INSERT OR REPLACE INTO portal_tokens (token, email, expires_at, created_at) VALUES (?, ?, ?, ?)",
+            (token, email.lower(), expires_at, now.isoformat())
+        )
+        await db.commit()
+    finally:
+        await db.close()
+    return token
+
+
+async def verify_portal_token(token: str) -> Optional[str]:
+    """Vérifie un token et retourne l'email associé, ou None si invalide/expiré."""
+    now = datetime.now().isoformat()
+    db = await get_db()
+    try:
+        cursor = await db.execute(
+            "SELECT email FROM portal_tokens WHERE token = ? AND expires_at > ?",
+            (token, now)
+        )
+        row = await cursor.fetchone()
+        return row["email"] if row else None
     finally:
         await db.close()
 

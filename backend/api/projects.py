@@ -534,18 +534,22 @@ async def send_payment_link(project_id: int, request: Request):
             finally:
                 await db.close()
 
-            # Envoyer l'email au client avec le lien de paiement
+            # Envoyer l'email au client avec le lien de paiement + accès portail
             client_email = project.get("client_email", "")
             client_name = project.get("client_name") or project.get("name", "")
             if client_email:
                 try:
                     from backend.site_guardian.notifier import send_email
-                    html = _payment_link_html(client_name, project["name"], payment_url, price_to_charge)
+                    from backend.db.database import generate_portal_token
+                    portal_token = await generate_portal_token(client_email)
+                    portal_url = f"https://builderz.shop/mon-espace?token={portal_token}"
+                    html = _payment_link_html(client_name, project["name"], payment_url, price_to_charge, portal_url)
                     text = (
                         f"Bonjour {client_name},\n\n"
                         f"Votre devis pour « {project['name']} » a été validé.\n\n"
                         f"Montant : {price_to_charge:.0f}€\n"
                         f"Lien de paiement : {payment_url}\n\n"
+                        f"Accéder à votre espace client : {portal_url}\n\n"
                         f"— L'équipe builderz"
                     )
                     await send_email(
@@ -580,7 +584,16 @@ async def send_payment_link(project_id: int, request: Request):
     }
 
 
-def _payment_link_html(client_name: str, project_name: str, payment_url: str, amount: float) -> str:
+def _payment_link_html(client_name: str, project_name: str, payment_url: str, amount: float, portal_url: str = "") -> str:
+    portal_section = ""
+    if portal_url:
+        portal_section = f"""
+          <div style="border-top:1px solid #1e1e2e;margin-top:24px;padding-top:24px;text-align:center;">
+            <p style="color:#94a3b8;font-size:13px;margin:0 0 14px;">Consultez dès maintenant l'avancement de votre projet :</p>
+            <a href="{portal_url}" style="display:inline-block;background:#0f0f1a;border:1px solid #6366f144;color:#818cf8;font-size:13px;font-weight:600;text-decoration:none;padding:11px 28px;border-radius:8px;">
+              Mon espace builderz →
+            </a>
+          </div>"""
     return f"""<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -626,6 +639,7 @@ def _payment_link_html(client_name: str, project_name: str, payment_url: str, am
             Ce lien est sécurisé et traité par <strong>Stripe</strong>.<br>
             Une fois le paiement confirmé, vous recevrez un email avec le suivi de votre projet.
           </p>
+          {portal_section}
         </td></tr>
 
         <!-- Footer -->

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
@@ -34,20 +34,52 @@ const STATUS_LABEL: Record<string, { label: string; color: string; dot: string }
 export default function MonEspacePage() {
   const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
-  const [projects, setProjects]   = useState<ClientProject[]>([]);
-  const [fetching, setFetching]   = useState(true);
-  const [error, setError]         = useState('');
-  const [message, setMessage]     = useState('');
-  const [sending, setSending]     = useState(false);
-  const [sent, setSent]           = useState(false);
+  const searchParams = useSearchParams();
+
+  const [clientEmail, setClientEmail]   = useState('');
+  const [tokenChecked, setTokenChecked] = useState(false);
+  const [projects, setProjects]         = useState<ClientProject[]>([]);
+  const [fetching, setFetching]         = useState(true);
+  const [error, setError]               = useState('');
+  const [message, setMessage]           = useState('');
+  const [sending, setSending]           = useState(false);
+  const [sent, setSent]                 = useState(false);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
 
+  // Step 1: resolve identity — token param or Firebase user
   useEffect(() => {
     if (loading) return;
+
+    const token = searchParams.get('token');
+
+    if (token) {
+      fetch(`${API}/client/auth?token=${encodeURIComponent(token)}`)
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => {
+          setClientEmail(data.email);
+          // Clean token from URL without page reload
+          window.history.replaceState({}, '', '/mon-espace');
+        })
+        .catch(() => {
+          setError('Lien expiré ou invalide. Demandez un nouveau lien à builderz.');
+          setFetching(false);
+        })
+        .finally(() => setTokenChecked(true));
+      return;
+    }
+
+    // No token — fall back to Firebase auth
     if (!user) { router.replace('/login'); return; }
     if (isAdmin) { router.replace('/app'); return; }
+    setClientEmail(user.email || '');
+    setTokenChecked(true);
+  }, [loading, user, isAdmin, router, searchParams]);
 
-    fetch(`${API}/client/me?email=${encodeURIComponent(user.email || '')}`)
+  // Step 2: fetch projects once email is resolved
+  useEffect(() => {
+    if (!tokenChecked || !clientEmail) return;
+
+    fetch(`${API}/client/me?email=${encodeURIComponent(clientEmail)}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(data => {
         setProjects(data.projects || []);
@@ -58,16 +90,16 @@ export default function MonEspacePage() {
         else setError('Erreur lors du chargement de vos projets.');
       })
       .finally(() => setFetching(false));
-  }, [user, loading, isAdmin, router]);
+  }, [tokenChecked, clientEmail]);
 
   const handleSend = async () => {
-    if (!message.trim() || !selectedProject || !user?.email) return;
+    if (!message.trim() || !selectedProject || !clientEmail) return;
     setSending(true);
     try {
       const res = await fetch(`${API}/client/modification-request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project_id: selectedProject, client_email: user.email, message }),
+        body: JSON.stringify({ project_id: selectedProject, client_email: clientEmail, message }),
       });
       if (!res.ok) throw new Error();
       setSent(true);
@@ -77,6 +109,14 @@ export default function MonEspacePage() {
       setError('Erreur lors de l\'envoi, réessayez.');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    if (user) {
+      signOut(auth).then(() => router.replace('/login'));
+    } else {
+      router.replace('/login');
     }
   };
 
@@ -108,9 +148,9 @@ export default function MonEspacePage() {
           <span style={{ fontSize: 12, color: '#475569', marginLeft: 4 }}>· Mon espace</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 12, color: '#64748b' }}>{user?.email}</span>
+          <span style={{ fontSize: 12, color: '#64748b' }}>{clientEmail}</span>
           <button
-            onClick={() => signOut(auth).then(() => router.replace('/login'))}
+            onClick={handleSignOut}
             style={{ fontSize: 12, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
           >
             Déconnexion
@@ -124,7 +164,7 @@ export default function MonEspacePage() {
           <div style={{ background: '#1a0f0f', border: '1px solid #ef444440', borderRadius: 12, padding: '20px 24px', color: '#ef4444', fontSize: 14, textAlign: 'center' }}>
             {error}
             <p style={{ color: '#64748b', fontSize: 12, marginTop: 8, marginBottom: 0 }}>
-              Vérifiez que vous êtes connecté avec l'adresse email utilisée lors de votre commande.
+              Vérifiez que vous utilisez le lien reçu dans votre email ou contactez-nous.
             </p>
           </div>
         )}
@@ -212,7 +252,7 @@ export default function MonEspacePage() {
                   ✓ Demande envoyée, nous vous répondrons rapidement.
                 </div>
               )}
-              {error && sent === false && (
+              {error && !sent && (
                 <div style={{ fontSize: 13, color: '#ef4444', margin: '10px 0 0' }}>{error}</div>
               )}
               <button

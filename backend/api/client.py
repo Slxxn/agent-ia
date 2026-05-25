@@ -2,11 +2,20 @@
 API Routes — Espace client (accès par email Google / magic link).
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from backend.db.database import get_db
+from backend.db.database import get_db, verify_portal_token
 
 router = APIRouter(prefix="/client", tags=["client"])
+
+
+@router.get("/auth")
+async def verify_client_token(token: str = Query(...)):
+    """Vérifie un token de portail et retourne l'email associé."""
+    email = await verify_portal_token(token)
+    if not email:
+        raise HTTPException(401, "Token invalide ou expiré")
+    return {"email": email}
 
 
 @router.get("/me")
