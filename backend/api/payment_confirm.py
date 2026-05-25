@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from backend.db.database import get_db, get_setting
+from backend.db.database import get_db, get_setting, generate_portal_token
 from backend.site_guardian.notifier import send_email
 
 GUARDIAN_PLAN = "standard"
@@ -371,13 +371,19 @@ async def confirm_payment(data: ConfirmPayload):
 
     portal_link = f"https://builderz.shop/p/{portal_token}" if portal_token else "https://builderz.shop"
 
+    # Générer un token d'accès direct au portail client
+    access_token = ""
+    if client_email:
+        access_token = await generate_portal_token(client_email)
+        portal_link = f"https://builderz.shop/mon-espace?token={access_token}"
+
     # ── Email client HTML ─────────────────────────────────────────────────
     if client_email:
         client_text = (
             f"Bonjour {business_name},\n\n"
             f"Votre paiement de {int(final_price)}€ a bien été reçu. "
             "Notre équipe commence à travailler sur votre site sous 24–48h.\n\n"
-            f"Suivez l'avancement ici : {portal_link}\n\n"
+            f"Accédez à votre espace client : {portal_link}\n\n"
             "L'équipe builderz"
         )
         sent = await send_email(
@@ -406,4 +412,4 @@ async def confirm_payment(data: ConfirmPayload):
         ),
     )
 
-    return {"success": True, "project_id": data.project_id, "client_email": client_email}
+    return {"success": True, "project_id": data.project_id, "client_email": client_email, "portal_token": access_token}

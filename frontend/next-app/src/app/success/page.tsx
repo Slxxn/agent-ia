@@ -12,6 +12,8 @@ function SuccessContent() {
   const params = useSearchParams();
   const projectId = params.get('project');
   const [dots, setDots] = useState('');
+  const [portalToken, setPortalToken] = useState('');
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 600);
@@ -24,7 +26,19 @@ function SuccessContent() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ project_id: parseInt(projectId, 10) }),
-    }).catch(() => {});
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.portal_token) {
+          setPortalToken(data.portal_token);
+          // Redirect to portal after 3s
+          setTimeout(() => {
+            setRedirecting(true);
+            window.location.href = `/mon-espace?token=${data.portal_token}`;
+          }, 3000);
+        }
+      })
+      .catch(() => {});
   }, [projectId]);
 
   return (
@@ -122,9 +136,9 @@ function SuccessContent() {
           }}
         >
           {[
-            { icon: '📧', text: 'Un email de confirmation vous a été envoyé.' },
-            { icon: '🎨', text: 'Nous créons votre site selon votre brief.' },
-            { icon: '🔗', text: 'Vous recevrez un lien de suivi en temps réel.' },
+            { icon: '📧', text: 'Un email de confirmation vous a été envoyé avec le lien d\'accès à votre espace.' },
+            { icon: '🎨', text: 'Nous créons votre site selon votre brief sous 24–48h.' },
+            { icon: '🔗', text: 'Suivez l\'avancement en temps réel depuis votre espace client.' },
           ].map(({ icon, text }, i) => (
             <motion.div
               key={i}
@@ -143,24 +157,50 @@ function SuccessContent() {
           ))}
         </motion.div>
 
-        {/* Status */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.85 }}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '8px 16px', borderRadius: 99,
-            background: 'rgba(16,185,129,0.08)',
-            border: '1px solid rgba(16,185,129,0.2)',
-            marginBottom: 32,
-          }}
-        >
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 8px #10B981' }} />
-          <span style={{ fontSize: 13, color: '#10B981', fontWeight: 600 }}>
-            Votre projet est en file d'attente{dots}
-          </span>
-        </motion.div>
+        {/* CTA or status */}
+        {portalToken ? (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.85 }}
+            style={{ marginBottom: 32 }}
+          >
+            <a
+              href={`/mon-espace?token=${portalToken}`}
+              style={{
+                display: 'inline-block', padding: '13px 32px',
+                background: 'linear-gradient(135deg, #6366f1, #818cf8)',
+                color: '#fff', textDecoration: 'none', borderRadius: 10,
+                fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em',
+              }}
+            >
+              {redirecting ? 'Redirection…' : 'Accéder à mon espace →'}
+            </a>
+            {!redirecting && (
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', marginTop: 10 }}>
+                Redirection automatique dans quelques secondes…
+              </p>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.85 }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '8px 16px', borderRadius: 99,
+              background: 'rgba(16,185,129,0.08)',
+              border: '1px solid rgba(16,185,129,0.2)',
+              marginBottom: 32,
+            }}
+          >
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 8px #10B981' }} />
+            <span style={{ fontSize: 13, color: '#10B981', fontWeight: 600 }}>
+              Votre projet est en file d'attente{dots}
+            </span>
+          </motion.div>
+        )}
 
         {/* Back link */}
         <motion.div
