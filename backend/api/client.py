@@ -1,5 +1,5 @@
 """
-API Routes — Espace client (accès par email Google).
+API Routes — Espace client (accès par email Google / magic link).
 """
 
 from fastapi import APIRouter, HTTPException
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/client", tags=["client"])
 
 @router.get("/me")
 async def get_client_project(email: str):
-    """Retourne le(s) projet(s) du client identifié par son email Google."""
+    """Retourne le(s) projet(s) du client identifié par son email."""
     if not email:
         raise HTTPException(400, "Email requis")
 
@@ -34,7 +34,6 @@ async def get_client_project(email: str):
         raise HTTPException(404, "Aucun projet trouvé pour cet email")
 
     projects = [dict(r) for r in rows]
-    # Filtrer les projets pas encore payés (crm_pending = pas visible côté client)
     visible = [p for p in projects if p.get("form_status") != "crm_pending"]
     if not visible:
         raise HTTPException(404, "Aucun projet trouvé pour cet email")
@@ -73,40 +72,7 @@ async def send_modification_request(body: ModificationRequest):
     client_name = project.get("client_name") or body.client_email
     project_name = project.get("name", f"Projet #{body.project_id}")
 
-    html = f"""<!DOCTYPE html>
-<html lang="fr">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#0a0a0f;font-family:-apple-system,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
-    <tr><td align="center">
-      <table width="520" cellpadding="0" cellspacing="0" style="background:#111118;border:1px solid #1e1e2e;border-radius:16px;overflow:hidden;max-width:520px;width:100%;">
-        <tr><td style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:28px 36px;">
-          <div style="font-size:18px;font-weight:700;color:#fff;">📨 Nouvelle demande de modification</div>
-        </td></tr>
-        <tr><td style="padding:28px 36px;">
-          <table cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #1e1e2e;border-radius:10px;overflow:hidden;margin-bottom:20px;">
-            <tr style="background:#0f0f1a;">
-              <td style="padding:10px 14px;font-size:12px;color:#94a3b8;width:40%;">Projet</td>
-              <td style="padding:10px 14px;font-size:13px;color:#e2e8f0;font-weight:600;">{project_name}</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 14px;font-size:12px;color:#94a3b8;border-top:1px solid #1e1e2e;">Client</td>
-              <td style="padding:10px 14px;font-size:13px;color:#e2e8f0;border-top:1px solid #1e1e2e;">{client_name} &lt;{body.client_email}&gt;</td>
-            </tr>
-          </table>
-          <div style="background:#0f0f1a;border:1px solid #1e1e2e;border-radius:10px;padding:16px 18px;">
-            <div style="font-size:11px;color:#6366f1;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Message</div>
-            <p style="color:#e2e8f0;font-size:14px;line-height:1.7;margin:0;">{body.message}</p>
-          </div>
-        </td></tr>
-        <tr><td style="border-top:1px solid #1e1e2e;padding:16px 36px;text-align:center;">
-          <p style="color:#475569;font-size:11px;margin:0;">builderz.shop · Espace client</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>"""
+    html = _modification_request_html(client_name, project_name, body.client_email, body.message)
 
     await send_email(
         to=admin_email,
@@ -116,3 +82,105 @@ async def send_modification_request(body: ModificationRequest):
     )
 
     return {"success": True, "message": "Votre demande a été envoyée."}
+
+
+def _modification_request_html(client_name: str, project_name: str, client_email: str, message: str) -> str:
+    pixel_logo = """
+      <table cellpadding="0" cellspacing="0" style="margin:0 auto 10px;">
+        <tr>
+          <td style="padding:2px;"><div style="width:10px;height:10px;border-radius:3px;background:#6366f1;"></div></td>
+          <td style="padding:2px;"><div style="width:10px;height:10px;border-radius:3px;background:#818cf8;"></div></td>
+          <td style="padding:2px;"><div style="width:10px;height:10px;border-radius:3px;background:#6366f1;"></div></td>
+        </tr>
+        <tr>
+          <td style="padding:2px;"><div style="width:10px;height:10px;border-radius:3px;background:#818cf8;"></div></td>
+          <td style="padding:2px;"><div style="width:10px;height:10px;border-radius:3px;background:#6366f1;"></div></td>
+          <td style="padding:2px;"><div style="width:10px;height:10px;border-radius:3px;background:#818cf8;"></div></td>
+        </tr>
+        <tr>
+          <td style="padding:2px;"><div style="width:10px;height:10px;border-radius:3px;background:#6366f1;"></div></td>
+          <td style="padding:2px;"><div style="width:10px;height:10px;border-radius:3px;background:#818cf8;"></div></td>
+          <td style="padding:2px;"><div style="width:10px;height:10px;border-radius:3px;background:#6366f1;"></div></td>
+        </tr>
+      </table>"""
+
+    return f"""<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    @media (prefers-color-scheme: light) {{
+      .email-body   {{ background:#f0f2f5 !important; }}
+      .email-card   {{ background:#ffffff !important; border-color:#e2e8f0 !important; }}
+      .email-header {{ background:linear-gradient(135deg,#6366f1,#818cf8) !important; }}
+      .label-cell   {{ background:#f8fafc !important; color:#64748b !important; border-color:#e2e8f0 !important; }}
+      .value-cell   {{ color:#1e293b !important; background:#ffffff !important; }}
+      .table-wrap   {{ border-color:#e2e8f0 !important; }}
+      .msg-box      {{ background:#f8fafc !important; border-color:#e2e8f0 !important; }}
+      .msg-text     {{ color:#1e293b !important; }}
+      .footer-text  {{ color:#94a3b8 !important; }}
+      .row-border   {{ border-color:#e2e8f0 !important; }}
+    }}
+  </style>
+</head>
+<body class="email-body" style="margin:0;padding:0;background:#0a0a0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
+    <tr><td align="center">
+      <table class="email-card" width="520" cellpadding="0" cellspacing="0" style="background:#111118;border:1px solid #1e1e2e;border-radius:16px;overflow:hidden;max-width:520px;width:100%;">
+
+        <!-- Header -->
+        <tr><td class="email-header" style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:32px 36px;text-align:center;">
+          {pixel_logo}
+          <div style="font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.025em;">builderz</div>
+          <div style="font-size:11px;color:#a5b4fc;margin-top:5px;letter-spacing:0.08em;text-transform:uppercase;">Nouvelle demande de modification</div>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:28px 32px;">
+
+          <!-- Info table -->
+          <table class="table-wrap" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #1e1e2e;border-radius:12px;overflow:hidden;margin-bottom:20px;">
+            <tr>
+              <td class="label-cell" style="background:#0d0d18;padding:12px 16px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;width:32%;border-right:1px solid #1e1e2e;">Projet</td>
+              <td class="value-cell" style="padding:12px 16px;font-size:13px;color:#e2e8f0;font-weight:600;">{project_name}</td>
+            </tr>
+            <tr class="row-border" style="border-top:1px solid #1e1e2e;">
+              <td class="label-cell" style="background:#0d0d18;padding:12px 16px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;border-right:1px solid #1e1e2e;border-top:1px solid #1e1e2e;">Client</td>
+              <td class="value-cell" style="padding:12px 16px;font-size:13px;color:#e2e8f0;border-top:1px solid #1e1e2e;">{client_name}</td>
+            </tr>
+            <tr class="row-border" style="border-top:1px solid #1e1e2e;">
+              <td class="label-cell" style="background:#0d0d18;padding:12px 16px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;border-right:1px solid #1e1e2e;border-top:1px solid #1e1e2e;">Email</td>
+              <td style="padding:12px 16px;font-size:13px;border-top:1px solid #1e1e2e;">
+                <a href="mailto:{client_email}" style="color:#6366f1;text-decoration:none;font-weight:500;">{client_email}</a>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Message -->
+          <div class="msg-box" style="background:#0d0d18;border:1px solid #1e1e2e;border-radius:12px;padding:20px 22px;">
+            <div style="font-size:10px;color:#6366f1;text-transform:uppercase;letter-spacing:0.09em;font-weight:700;margin-bottom:12px;">💬 Message</div>
+            <p class="msg-text" style="color:#e2e8f0;font-size:14px;line-height:1.75;margin:0;white-space:pre-wrap;">{message}</p>
+          </div>
+
+          <!-- Reply CTA -->
+          <div style="text-align:center;margin-top:24px;">
+            <a href="mailto:{client_email}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:13px;font-weight:600;text-decoration:none;padding:11px 28px;border-radius:8px;">
+              Répondre au client →
+            </a>
+          </div>
+
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="border-top:1px solid #1e1e2e;padding:18px 32px;text-align:center;">
+          <p class="footer-text" style="color:#475569;font-size:11px;margin:0;line-height:1.7;">
+            builderz.shop · Reçu via l'espace client
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
