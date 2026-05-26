@@ -83,15 +83,27 @@ async def submit_form(request: Request):
     try:
         from backend.db.database import get_setting
         from backend.site_guardian.notifier import send_email
+        from backend.utils.email_templates import admin_notification_html
         admin_email = await get_setting("ADMIN_EMAIL") or "sloan.dlrz@gmail.com"
-        business_name_display = answers.get("business_name", "Nouveau projet")
-        sector = answers.get("sector", "—")
         suggested = pricing.get("suggested", 0)
-        html = _admin_notification_html(business_name_display, client_email, client_phone, sector, site_type, suggested, db_id)
+        sector = answers.get("sector", answers.get("secteur", "—"))
+        objectif = answers.get("goal", "—")
+        description = answers.get("description", "")
+        html = admin_notification_html(
+            nom=business_name,
+            email=client_email,
+            telephone=client_phone,
+            secteur=sector,
+            type_site=site_type,
+            objectif=objectif,
+            description=description,
+            prix_suggere=suggested,
+            crm_url="https://builderz.shop/app/crm",
+        )
         await send_email(
             to=admin_email,
-            subject=f"[builderz] Nouvelle demande — {business_name_display}",
-            body=f"Nouvelle demande de {business_name_display} ({client_email})\nSecteur: {sector} | Prix suggéré: {suggested}€\nVoir le CRM: https://builderz.shop/app/crm",
+            subject=f"Nouvelle demande — {business_name}",
+            body=f"Nouvelle demande de {business_name} ({client_email})\nSecteur: {sector} | Prix suggéré: {suggested}€\nVoir le CRM: https://builderz.shop/app/crm",
             html=html,
         )
     except Exception:
@@ -105,56 +117,6 @@ async def submit_form(request: Request):
         "message": "Votre demande a été reçue. Nous vous contacterons sous 24h.",
     }
 
-
-def _admin_notification_html(business_name: str, client_email: str, client_phone: str,
-                              sector: str, site_type: str, suggested: float, project_id: int) -> str:
-    def row(label: str, value: str) -> str:
-        if not value or value == "—":
-            return ""
-        return f"""<tr>
-          <td style="padding:8px 16px;font-size:12px;color:#94a3b8;width:130px;background:#0d0d18;border-right:1px solid #1e1e2e;border-bottom:1px solid #1e1e2e;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">{label}</td>
-          <td style="padding:8px 16px;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e1e2e;">{value}</td>
-        </tr>"""
-
-    crm_url = "https://builderz.shop/app/crm"
-    return f"""<!DOCTYPE html>
-<html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0a0a0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
-    <tr><td align="center">
-      <table width="520" cellpadding="0" cellspacing="0" style="background:#111118;border:1px solid #1e1e2e;border-radius:16px;overflow:hidden;max-width:520px;width:100%;">
-
-        <tr><td style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:24px 32px;">
-          <div style="font-size:11px;color:#a5b4fc;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:6px;">Nouvelle demande</div>
-          <div style="font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.025em;">{business_name}</div>
-        </td></tr>
-
-        <tr><td style="padding:24px 32px;">
-          <table cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #1e1e2e;border-radius:10px;overflow:hidden;margin-bottom:20px;">
-            {row("Email", f'<a href="mailto:{client_email}" style="color:#6366f1;text-decoration:none;">{client_email}</a>' if client_email else "—")}
-            {row("Téléphone", client_phone or "—")}
-            {row("Secteur", sector)}
-            {row("Type de site", site_type)}
-            {row("Prix suggéré", f'<strong style="color:#22c55e;">{int(suggested)}€</strong>')}
-          </table>
-
-          <div style="text-align:center;">
-            <a href="{crm_url}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:13px;font-weight:600;text-decoration:none;padding:11px 28px;border-radius:8px;">
-              Voir dans le CRM →
-            </a>
-          </div>
-        </td></tr>
-
-        <tr><td style="border-top:1px solid #1e1e2e;padding:16px 32px;text-align:center;">
-          <p style="color:#475569;font-size:11px;margin:0;">builderz.shop · Projet #{project_id}</p>
-        </td></tr>
-
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>"""
 
 
 @router.get("/goal-choices/{sector}")
