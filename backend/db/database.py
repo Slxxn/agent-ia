@@ -189,6 +189,25 @@ async def init_db():
             "ALTER TABLE projects ADD COLUMN client_phone TEXT DEFAULT ''",
             "ALTER TABLE projects ADD COLUMN stripe_session_id TEXT DEFAULT ''",
             "ALTER TABLE guardian_sites ADD COLUMN updated_at TEXT",
+            """CREATE TABLE IF NOT EXISTS site_reservations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site_id TEXT NOT NULL,
+                nom TEXT NOT NULL,
+                email TEXT NOT NULL,
+                tel TEXT DEFAULT '',
+                poste TEXT DEFAULT '',
+                type_resa TEXT DEFAULT '',
+                date_resa TEXT DEFAULT '',
+                heure_debut TEXT DEFAULT '',
+                heure_fin TEXT DEFAULT '',
+                options TEXT DEFAULT '[]',
+                total REAL DEFAULT 0,
+                activite TEXT DEFAULT '',
+                notes TEXT DEFAULT '',
+                status TEXT DEFAULT 'pending',
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            )""",
         ]:
             try:
                 await db.execute(migration)
