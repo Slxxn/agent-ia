@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -45,6 +45,7 @@ function MonEspaceInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const tokenAuthed = useRef(false);
   const [clientEmail, setClientEmail]   = useState('');
   const [tokenChecked, setTokenChecked] = useState(false);
   const [projects, setProjects]         = useState<ClientProject[]>([]);
@@ -62,6 +63,8 @@ function MonEspaceInner() {
     const token = searchParams.get('token');
 
     if (token) {
+      if (tokenAuthed.current) return;
+      tokenAuthed.current = true;
       fetch(`${API}/client/auth?token=${encodeURIComponent(token)}`)
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(data => {
@@ -69,6 +72,7 @@ function MonEspaceInner() {
           window.history.replaceState({}, '', '/mon-espace');
         })
         .catch(() => {
+          tokenAuthed.current = false;
           setError('Lien expiré ou invalide. Demandez un nouveau lien à builderz.');
           setFetching(false);
         })
@@ -77,6 +81,7 @@ function MonEspaceInner() {
     }
 
     // No token — fall back to Firebase auth
+    if (tokenAuthed.current) return; // token auth already handled
     if (!user) { router.replace('/login'); return; }
     if (isAdmin) { router.replace('/app'); return; }
     setClientEmail(user.email || '');
