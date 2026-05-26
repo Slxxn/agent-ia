@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -23,15 +23,24 @@ interface ClientProject {
 }
 
 const STATUS_LABEL: Record<string, { label: string; color: string; dot: string }> = {
-  idle:     { label: 'En attente',     color: '#94a3b8', dot: '#94a3b8' },
-  running:  { label: 'En cours',       color: '#6366f1', dot: '#6366f1' },
-  paused:   { label: 'En pause',       color: '#f59e0b', dot: '#f59e0b' },
-  error:    { label: 'Erreur',         color: '#ef4444', dot: '#ef4444' },
-  done:     { label: 'En ligne ✓',     color: '#22c55e', dot: '#22c55e' },
-  payment_sent: { label: 'Paiement reçu', color: '#a78bfa', dot: '#a78bfa' },
+  idle:         { label: 'En attente',     color: '#94a3b8', dot: '#94a3b8' },
+  running:      { label: 'En cours',       color: '#6366f1', dot: '#6366f1' },
+  paused:       { label: 'En pause',       color: '#f59e0b', dot: '#f59e0b' },
+  error:        { label: 'Erreur',         color: '#ef4444', dot: '#ef4444' },
+  done:         { label: 'En ligne ✓',     color: '#22c55e', dot: '#22c55e' },
+  payment_sent: { label: 'Paiement reçu',  color: '#a78bfa', dot: '#a78bfa' },
 };
 
-export default function MonEspacePage() {
+function Spinner() {
+  return (
+    <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 28, height: 28, border: '2px solid #6366f1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+function MonEspaceInner() {
   const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -57,7 +66,6 @@ export default function MonEspacePage() {
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(data => {
           setClientEmail(data.email);
-          // Clean token from URL without page reload
           window.history.replaceState({}, '', '/mon-espace');
         })
         .catch(() => {
@@ -120,14 +128,7 @@ export default function MonEspacePage() {
     }
   };
 
-  if (loading || fetching) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 28, height: 28, border: '2px solid #6366f1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
+  if (loading || fetching) return <Spinner />;
 
   const project = projects.find(p => p.id === selectedProject) || projects[0];
   const statusInfo = project ? (STATUS_LABEL[project.status] || STATUS_LABEL.idle) : null;
@@ -259,7 +260,8 @@ export default function MonEspacePage() {
                 onClick={handleSend}
                 disabled={!message.trim() || sending}
                 style={{
-                  marginTop: 12, padding: '10px 20px', borderRadius: 8, border: 'none', cursor: message.trim() && !sending ? 'pointer' : 'not-allowed',
+                  marginTop: 12, padding: '10px 20px', borderRadius: 8, border: 'none',
+                  cursor: message.trim() && !sending ? 'pointer' : 'not-allowed',
                   background: message.trim() && !sending ? 'linear-gradient(135deg, #6366f1, #818cf8)' : '#1e1e2e',
                   color: message.trim() && !sending ? '#fff' : '#475569',
                   fontSize: 13, fontWeight: 600, transition: 'all 0.15s',
@@ -272,5 +274,13 @@ export default function MonEspacePage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function MonEspacePage() {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <MonEspaceInner />
+    </Suspense>
   );
 }
