@@ -4,6 +4,6 @@ import { useRouter } from 'next/navigation'
 
 export default function AppPage() {
   const router = useRouter()
-  useEffect(() => { router.replace('/app/platform') }, [router])
+  useEffect(() => { router.replace('/app/prospects') }, [router])
   return null
 }

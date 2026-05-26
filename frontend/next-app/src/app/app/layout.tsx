@@ -5,10 +5,10 @@ import { Zap, Target, Shield, Settings, LogOut, ChevronLeft, ChevronRight, Users
 import { useState } from 'react'
 
 const NAV_ITEMS = [
-  { href: '/app/platform',  label: 'Web Platform',     description: 'Génération de sites',  icon: Zap,    color: '#6366F1' },
   { href: '/app/prospects', label: 'Prospect Hunter',  description: 'Recherche de clients', icon: Target, color: '#F59E0B' },
+  { href: '/app/crm',       label: 'CRM',              description: 'Demandes clients',     icon: Users,  color: '#EC4899' },
+  { href: '/app/platform',  label: 'Web Platform',     description: 'Génération de sites',  icon: Zap,    color: '#6366F1' },
   { href: '/app/guardian',  label: 'Site Guardian',    description: 'Maintenance des sites', icon: Shield, color: '#10B981' },
-  { href: '/app/crm',        label: 'CRM',              description: 'Demandes clients',      icon: Users,  color: '#EC4899' },
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
