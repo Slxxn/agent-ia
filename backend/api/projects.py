@@ -554,7 +554,7 @@ async def send_payment_link(project_id: int, request: Request):
                     )
                     await send_email(
                         to=client_email,
-                        subject=f"Votre lien de paiement — {project['name']}",
+                        subject=f"Votre devis builderz — {project['name']}",
                         body=text,
                         html=html,
                     )
@@ -631,12 +631,12 @@ def _payment_link_html(client_name: str, project_name: str, payment_url: str, am
           <!-- CTA -->
           <div style="text-align:center;margin-bottom:28px;">
             <a href="{payment_url}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:10px;letter-spacing:-0.01em;">
-              💳 Payer maintenant →
+              Finaliser ma commande →
             </a>
           </div>
 
           <p style="color:#64748b;font-size:12px;line-height:1.6;text-align:center;margin:0;">
-            Ce lien est sécurisé et traité par <strong>Stripe</strong>.<br>
+            Règlement sécurisé par Stripe.<br>
             Une fois le paiement confirmé, vous recevrez un email avec le suivi de votre projet.
           </p>
           {portal_section}
