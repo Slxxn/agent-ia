@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { signInWithPopup, GoogleAuthProvider, OAuthProvider, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
+import { signInWithPopup, GoogleAuthProvider, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
 
 const provider = new GoogleAuthProvider();
-const appleProvider = new OAuthProvider('apple.com');
 const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "sloan.dlrz@gmail.com").toLowerCase();
 
 function PixelLogo() {
@@ -67,18 +66,7 @@ export default function LoginPage() {
     } finally { setSubmitting(false); }
   }
 
-  async function handleApple() {
-    setError(""); setSubmitting(true);
-    try {
-      const result = await signInWithPopup(auth, appleProvider);
-      const e = result.user.email?.toLowerCase() || "";
-      router.replace(e === ADMIN_EMAIL ? "/app" : "/mon-espace");
-    } catch {
-      setError("Connexion annulée ou refusée.");
-    } finally { setSubmitting(false); }
-  }
-
-  async function handleMagicLink() {
+async function handleMagicLink() {
     if (!email.trim()) return;
     setError(""); setSubmitting(true);
     try {
@@ -121,18 +109,10 @@ export default function LoginPage() {
               {submitting ? "Connexion..." : "Continuer avec Google"}
             </button>
 
-            {/* Apple */}
-            <button onClick={handleApple} disabled={submitting} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: "#000", color: "#fff", border: "1px solid #333", borderRadius: 8, padding: "11px 16px", fontWeight: 600, fontSize: 14, cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.7 : 1 }}>
-              <svg width="17" height="17" viewBox="0 0 814 1000" fill="white">
-                <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-37.8-155.5-127.4C46 790.5 0 663.6 0 541.8c0-207.5 135.4-317.3 269-317.3 71 0 130.5 46.4 175 46.4 42.8 0 109.3-49.1 188.3-49.1 30.3 0 108.2 2.6 168.6 75.5zm-234.7-206.4c31.6-37.8 54.3-89.8 54.3-141.9 0-7.1-.6-14.3-1.9-20.1-51.6 2-112.1 34.5-148.6 79.2-28.6 32.2-55.8 84.2-55.8 137.6 0 7.7 1.3 15.5 1.9 17.9 3.2.6 8.4 1.3 13.6 1.3 46.4 0 102.9-31 136.5-73.6v.6z"/>
-              </svg>
-              {submitting ? "Connexion..." : "Continuer avec Apple"}
-            </button>
-
             {/* Divider */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ flex: 1, height: 1, background: "var(--bd)" }} />
-              <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>ou sans compte</span>
+              <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>ou sans compte Google</span>
               <div style={{ flex: 1, height: 1, background: "var(--bd)" }} />
             </div>
 
