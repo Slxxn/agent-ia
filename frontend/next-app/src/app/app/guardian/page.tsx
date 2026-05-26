@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Shield, RefreshCw, Check, X, Clock, ExternalLink, AlertTriangle, Zap, Pencil, Save } from "lucide-react";
+import { Shield, RefreshCw, Check, X, Clock, ExternalLink, AlertTriangle, Zap, Pencil, Save, KeyRound } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL
   ? `${process.env.NEXT_PUBLIC_API_URL}/api`
@@ -69,6 +69,10 @@ export default function GuardianPage() {
   const [editingEmail, setEditingEmail] = useState<string | null>(null);
   const [emailDraft, setEmailDraft] = useState<Record<string, string>>({});
   const [savingEmail, setSavingEmail] = useState<string | null>(null);
+  const [editingToken, setEditingToken] = useState<string | null>(null);
+  const [tokenDraft, setTokenDraft] = useState<Record<string, string>>({});
+  const [savingToken, setSavingToken] = useState<string | null>(null);
+  const [tokens, setTokens] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     try {
@@ -78,6 +82,15 @@ export default function GuardianPage() {
       ]);
       setSites(s);
       setRequests(r);
+      // Load admin tokens for each site
+      const tokenMap: Record<string, string> = {};
+      await Promise.all((s as GuardianSite[]).map(async (site) => {
+        const key = `${site.id.toUpperCase().replace(/-/g, "-")}_ADMIN_TOKEN`;
+        const res = await fetch(`${API}/settings/${key}`);
+        if (res.ok) { const d = await res.json(); tokenMap[site.id] = d.value || ""; }
+        else tokenMap[site.id] = "";
+      }));
+      setTokens(tokenMap);
     } catch {}
     finally { setLoading(false); }
   }, []);
@@ -103,6 +116,20 @@ export default function GuardianPage() {
       await load();
       setEditingEmail(null);
     } finally { setSavingEmail(null); }
+  };
+
+  const saveToken = async (siteId: string) => {
+    setSavingToken(siteId);
+    try {
+      const key = `${siteId.toUpperCase().replace(/-/g, "-")}_ADMIN_TOKEN`;
+      await fetch(`${API}/settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, value: tokenDraft[siteId] }),
+      });
+      setTokens(p => ({ ...p, [siteId]: tokenDraft[siteId] }));
+      setEditingToken(null);
+    } finally { setSavingToken(null); }
   };
 
   const handleAction = async (reqId: string, action: string) => {
@@ -263,6 +290,40 @@ export default function GuardianPage() {
                       <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {site.client_email || "Ajouter un email client…"}
                       </span>
+                    </button>
+                  )}
+
+                  {/* Admin token */}
+                  {editingToken === site.id ? (
+                    <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="Mot de passe admin…"
+                        value={tokenDraft[site.id] ?? tokens[site.id] ?? ""}
+                        onChange={e => setTokenDraft(p => ({ ...p, [site.id]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === "Enter") saveToken(site.id); if (e.key === "Escape") setEditingToken(null); }}
+                        style={{ flex: 1, padding: "5px 9px", borderRadius: 6, border: "1px solid #6366f1", background: "var(--surface2)", color: "var(--text)", fontSize: 12, outline: "none" }}
+                      />
+                      <button onClick={() => saveToken(site.id)} disabled={savingToken === site.id}
+                        style={{ padding: "5px 9px", borderRadius: 6, border: "1px solid rgba(16,185,129,0.3)", background: "rgba(16,185,129,0.1)", color: "#10B981", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                        <Save size={11} />
+                      </button>
+                      <button onClick={() => setEditingToken(null)}
+                        style={{ padding: "5px 9px", borderRadius: 6, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                        <X size={11} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setEditingToken(site.id); setTokenDraft(p => ({ ...p, [site.id]: tokens[site.id] ?? "" })); }}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 5, padding: "5px 9px", marginBottom: 8, borderRadius: 6, border: "1px solid var(--bd)", background: "transparent", color: "var(--muted)", fontSize: 11, cursor: "pointer", textAlign: "left" }}
+                    >
+                      <KeyRound size={10} />
+                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {tokens[site.id] ? "••••••••" : "Définir le mot de passe admin…"}
+                      </span>
+                      <Pencil size={9} style={{ flexShrink: 0 }} />
                     </button>
                   )}
 
