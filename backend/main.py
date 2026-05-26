@@ -25,6 +25,7 @@ from backend.api.analyze_logo import router as analyze_logo_router
 from backend.api.form import router as form_router
 from backend.api.payment_confirm import router as payment_confirm_router
 from backend.api.client import router as client_router
+from backend.api.contact import router as contact_router
 from backend.prospect_hunter.api import router as prospects_router
 from backend.site_guardian.api import router as guardian_router
 from backend.tools.llm import LLMTool
@@ -83,6 +84,8 @@ app.add_middleware(
         "http://localhost:3001",
         "https://builderz.shop",
         "https://www.builderz.shop",
+        "https://ixshel-co.web.app",
+        "https://ixshel-co.firebaseapp.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -103,6 +106,7 @@ app.include_router(analyze_logo_router, prefix="/api")
 app.include_router(form_router, prefix="/api")
 app.include_router(payment_confirm_router, prefix="/api")
 app.include_router(client_router, prefix="/api")
+app.include_router(contact_router, prefix="/api")
 app.include_router(prospects_router)
 app.include_router(guardian_router)
 app.include_router(projects_router, prefix="/api")
