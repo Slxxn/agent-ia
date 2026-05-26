@@ -2,6 +2,7 @@
 import httpx
 from typing import Optional
 from backend.db.database import get_setting
+from backend.utils.email_templates import guardian_request_html, guardian_status_html
 
 
 async def send_email(to: str, subject: str, body: str, html: Optional[str] = None) -> bool:
@@ -34,31 +35,25 @@ async def send_email(to: str, subject: str, body: str, html: Optional[str] = Non
 async def notify_admin_new_request(client_name: str, site_url: str, message: str) -> None:
     admin = await get_setting("ADMIN_EMAIL") or "sloan.dlrz@gmail.com"
     subject = f"Nouvelle demande — {client_name}"
-    body = f"""Nouvelle demande de modification reçue.
-
-Client : {client_name}
-Site : {site_url}
-
-Demande :
-{message}
-
-Connectez-vous sur builderz.shop/app/guardian pour valider ou refuser.
-"""
-    await send_email(admin, subject, body)
+    body = f"Nouvelle demande de {client_name}\nSite : {site_url}\n\n{message}"
+    html = guardian_request_html(
+        client_name=client_name,
+        site_url=site_url,
+        message=message,
+        dashboard_url="https://builderz.shop/app/guardian",
+    )
+    await send_email(admin, subject, body, html=html)
 
 
 async def notify_client_status(client_email: str, client_name: str, status: str, admin_response: str = "") -> None:
-    if status == "approved":
-        subject = "Votre modification est en cours"
-        body = f"Bonjour {client_name},\n\nVotre demande a été validée et est en cours de traitement.\n\nL'équipe builderz"
-    elif status == "done":
-        note = f"\nNote : {admin_response}" if admin_response else ""
-        subject = "Votre modification a été appliquée ✓"
-        body = f"Bonjour {client_name},\n\nLes modifications ont été appliquées sur votre site.{note}\n\nL'équipe builderz"
-    elif status == "rejected":
-        note = f"\nMessage : {admin_response}" if admin_response else "\nNous vous contacterons prochainement."
-        subject = "Concernant votre demande de modification"
-        body = f"Bonjour {client_name},\n\nNous avons examiné votre demande.{note}\n\nL'équipe builderz"
-    else:
+    SUBJECTS = {
+        "approved": "Votre modification est en cours",
+        "done":     "Votre modification a été appliquée",
+        "rejected": "Concernant votre demande de modification",
+    }
+    subject = SUBJECTS.get(status)
+    if not subject:
         return
-    await send_email(client_email, subject, body)
+    body = f"Bonjour {client_name},\n\n{admin_response or ''}\n\nL'équipe builderz"
+    html = guardian_status_html(client_name=client_name, status=status, note=admin_response)
+    await send_email(client_email, subject, body, html=html)

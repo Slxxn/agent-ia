@@ -322,3 +322,67 @@ def modification_request_html(
 </p>
 """
     return _base(content, label="Demande de modification")
+
+
+# ───────────────────────────────────────────────────────────────────
+# EMAIL 6 — Admin : nouvelle demande guardian (site_guardian)
+# ───────────────────────────────────────────────────────────────────
+def guardian_request_html(
+    client_name: str,
+    site_url: str,
+    message: str,
+    dashboard_url: str,
+) -> str:
+    rows = f"""
+  {_row("Client", client_name)}
+  {_row("Site", f'<a href="{site_url}" style="color:#6366f1;text-decoration:none;">{site_url}</a>' if site_url else "—")}
+"""
+    content = f"""
+<p style="margin:0 0 4px;font-size:13px;color:#10b981;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Site Guardian</p>
+<h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.02em;">Nouvelle demande de modification</h1>
+
+{_card(f'<table width="100%" cellpadding="0" cellspacing="0" border="0">{rows}</table>')}
+
+<p style="margin:20px 0 8px;font-size:13px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;">Message</p>
+<div style="background:#1a1d2e;border-left:3px solid #10b981;border-radius:0 8px 8px 0;padding:16px 20px;font-size:14px;color:#e5e7eb;line-height:1.7;font-style:italic;">
+  "{message}"
+</div>
+
+{_btn("Voir dans Site Guardian →", dashboard_url, color="#10b981")}
+"""
+    return _base(content, label="Site Guardian")
+
+
+# ───────────────────────────────────────────────────────────────────
+# EMAIL 7 — Client : statut de sa demande guardian
+# ───────────────────────────────────────────────────────────────────
+def guardian_status_html(
+    client_name: str,
+    status: str,
+    note: str = "",
+) -> str:
+    STATUS_MAP = {
+        "approved": ("En cours de traitement", "#6366f1", "Votre demande a été validée et est en cours de traitement."),
+        "done":     ("Modification appliquée ✓", "#10b981", "Les modifications ont été appliquées sur votre site."),
+        "rejected": ("Demande examinée", "#f59e0b", "Nous avons examiné votre demande."),
+    }
+    label, color, default_msg = STATUS_MAP.get(status, ("Mise à jour", "#6366f1", "Votre demande a été mise à jour."))
+    note_html = f"""
+<div style="background:#1a1d2e;border-left:3px solid {color};border-radius:0 8px 8px 0;padding:16px 20px;font-size:14px;color:#e5e7eb;line-height:1.7;margin-top:16px;">
+  {note}
+</div>""" if note else ""
+
+    content = f"""
+<p style="margin:0 0 4px;font-size:13px;color:{color};font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Site Guardian</p>
+<h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.02em;">{label}</h1>
+
+<p style="margin:0;font-size:15px;color:#9ca3af;line-height:1.7;">
+  Bonjour <strong style="color:#e5e7eb;">{client_name}</strong>,<br>
+  {default_msg}
+</p>
+
+{note_html}
+
+{_btn("Accéder à mon espace →", f"{BASE_URL}/mon-espace", color=color)}
+"""
+    return _base(content, label="Mise à jour de votre site")
