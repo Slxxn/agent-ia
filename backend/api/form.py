@@ -100,14 +100,15 @@ async def submit_form(request: Request):
             prix_suggere=suggested,
             crm_url="https://builderz.shop/app/crm",
         )
-        await send_email(
+        sent = await send_email(
             to=admin_email,
             subject=f"Nouvelle demande — {business_name}",
             body=f"Nouvelle demande de {business_name} ({client_email})\nSecteur: {sector} | Prix suggéré: {suggested}€\nVoir le CRM: https://builderz.shop/app/crm",
             html=html,
         )
-    except Exception:
-        pass
+        print(f"[form/submit] Email admin {'envoyé' if sent else 'ÉCHEC'} → {admin_email}")
+    except Exception as e:
+        print(f"[form/submit] Erreur envoi email admin: {e}")
 
     return {
         "project_id": db_id,

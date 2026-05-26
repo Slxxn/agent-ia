@@ -25,7 +25,10 @@ async def send_email(to: str, subject: str, body: str, html: Optional[str] = Non
             headers={"Authorization": f"Bearer {api_key}"},
             json=payload,
         )
-        return resp.status_code == 200
+        if resp.status_code not in (200, 201):
+            print(f"[Notifier] Resend error {resp.status_code}: {resp.text}")
+            return False
+        return True
 
 
 async def notify_admin_new_request(client_name: str, site_url: str, message: str) -> None:
