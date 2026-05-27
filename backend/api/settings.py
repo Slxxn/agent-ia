@@ -31,6 +31,7 @@ KNOWN_SETTINGS = [
     # ── Prospect Hunter ─────────────────────────────────────────────────────
     {"key": "GOOGLE_SEARCH_API_KEY", "label": "Google Custom Search — Clé API", "encrypted": True,  "placeholder": "AIza..."},
     {"key": "GOOGLE_SEARCH_CX",      "label": "Google Custom Search — CX (moteur)", "encrypted": False, "placeholder": "e6bc6a0d395634e67"},
+    {"key": "PROSPECT_AUTO_CITY",    "label": "Ville du scan automatique",  "encrypted": False, "placeholder": "Montpellier"},
 ]
 
 

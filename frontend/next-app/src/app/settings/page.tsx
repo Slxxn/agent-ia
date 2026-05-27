@@ -181,7 +181,7 @@ const SECTIONS = [
   {
     key: "prospect", title: "Prospect Hunter",         description: "Google Custom Search — enrichissement sites web",
     icon: <Search size={13} />,      color: "#EF4444",
-    keys: ["GOOGLE_SEARCH_API_KEY", "GOOGLE_SEARCH_CX"],
+    keys: ["GOOGLE_SEARCH_API_KEY", "GOOGLE_SEARCH_CX", "PROSPECT_AUTO_CITY"],
   },
 ];
 

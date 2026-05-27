@@ -57,6 +57,10 @@ async def lifespan(app: FastAPI):
         if s.get("value") and s["key"] not in os.environ:
             os.environ[s["key"]] = s["value"]
 
+    # Démarrer le scheduler Prospect Hunter (scan auto quotidien)
+    from backend.prospect_hunter.scheduler import start_scheduler
+    scheduler = start_scheduler()
+
     # Vérifier la connexion au backend LLM
     llm = LLMTool()
     status = await llm.check_connection()
@@ -74,6 +78,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
+    scheduler.shutdown(wait=False)
     print("👋 Arrêt du serveur.")
 
 
