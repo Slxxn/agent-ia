@@ -15,11 +15,12 @@ function Shell({ children }: { children: React.ReactNode }) {
   const isPublic = PUBLIC_EXACT.includes(pathname) || PUBLIC_ROUTES.some(r => pathname.startsWith(r));
 
   const isAppRoute = pathname.startsWith('/app');
+  const isSettingsRoute = pathname === '/settings';
 
   if (isPublic) return <>{children}</>;
 
-  // /app/* routes: auth guard but no header (sidebar layout handles chrome)
-  if (isAppRoute) return <AuthGuard>{children}</AuthGuard>;
+  // /app/* et /settings : auth guard sans header (pas de navbar)
+  if (isAppRoute || isSettingsRoute) return <AuthGuard>{children}</AuthGuard>;
 
   return (
     <AuthGuard>

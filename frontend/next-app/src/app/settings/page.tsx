@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Save, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2,
-  Settings, Cpu, Zap, CreditCard, Flame, X, Bot, Mail, Search,
+  Settings, Cpu, Zap, CreditCard, Flame, X, Bot, Mail, Search, ArrowLeft,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Setting, getSettings, saveSetting } from "@/lib/api";
 
 function SettingInputRow({ setting, onSaved }: { setting: Setting; onSaved: (key: string) => void }) {
@@ -185,6 +186,7 @@ const SECTIONS = [
 ];
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [settings, setSettings] = useState<Setting[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -200,7 +202,21 @@ export default function SettingsPage() {
   const total      = settings.length;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column" }}>
+
+      {/* ── Topbar ── */}
+      <div style={{ height: 52, borderBottom: "1px solid var(--bd)", display: "flex", alignItems: "center", padding: "0 20px", gap: 12, flexShrink: 0, background: "var(--surface)" }}>
+        <button
+          onClick={() => router.back()}
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--muted)", fontSize: 13, padding: "5px 8px", borderRadius: 7, transition: "all 0.15s" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--surface2)"; (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
+        >
+          <ArrowLeft size={14} /> Retour
+        </button>
+      </div>
+
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 1380, margin: "0 auto", width: "100%", padding: "24px 24px 48px" }}>
 
       {/* ── Header ── */}
       <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
@@ -247,6 +263,7 @@ export default function SettingsPage() {
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 }
