@@ -107,6 +107,10 @@ async def run_daily_scan():
 
     log.info(f"[AutoScan] Terminé — {total_new} nouveaux prospects ajoutés")
 
+    # Sauvegarder la date du dernier scan
+    from backend.db.database import set_setting
+    await set_setting("PROSPECT_LAST_AUTO_SCAN", datetime.now(timezone.utc).isoformat(), encrypted=False)
+
 
 def start_scheduler() -> AsyncIOScheduler:
     """Crée et démarre le scheduler. Appeler depuis le lifespan FastAPI."""

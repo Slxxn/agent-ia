@@ -37,6 +37,18 @@ interface Prospect {
 interface ScraperStatus {
   pages_jaunes: { ok: boolean; message: string };
   data_gouv: { ok: boolean; message: string };
+  last_auto_scan?: string | null;
+}
+
+function formatLastScan(iso: string | null | undefined): string {
+  if (!iso) return "Jamais";
+  const d = new Date(iso);
+  const now = new Date();
+  const diffH = Math.floor((now.getTime() - d.getTime()) / 3600000);
+  if (diffH < 1) return "Il y a < 1h";
+  if (diffH < 24) return `Il y a ${diffH}h`;
+  const diffD = Math.floor(diffH / 24);
+  return `Il y a ${diffD}j`;
 }
 
 const ProspectsMap = dynamic(() => import("./ProspectsMap"), {
@@ -194,6 +206,12 @@ export default function ProspectsPage() {
           <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
             {stats.total} prospects · {stats.hot} chauds · {stats.warm} tièdes
           </p>
+          {scraperStatus && (
+            <p style={{ fontSize: 11, color: "var(--muted2)", marginTop: 1, display: "flex", alignItems: "center", gap: 4 }}>
+              <RefreshCw size={9} />
+              Dernier scan auto : {formatLastScan(scraperStatus.last_auto_scan)}
+            </p>
+          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {/* Badges statut sources */}

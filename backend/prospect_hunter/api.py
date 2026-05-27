@@ -38,8 +38,12 @@ class ProspectUpdate(BaseModel):
 
 @router.get("/status")
 async def get_scraper_status(city: str = "Montpellier"):
-    """Vérifie que Pages Jaunes et data.gouv sont accessibles."""
-    return await test_scrapers(city)
+    """Vérifie que les sources sont accessibles + date du dernier scan auto."""
+    from backend.db.database import get_setting
+    status = await test_scrapers(city)
+    last_scan = await get_setting("PROSPECT_LAST_AUTO_SCAN")
+    status["last_auto_scan"] = last_scan
+    return status
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
