@@ -8,6 +8,7 @@ Les deux tournent en même temps par secteur, les résultats sont dédupliqués.
 import re
 import asyncio
 import unicodedata
+import os
 import httpx
 from urllib.parse import quote
 
@@ -219,23 +220,39 @@ def _name_to_slug(name: str) -> str:
     return slug
 
 
-async def _find_website(name: str, city: str) -> str:
+async def _find_website_google(name: str, city: str, api_key: str, cx: str) -> str:
+    """Cherche le site officiel via Google Custom Search JSON API."""
+    query = f"{name} {city} site officiel"
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            resp = await client.get(
+                "https://www.googleapis.com/customsearch/v1",
+                params={"key": api_key, "cx": cx, "q": query, "num": 3},
+            )
+            data = resp.json()
+        blocked = {"facebook.com", "linkedin.com", "pagesjaunes.fr", "societe.com",
+                   "google.com", "yelp.fr", "tripadvisor.fr", "mappy.com", "annuaire"}
+        for item in data.get("items", []):
+            url = item.get("link", "")
+            domain = url.split("/")[2].replace("www.", "") if url else ""
+            if domain and not any(b in domain for b in blocked):
+                return url
+    except Exception:
+        pass
+    return ""
+
+
+async def _find_website_domain(name: str, city: str) -> str:
     """
-    Tente de trouver le site web d'une entreprise en testant des domaines courants
-    construits depuis son nom. Pas de scraping tiers — requêtes HTTP directes.
+    Fallback : tente des domaines courants construits depuis le nom.
+    Pas de scraping tiers — requêtes HTTP directes.
     """
     slug = _name_to_slug(name)
     city_slug = _name_to_slug(city)
     if not slug or len(slug) < 3:
         return ""
 
-    candidates = [
-        f"{slug}.fr",
-        f"{slug}.com",
-        f"{slug}-{city_slug}.fr",
-        f"{city_slug}-{slug}.fr",
-    ]
-
+    candidates = [f"{slug}.fr", f"{slug}.com", f"{slug}-{city_slug}.fr"]
     async with httpx.AsyncClient(timeout=4, follow_redirects=True) as client:
         for domain in candidates:
             for scheme in ["https://", "http://"]:
@@ -246,6 +263,17 @@ async def _find_website(name: str, city: str) -> str:
                 except Exception:
                     continue
     return ""
+
+
+async def _find_website(name: str, city: str) -> str:
+    """Utilise Google Custom Search si les clés sont configurées, sinon devinette."""
+    api_key = os.getenv("GOOGLE_SEARCH_API_KEY", "")
+    cx = os.getenv("GOOGLE_SEARCH_CX", "")
+    if api_key and cx:
+        result = await _find_website_google(name, city, api_key, cx)
+        if result:
+            return result
+    return await _find_website_domain(name, city)
 
 
 # ─── Test de santé des sources ────────────────────────────────────────────────

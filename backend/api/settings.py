@@ -28,6 +28,9 @@ KNOWN_SETTINGS = [
     # ── Site Guardian ───────────────────────────────────────────────────────────
     {"key": "RESEND_API_KEY",        "label": "Resend API Key (emails)",    "encrypted": True,  "placeholder": "re_..."},
     {"key": "ADMIN_EMAIL",           "label": "Email admin (notifications)", "encrypted": False, "placeholder": "toi@example.com"},
+    # ── Prospect Hunter ─────────────────────────────────────────────────────
+    {"key": "GOOGLE_SEARCH_API_KEY", "label": "Google Custom Search — Clé API", "encrypted": True,  "placeholder": "AIza..."},
+    {"key": "GOOGLE_SEARCH_CX",      "label": "Google Custom Search — CX (moteur)", "encrypted": False, "placeholder": "e6bc6a0d395634e67"},
 ]
 
 

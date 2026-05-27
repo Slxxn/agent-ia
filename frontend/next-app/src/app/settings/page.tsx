@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Save, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2,
-  Settings, Cpu, Zap, CreditCard, Flame, X, Bot, Mail,
+  Settings, Cpu, Zap, CreditCard, Flame, X, Bot, Mail, Search,
 } from "lucide-react";
 import { Setting, getSettings, saveSetting } from "@/lib/api";
 
@@ -176,6 +176,11 @@ const SECTIONS = [
     key: "notifs",   title: "Emails & Notifications", description: "Confirmations client, alertes Guardian",
     icon: <Mail size={13} />,        color: "#10B981",
     keys: ["RESEND_API_KEY", "ADMIN_EMAIL"],
+  },
+  {
+    key: "prospect", title: "Prospect Hunter",         description: "Google Custom Search — enrichissement sites web",
+    icon: <Search size={13} />,      color: "#EF4444",
+    keys: ["GOOGLE_SEARCH_API_KEY", "GOOGLE_SEARCH_CX"],
   },
 ];
 

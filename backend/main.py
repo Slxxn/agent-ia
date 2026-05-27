@@ -50,6 +50,13 @@ async def lifespan(app: FastAPI):
         await _db.close()
     print("✅ Projets orphelins remis à idle.")
 
+    # Injecter les settings DB dans os.environ (pour modules qui lisent os.getenv)
+    import os
+    from backend.db.database import get_all_settings
+    for s in await get_all_settings():
+        if s.get("value") and s["key"] not in os.environ:
+            os.environ[s["key"]] = s["value"]
+
     # Vérifier la connexion au backend LLM
     llm = LLMTool()
     status = await llm.check_connection()
