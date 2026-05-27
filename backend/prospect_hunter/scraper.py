@@ -201,29 +201,54 @@ async def _scrape_api_gouv(sector: str, city: str, max_results: int) -> list[dic
     return results[:max_results]
 
 
+# ─── Enrichissement via DuckDuckGo ────────────────────────────────────────────
+
+async def _find_website(name: str, city: str) -> str:
+    """
+    Cherche le site officiel d'une entreprise via DuckDuckGo HTML.
+    Retourne l'URL trouvée ou "" si rien.
+    """
+    query = f"{name} {city} site officiel"
+    url = f"https://html.duckduckgo.com/html/?q={quote(query)}"
+    try:
+        async with httpx.AsyncClient(timeout=8, headers=_HEADERS, follow_redirects=True) as client:
+            resp = await client.get(url)
+            if resp.status_code != 200:
+                return ""
+            html = resp.text
+
+        # Extraire les URLs de résultats (liens externes, pas duckduckgo)
+        links = re.findall(r'href="(https?://[^"]+)"', html)
+        blocked = {"duckduckgo.com", "google.com", "facebook.com", "linkedin.com",
+                   "pagesjaunes.fr", "mappy.com", "yelp.fr", "tripadvisor"}
+        for link in links:
+            domain = link.split("/")[2].replace("www.", "")
+            if not any(b in domain for b in blocked):
+                return link.split("?")[0]  # URL propre sans params tracking
+    except Exception:
+        pass
+    return ""
+
+
 # ─── Test de santé des sources ────────────────────────────────────────────────
 
 async def test_scrapers(city: str = "Montpellier") -> dict:
     """Vérifie rapidement que chaque source répond correctement."""
-    pj_ok = False
+    ddg_ok = False
     gouv_ok = False
-    pj_msg = "Non disponible"
+    ddg_msg = "Non disponible"
     gouv_msg = "Non disponible"
 
-    # Test Pages Jaunes (1 résultat, timeout court)
+    # Test DuckDuckGo enrichissement
     try:
-        url = f"https://www.pagesjaunes.fr/annuaire/chercherlespros?quoiqui=coiffeur&ou={quote(city)}"
-        async with httpx.AsyncClient(timeout=10, headers=_HEADERS, follow_redirects=True) as client:
-            resp = await client.get(url)
-            if resp.status_code == 200 and any(
-                m in resp.text for m in ["bi-content", "bi-generic", "denomination"]
-            ):
-                pj_ok = True
-                pj_msg = "Opérationnel"
-            else:
-                pj_msg = f"Bloqué (HTTP {resp.status_code})" if resp.status_code != 200 else "Captcha détecté"
+        result = await _find_website("coiffeur montpellier", city)
+        if result:
+            ddg_ok = True
+            ddg_msg = "Opérationnel"
+        else:
+            ddg_msg = "Aucun résultat de test"
     except Exception as e:
-        pj_msg = f"Erreur : {str(e)[:60]}"
+        ddg_msg = f"Erreur : {str(e)[:60]}"
 
     # Test data.gouv
     try:
@@ -242,7 +267,7 @@ async def test_scrapers(city: str = "Montpellier") -> dict:
         gouv_msg = f"Erreur : {str(e)[:60]}"
 
     return {
-        "pages_jaunes": {"ok": pj_ok, "message": pj_msg},
+        "pages_jaunes": {"ok": ddg_ok, "message": f"DuckDuckGo — {ddg_msg}"},
         "data_gouv": {"ok": gouv_ok, "message": gouv_msg},
     }
 
@@ -250,20 +275,29 @@ async def test_scrapers(city: str = "Montpellier") -> dict:
 # ─── Point d'entrée principal ─────────────────────────────────────────────────
 
 async def scrape_both_sources(sector: str, city: str, max_results: int = 20) -> list[dict]:
-    """Lance PJ + data.gouv en parallèle et déduplique les résultats."""
-    pj_task = asyncio.create_task(_scrape_pj(sector, city, max_results))
-    gouv_task = asyncio.create_task(_scrape_api_gouv(sector, city, max_results))
+    """
+    1. Récupère les entreprises via data.gouv (fiable, GPS inclus)
+    2. Enrichit chaque résultat avec le site web via DuckDuckGo (en parallèle, max 5 à la fois)
+    """
+    results = await _scrape_api_gouv(sector, city, max_results)
+    if not results:
+        return []
 
-    pj_results, gouv_results = await asyncio.gather(pj_task, gouv_task, return_exceptions=True)
+    # Enrichissement DuckDuckGo en parallèle (semaphore pour limiter les requêtes simultanées)
+    sem = asyncio.Semaphore(5)
 
-    if isinstance(pj_results, Exception):
-        pj_results = []
-    if isinstance(gouv_results, Exception):
-        gouv_results = []
+    async def enrich(biz: dict) -> dict:
+        if biz.get("website"):
+            return biz
+        async with sem:
+            website = await _find_website(biz["name"], city)
+            await asyncio.sleep(0.2)  # politesse
+        return {**biz, "website": website}
 
-    merged = _dedup([*pj_results, *gouv_results])
-    return merged[:max_results]
+    enriched = await asyncio.gather(*[enrich(b) for b in results], return_exceptions=True)
+    final = [r for r in enriched if isinstance(r, dict)]
+    return _dedup(final)[:max_results]
 
 
-# Alias pour compatibilité avec l'ancien appel
+# Alias pour compatibilité
 scrape_pages_jaunes = scrape_both_sources
