@@ -1,4 +1,4 @@
-"""Génération de pitch email via Claude Haiku."""
+"""Génération de pitch email via Gemini Flash."""
 import json
 from backend.tools.llm import LLMTool
 
@@ -30,11 +30,10 @@ Réponds en JSON uniquement :
 {{"subject": "objet de l'email", "body": "corps de l'email"}}"""
 
     llm = LLMTool()
-    result = await llm._call_claude(
+    result = await llm._call_gemini_flash(
         prompt=prompt,
         system_prompt="Tu génères des emails de prospection efficaces. Réponds uniquement en JSON valide.",
         max_tokens=400,
-        model_override="claude-haiku-4-5-20251001",
     )
 
     response = result.get("content", "") if result.get("success") else ""
