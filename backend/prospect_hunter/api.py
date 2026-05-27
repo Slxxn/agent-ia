@@ -237,6 +237,37 @@ async def generate_prospect_pitch(prospect_id: str):
     return {"subject": subject, "pitch": body}
 
 
+# ─── Envoi email pitch via Resend ─────────────────────────────────────────────
+
+class SendEmailRequest(BaseModel):
+    to: str
+    subject: str
+    body: str
+
+
+@router.post("/{prospect_id}/send-email")
+async def send_pitch_email(prospect_id: str, req: SendEmailRequest):
+    from backend.site_guardian.notifier import send_email
+
+    ok = await send_email(to=req.to, subject=req.subject, body=req.body)
+    if not ok:
+        raise HTTPException(500, "Envoi échoué — vérifie RESEND_API_KEY dans les réglages")
+
+    # Marquer comme contacté + sauvegarder l'email
+    db = await get_db()
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        await db.execute(
+            "UPDATE prospects SET status='contacted', email=?, updated_at=? WHERE id=?",
+            (req.to, now, prospect_id),
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+    return {"ok": True}
+
+
 # ─── Update ───────────────────────────────────────────────────────────────────
 
 @router.patch("/{prospect_id}")

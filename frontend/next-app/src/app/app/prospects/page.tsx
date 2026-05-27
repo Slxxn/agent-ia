@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { Search, Zap, Target, Globe, Phone, ChevronDown, X, Copy, Check, ArrowRight, RefreshCw, CheckCircle2, XCircle, Trash2 } from "lucide-react";
+import { Search, Zap, Target, Globe, Phone, ChevronDown, X, Copy, Check, ArrowRight, RefreshCw, CheckCircle2, XCircle, Trash2, Send, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const API = process.env.NEXT_PUBLIC_API_URL
@@ -107,6 +107,10 @@ export default function ProspectsPage() {
   const [pitchData, setPitchData] = useState<{ subject: string; pitch: string } | null>(null);
   const [generatingPitch, setGeneratingPitch] = useState(false);
   const [pitchCopied, setPitchCopied] = useState(false);
+  const [pitchEmail, setPitchEmail] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState("");
 
   const fetchProspects = useCallback(async () => {
     try {
@@ -156,8 +160,29 @@ export default function ProspectsPage() {
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!pitchData || !selected || !pitchEmail.trim()) return;
+    setSendingEmail(true); setEmailError(""); setEmailSent(false);
+    try {
+      const res = await fetch(`${API}/prospects/${selected.id}/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: pitchEmail.trim(), subject: pitchData.subject, body: pitchData.pitch }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Erreur envoi");
+      setEmailSent(true);
+      setProspects(prev => prev.map(x => x.id === selected.id ? { ...x, status: "contacted", email: pitchEmail } : x));
+    } catch (e: unknown) {
+      setEmailError(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   const handleGeneratePitch = async (p: Prospect) => {
     setSelected(p); setPitchOpen(true); setGeneratingPitch(true); setPitchData(null);
+    setPitchEmail(p.email || ""); setEmailSent(false); setEmailError("");
     try {
       const res = await fetch(`${API}/prospects/${p.id}/pitch`, { method: "POST" });
       const data = await res.json();
@@ -422,6 +447,31 @@ export default function ProspectsPage() {
               >
                 {pitchCopied ? <><Check size={13} /> Copié !</> : <><Copy size={13} /> Copier l&apos;email</>}
               </button>
+
+              {/* Envoi direct via Resend */}
+              <div style={{ borderTop: "1px solid var(--bd)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", display: "flex", alignItems: "center", gap: 5 }}>
+                  <Mail size={11} /> Envoyer directement
+                </label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    type="email"
+                    value={pitchEmail}
+                    onChange={e => { setPitchEmail(e.target.value); setEmailSent(false); setEmailError(""); }}
+                    placeholder="email@prospect.fr"
+                    style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--bd-bright)", background: "var(--surface2)", color: "var(--text)", fontSize: 13, outline: "none" }}
+                  />
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={sendingEmail || !pitchEmail.trim() || emailSent}
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "none", background: emailSent ? "#10B981" : "#6366F1", color: "#fff", fontSize: 13, fontWeight: 600, cursor: sendingEmail || !pitchEmail.trim() || emailSent ? "not-allowed" : "pointer", opacity: sendingEmail || !pitchEmail.trim() ? 0.6 : 1, transition: "all 0.15s", whiteSpace: "nowrap" }}
+                  >
+                    {emailSent ? <><Check size={13} /> Envoyé !</> : sendingEmail ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> Envoi…</> : <><Send size={13} /> Envoyer</>}
+                  </button>
+                </div>
+                {emailError && <p style={{ fontSize: 11, color: "#EF4444" }}>{emailError}</p>}
+                {emailSent && <p style={{ fontSize: 11, color: "#10B981" }}>Email envoyé — prospect marqué comme contacté.</p>}
+              </div>
             </div>
           ) : null}
         </Modal>
