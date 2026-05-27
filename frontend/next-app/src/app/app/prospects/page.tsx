@@ -199,7 +199,7 @@ export default function ProspectsPage() {
           {/* Badges statut sources */}
           {scraperStatus && (
             <div style={{ display: "flex", gap: 5 }}>
-              <StatusBadge label="DuckDuckGo" ok={scraperStatus.pages_jaunes.ok} message={scraperStatus.pages_jaunes.message} />
+              <StatusBadge label="Enrichissement" ok={scraperStatus.pages_jaunes.ok} message={scraperStatus.pages_jaunes.message} />
               <StatusBadge label="data.gouv" ok={scraperStatus.data_gouv.ok} message={scraperStatus.data_gouv.message} />
             </div>
           )}
@@ -319,7 +319,7 @@ export default function ProspectsPage() {
           {/* Statut des sources dans la modal */}
           {scraperStatus && (
             <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-              <StatusBadge label="DuckDuckGo" ok={scraperStatus.pages_jaunes.ok} message={scraperStatus.pages_jaunes.message} />
+              <StatusBadge label="Enrichissement" ok={scraperStatus.pages_jaunes.ok} message={scraperStatus.pages_jaunes.message} />
               <StatusBadge label="data.gouv" ok={scraperStatus.data_gouv.ok} message={scraperStatus.data_gouv.message} />
             </div>
           )}

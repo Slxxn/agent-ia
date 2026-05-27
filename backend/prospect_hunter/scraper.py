@@ -201,54 +201,61 @@ async def _scrape_api_gouv(sector: str, city: str, max_results: int) -> list[dic
     return results[:max_results]
 
 
-# ─── Enrichissement via DuckDuckGo ────────────────────────────────────────────
+# ─── Enrichissement par devinette de domaine ──────────────────────────────────
+
+def _name_to_slug(name: str) -> str:
+    """Convertit un nom d'entreprise en slug utilisable comme domaine."""
+    slug = name.lower().strip()
+    slug = "".join(
+        c for c in unicodedata.normalize("NFD", slug)
+        if unicodedata.category(c) != "Mn"
+    )
+    # Supprimer formes juridiques
+    for s in ["sarl", "sas", "eurl", "sa", "snc", "scp", "sci", "sasu"]:
+        slug = re.sub(rf"\b{s}\b", "", slug)
+    slug = re.sub(r"[^\w\s-]", "", slug)
+    slug = re.sub(r"[\s_]+", "-", slug).strip("-")
+    slug = re.sub(r"-+", "-", slug)
+    return slug
+
 
 async def _find_website(name: str, city: str) -> str:
     """
-    Cherche le site officiel d'une entreprise via DuckDuckGo HTML.
-    Retourne l'URL trouvée ou "" si rien.
+    Tente de trouver le site web d'une entreprise en testant des domaines courants
+    construits depuis son nom. Pas de scraping tiers — requêtes HTTP directes.
     """
-    query = f"{name} {city} site officiel"
-    url = f"https://html.duckduckgo.com/html/?q={quote(query)}"
-    try:
-        async with httpx.AsyncClient(timeout=8, headers=_HEADERS, follow_redirects=True) as client:
-            resp = await client.get(url)
-            if resp.status_code != 200:
-                return ""
-            html = resp.text
+    slug = _name_to_slug(name)
+    city_slug = _name_to_slug(city)
+    if not slug or len(slug) < 3:
+        return ""
 
-        # Extraire les URLs de résultats (liens externes, pas duckduckgo)
-        links = re.findall(r'href="(https?://[^"]+)"', html)
-        blocked = {"duckduckgo.com", "google.com", "facebook.com", "linkedin.com",
-                   "pagesjaunes.fr", "mappy.com", "yelp.fr", "tripadvisor"}
-        for link in links:
-            domain = link.split("/")[2].replace("www.", "")
-            if not any(b in domain for b in blocked):
-                return link.split("?")[0]  # URL propre sans params tracking
-    except Exception:
-        pass
+    candidates = [
+        f"{slug}.fr",
+        f"{slug}.com",
+        f"{slug}-{city_slug}.fr",
+        f"{city_slug}-{slug}.fr",
+    ]
+
+    async with httpx.AsyncClient(timeout=4, follow_redirects=True) as client:
+        for domain in candidates:
+            for scheme in ["https://", "http://"]:
+                try:
+                    resp = await client.get(scheme + domain)
+                    if resp.status_code < 400:
+                        return scheme + domain
+                except Exception:
+                    continue
     return ""
 
 
 # ─── Test de santé des sources ────────────────────────────────────────────────
 
 async def test_scrapers(city: str = "Montpellier") -> dict:
-    """Vérifie rapidement que chaque source répond correctement."""
-    ddg_ok = False
+    """Vérifie que data.gouv répond et que les requêtes HTTP sortantes fonctionnent."""
     gouv_ok = False
-    ddg_msg = "Non disponible"
     gouv_msg = "Non disponible"
-
-    # Test DuckDuckGo enrichissement
-    try:
-        result = await _find_website("coiffeur montpellier", city)
-        if result:
-            ddg_ok = True
-            ddg_msg = "Opérationnel"
-        else:
-            ddg_msg = "Aucun résultat de test"
-    except Exception as e:
-        ddg_msg = f"Erreur : {str(e)[:60]}"
+    http_ok = False
+    http_msg = "Non disponible"
 
     # Test data.gouv
     try:
@@ -260,14 +267,26 @@ async def test_scrapers(city: str = "Montpellier") -> dict:
             data = resp.json()
             if data.get("results"):
                 gouv_ok = True
-                gouv_msg = "Opérationnel"
+                gouv_msg = f"Opérationnel · {data['total_results']} entreprises indexées"
             else:
                 gouv_msg = "Aucun résultat de test"
     except Exception as e:
         gouv_msg = f"Erreur : {str(e)[:60]}"
 
+    # Test connectivité HTTP sortante (pour la devinette de domaines)
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get("https://httpbin.org/status/200")
+            if resp.status_code == 200:
+                http_ok = True
+                http_msg = "Connectivité OK"
+            else:
+                http_msg = f"HTTP {resp.status_code}"
+    except Exception as e:
+        http_msg = f"Erreur : {str(e)[:60]}"
+
     return {
-        "pages_jaunes": {"ok": ddg_ok, "message": f"DuckDuckGo — {ddg_msg}"},
+        "pages_jaunes": {"ok": http_ok, "message": f"Enrichissement domaines — {http_msg}"},
         "data_gouv": {"ok": gouv_ok, "message": gouv_msg},
     }
 
