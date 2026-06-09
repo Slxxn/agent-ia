@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from backend.db.database import get_db
-from backend.prospect_hunter.scraper import scrape_both_sources, test_scrapers
+from backend.prospect_hunter.scraper import scrape_both_sources, test_scrapers, cse_quota_status
 from backend.prospect_hunter.scorer import score_prospect, get_priority
 from backend.prospect_hunter.pitch_generator import generate_pitch
 
@@ -43,6 +43,7 @@ async def get_scraper_status(city: str = "Montpellier"):
     status = await test_scrapers(city)
     last_scan = await get_setting("PROSPECT_LAST_AUTO_SCAN")
     status["last_auto_scan"] = last_scan
+    status["cse_quota"] = cse_quota_status()
     return status
 
 

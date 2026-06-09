@@ -10,7 +10,38 @@ import asyncio
 import unicodedata
 import os
 import httpx
+from datetime import date
 from urllib.parse import quote
+
+# ─── Quota Google CSE ─────────────────────────────────────────────────────────
+# Limite douce à 95/100 pour ne jamais dépasser le quota gratuit
+_DAILY_LIMIT = 95
+_cse_date: str = ""
+_cse_count: int = 0
+
+
+def _cse_quota_ok() -> bool:
+    """Retourne True si on peut encore faire un appel Google CSE aujourd'hui."""
+    global _cse_date, _cse_count
+    today = date.today().isoformat()
+    if _cse_date != today:
+        _cse_date = today
+        _cse_count = 0
+    return _cse_count < _DAILY_LIMIT
+
+
+def _cse_increment():
+    global _cse_count
+    _cse_count += 1
+
+
+def cse_quota_status() -> dict:
+    """Retourne le statut du quota CSE pour le endpoint /status."""
+    global _cse_date, _cse_count
+    today = date.today().isoformat()
+    if _cse_date != today:
+        return {"used": 0, "limit": _DAILY_LIMIT, "date": today}
+    return {"used": _cse_count, "limit": _DAILY_LIMIT, "date": _cse_date}
 
 # ─── Config ────────────────────────────────────────────────────────────────────
 
@@ -222,6 +253,8 @@ def _name_to_slug(name: str) -> str:
 
 async def _find_website_google(name: str, city: str, api_key: str, cx: str) -> str:
     """Cherche le site officiel via Google Custom Search JSON API."""
+    if not _cse_quota_ok():
+        return ""   # quota journalier atteint → fallback domaine
     query = f"{name} {city} site officiel"
     try:
         async with httpx.AsyncClient(timeout=8) as client:
@@ -230,6 +263,7 @@ async def _find_website_google(name: str, city: str, api_key: str, cx: str) -> s
                 params={"key": api_key, "cx": cx, "q": query, "num": 3},
             )
             data = resp.json()
+        _cse_increment()
         blocked = {"facebook.com", "linkedin.com", "pagesjaunes.fr", "societe.com",
                    "google.com", "yelp.fr", "tripadvisor.fr", "mappy.com", "annuaire"}
         for item in data.get("items", []):
