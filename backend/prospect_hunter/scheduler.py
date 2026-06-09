@@ -1,11 +1,11 @@
 """
-Scan automatique quotidien — Prospect Hunter.
+Scan automatique — Prospect Hunter.
 
 Logique :
-- Tourne tous les jours à 06h00 UTC
-- Tourne 2 secteurs par jour en rotation (14 secteurs → cycle complet en 7 jours)
+- 2 scans par jour : 06h00 UTC et 18h00 UTC
+- 2 secteurs par scan en rotation → 4 secteurs/jour, cycle complet en ~3.5 jours
 - Chaque secteur = ~20 entreprises → ~20 requêtes Google Custom Search
-- Total : ~40 requêtes/jour sur les 100 gratuites
+- Total : ~80 requêtes/jour sur les 100 gratuites (marge de 20)
 - Ville configurable via la clé PROSPECT_AUTO_CITY (défaut : Montpellier)
 """
 import os
@@ -30,7 +30,7 @@ ALL_SECTORS = [
     "garage automobile", "photographe",
 ]
 
-SECTORS_PER_RUN = 2   # 2 secteurs × ~20 entreprises = ~40 requêtes Google/jour
+SECTORS_PER_RUN = 2   # 2 secteurs × ~20 req = ~40 req/scan × 2 scans = ~80/jour
 
 
 async def _save_if_new(db, biz: dict, sector: str, city: str) -> bool:
@@ -41,7 +41,6 @@ async def _save_if_new(db, biz: dict, sector: str, city: str) -> bool:
         "SELECT id FROM prospects WHERE name = ? AND city = ?", (name, city)
     )
     if await cursor.fetchone():
-        # Enrichir website/phone si on a plus d'infos
         await db.execute("""
             UPDATE prospects SET
               phone   = CASE WHEN (phone IS NULL OR phone='') AND ?!='' THEN ? ELSE phone END,
@@ -76,16 +75,21 @@ async def _save_if_new(db, biz: dict, sector: str, city: str) -> bool:
     return True
 
 
-async def run_daily_scan():
-    """Scan les 2 prochains secteurs dans la rotation quotidienne."""
+async def run_scan(slot: int):
+    """
+    Scan les 2 prochains secteurs en rotation.
+    slot=0 → scan du matin (06h), slot=1 → scan du soir (18h).
+    Chaque slot prend les 2 secteurs suivants dans la rotation journalière.
+    """
     city = os.getenv("PROSPECT_AUTO_CITY", "Montpellier")
 
-    # Déterminer les secteurs du jour via le numéro du jour de l'année
+    # slot 0 → secteurs [0,1] du jour, slot 1 → secteurs [2,3] du jour
     day_index = datetime.now().timetuple().tm_yday
-    start = (day_index * SECTORS_PER_RUN) % len(ALL_SECTORS)
-    sectors = [ALL_SECTORS[(start + i) % len(ALL_SECTORS)] for i in range(SECTORS_PER_RUN)]
+    base = (day_index * SECTORS_PER_RUN * 2 + slot * SECTORS_PER_RUN) % len(ALL_SECTORS)
+    sectors = [ALL_SECTORS[(base + i) % len(ALL_SECTORS)] for i in range(SECTORS_PER_RUN)]
 
-    log.info(f"[AutoScan] Démarrage — ville={city} secteurs={sectors}")
+    label = "matin" if slot == 0 else "soir"
+    log.info(f"[AutoScan/{label}] Démarrage — ville={city} secteurs={sectors}")
     total_new = 0
 
     db = await get_db()
@@ -98,16 +102,15 @@ async def run_daily_scan():
                     if await _save_if_new(db, biz, sector, city):
                         new_count += 1
                 total_new += new_count
-                log.info(f"[AutoScan] {sector} → {len(results)} trouvés, {new_count} nouveaux")
+                log.info(f"[AutoScan/{label}] {sector} → {len(results)} trouvés, {new_count} nouveaux")
             except Exception as e:
-                log.error(f"[AutoScan] Erreur sur secteur '{sector}' : {e}")
+                log.error(f"[AutoScan/{label}] Erreur sur secteur '{sector}' : {e}")
             await asyncio.sleep(1)
     finally:
         await db.close()
 
-    log.info(f"[AutoScan] Terminé — {total_new} nouveaux prospects ajoutés")
+    log.info(f"[AutoScan/{label}] Terminé — {total_new} nouveaux prospects ajoutés")
 
-    # Sauvegarder la date du dernier scan
     from backend.db.database import set_setting
     await set_setting("PROSPECT_LAST_AUTO_SCAN", datetime.now(timezone.utc).isoformat(), encrypted=False)
 
@@ -115,14 +118,24 @@ async def run_daily_scan():
 def start_scheduler() -> AsyncIOScheduler:
     """Crée et démarre le scheduler. Appeler depuis le lifespan FastAPI."""
     scheduler = AsyncIOScheduler(timezone="UTC")
+
     scheduler.add_job(
-        run_daily_scan,
-        trigger=CronTrigger(hour=6, minute=0),   # 06h00 UTC chaque jour
-        id="prospect_daily_scan",
-        name="Scan auto Prospect Hunter",
+        run_scan, args=[0],
+        trigger=CronTrigger(hour=6, minute=0),
+        id="prospect_scan_morning",
+        name="Scan auto Prospect Hunter — matin",
         replace_existing=True,
-        misfire_grace_time=3600,                  # tolère 1h de retard (restart VPS)
+        misfire_grace_time=3600,
     )
+    scheduler.add_job(
+        run_scan, args=[1],
+        trigger=CronTrigger(hour=18, minute=0),
+        id="prospect_scan_evening",
+        name="Scan auto Prospect Hunter — soir",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
     scheduler.start()
-    log.info("[AutoScan] Scheduler démarré — prochain scan à 06h00 UTC")
+    log.info("[AutoScan] Scheduler démarré — scans à 06h00 et 18h00 UTC")
     return scheduler
