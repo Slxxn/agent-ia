@@ -338,16 +338,19 @@ async def test_scrapers(city: str = "Montpellier") -> dict:
 
 # ─── Point d'entrée principal ─────────────────────────────────────────────────
 
-async def scrape_both_sources(sector: str, city: str, max_results: int = 20) -> list[dict]:
+async def scrape_both_sources(
+    sector: str, city: str, max_results: int = 20, enrich_websites: bool = False
+) -> list[dict]:
     """
-    1. Récupère les entreprises via data.gouv (fiable, GPS inclus)
-    2. Enrichit chaque résultat avec le site web via DuckDuckGo (en parallèle, max 5 à la fois)
+    Récupère les entreprises via data.gouv (fiable, GPS inclus).
+    enrich_websites=True : recherche aussi le site web via Google CSE ou devinette de domaine
+    (lent, ~10-20s par secteur — réservé au scheduler nocturne).
     """
     results = await _scrape_api_gouv(sector, city, max_results)
-    if not results:
-        return []
+    if not results or not enrich_websites:
+        return _dedup(results)[:max_results]
 
-    # Enrichissement DuckDuckGo en parallèle (semaphore pour limiter les requêtes simultanées)
+    # Enrichissement sites web en parallèle (semaphore pour limiter les requêtes simultanées)
     sem = asyncio.Semaphore(5)
 
     async def enrich(biz: dict) -> dict:
@@ -355,7 +358,7 @@ async def scrape_both_sources(sector: str, city: str, max_results: int = 20) -> 
             return biz
         async with sem:
             website = await _find_website(biz["name"], city)
-            await asyncio.sleep(0.2)  # politesse
+            await asyncio.sleep(0.2)
         return {**biz, "website": website}
 
     enriched = await asyncio.gather(*[enrich(b) for b in results], return_exceptions=True)

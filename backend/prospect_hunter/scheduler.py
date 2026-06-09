@@ -92,7 +92,7 @@ async def run_daily_scan():
     try:
         for sector in sectors:
             try:
-                results = await scrape_both_sources(sector, city, max_results=20)
+                results = await scrape_both_sources(sector, city, max_results=20, enrich_websites=True)
                 new_count = 0
                 for biz in results:
                     if await _save_if_new(db, biz, sector, city):
