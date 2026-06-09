@@ -82,6 +82,18 @@ export default function ProspectsPage() {
 
   // Vider la base
   const [clearing, setClearing] = useState(false);
+  // Rescorer
+  const [rescoring, setRescoring] = useState(false);
+
+  const handleRescore = async () => {
+    setRescoring(true);
+    try {
+      await fetch(`${API}/prospects/rescore`, { method: "POST" });
+      await fetchProspects();
+    } finally {
+      setRescoring(false);
+    }
+  };
 
   const handleClearAll = async () => {
     if (!confirm(`Supprimer les ${stats.total} prospects ? Cette action est irréversible.`)) return;
@@ -255,14 +267,25 @@ export default function ProspectsPage() {
             <RefreshCw size={12} style={{ animation: loadingStatus ? "spin 1s linear infinite" : "none" }} />
           </button>
           {stats.total > 0 && (
-            <button
-              onClick={handleClearAll}
-              disabled={clearing}
-              title="Vider tous les prospects"
-              style={{ background: "var(--surface2)", border: "1px solid var(--bd)", borderRadius: 7, padding: "6px 8px", cursor: "pointer", color: "#EF4444", display: "flex", alignItems: "center", opacity: clearing ? 0.6 : 1 }}
-            >
-              <Trash2 size={12} />
-            </button>
+            <>
+              <button
+                onClick={handleRescore}
+                disabled={rescoring}
+                title="Recalculer les scores avec le nouveau scorer"
+                style={{ background: "var(--surface2)", border: "1px solid var(--bd)", borderRadius: 7, padding: "6px 8px", cursor: rescoring ? "not-allowed" : "pointer", color: "#F59E0B", display: "flex", alignItems: "center", gap: 4, opacity: rescoring ? 0.6 : 1, fontSize: 11, fontWeight: 500 }}
+              >
+                <RefreshCw size={11} style={{ animation: rescoring ? "spin 1s linear infinite" : "none" }} />
+                {rescoring ? "…" : "Rescorer"}
+              </button>
+              <button
+                onClick={handleClearAll}
+                disabled={clearing}
+                title="Vider tous les prospects"
+                style={{ background: "var(--surface2)", border: "1px solid var(--bd)", borderRadius: 7, padding: "6px 8px", cursor: "pointer", color: "#EF4444", display: "flex", alignItems: "center", opacity: clearing ? 0.6 : 1 }}
+              >
+                <Trash2 size={12} />
+              </button>
+            </>
           )}
           <button
             onClick={() => { setScanOpen(true); setScanResult(null); }}

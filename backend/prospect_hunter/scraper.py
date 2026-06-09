@@ -279,11 +279,11 @@ async def _find_website(name: str, city: str) -> str:
 # ─── Test de santé des sources ────────────────────────────────────────────────
 
 async def test_scrapers(city: str = "Montpellier") -> dict:
-    """Vérifie que data.gouv répond et que les requêtes HTTP sortantes fonctionnent."""
+    """Vérifie data.gouv + l'enrichissement (Google CSE si clés configurées, sinon connectivité)."""
     gouv_ok = False
     gouv_msg = "Non disponible"
-    http_ok = False
-    http_msg = "Non disponible"
+    enrich_ok = False
+    enrich_msg = "Non disponible"
 
     # Test data.gouv
     try:
@@ -301,20 +301,37 @@ async def test_scrapers(city: str = "Montpellier") -> dict:
     except Exception as e:
         gouv_msg = f"Erreur : {str(e)[:60]}"
 
-    # Test connectivité HTTP sortante (pour la devinette de domaines)
-    try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            resp = await client.get("https://httpbin.org/status/200")
+    # Test enrichissement : Google CSE si clés présentes, sinon connectivité basique
+    api_key = os.getenv("GOOGLE_SEARCH_API_KEY", "")
+    cx = os.getenv("GOOGLE_SEARCH_CX", "")
+    if api_key and cx:
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
+                resp = await client.get(
+                    "https://www.googleapis.com/customsearch/v1",
+                    params={"key": api_key, "cx": cx, "q": "test", "num": 1},
+                )
             if resp.status_code == 200:
-                http_ok = True
-                http_msg = "Connectivité OK"
+                enrich_ok = True
+                enrich_msg = "Google Custom Search actif"
             else:
-                http_msg = f"HTTP {resp.status_code}"
-    except Exception as e:
-        http_msg = f"Erreur : {str(e)[:60]}"
+                enrich_msg = f"Erreur API Google ({resp.status_code})"
+        except Exception as e:
+            enrich_msg = f"Erreur : {str(e)[:60]}"
+    else:
+        try:
+            async with httpx.AsyncClient(timeout=6) as client:
+                resp = await client.get("https://www.google.com", headers=_HEADERS)
+            if resp.status_code < 400:
+                enrich_ok = True
+                enrich_msg = "Enrichissement domaines — connectivité OK"
+            else:
+                enrich_msg = f"HTTP {resp.status_code}"
+        except Exception as e:
+            enrich_msg = f"Erreur : {str(e)[:60]}"
 
     return {
-        "pages_jaunes": {"ok": http_ok, "message": f"Enrichissement domaines — {http_msg}"},
+        "pages_jaunes": {"ok": enrich_ok, "message": enrich_msg},
         "data_gouv": {"ok": gouv_ok, "message": gouv_msg},
     }
 

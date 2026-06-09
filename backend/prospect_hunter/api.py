@@ -159,6 +159,32 @@ async def scan_prospects(req: ScanRequest):
     }
 
 
+# ─── Rescore ──────────────────────────────────────────────────────────────────
+
+@router.post("/rescore")
+async def rescore_all_prospects():
+    """Rescorer tous les prospects avec le scorer actuel (sans refaire le scraping)."""
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT id, website, phone, lat FROM prospects")
+        rows = await cursor.fetchall()
+        updated = 0
+        now = datetime.now(timezone.utc).isoformat()
+        for row in rows:
+            pid, website, phone, lat = row
+            score = await score_prospect({"website": website or "", "phone": phone or "", "lat": lat})
+            priority = get_priority(score)
+            await db.execute(
+                "UPDATE prospects SET score=?, priority=?, updated_at=? WHERE id=?",
+                (score, priority, now, pid),
+            )
+            updated += 1
+        await db.commit()
+        return {"rescored": updated}
+    finally:
+        await db.close()
+
+
 # ─── Suppression ─────────────────────────────────────────────────────────────
 
 @router.delete("/")
