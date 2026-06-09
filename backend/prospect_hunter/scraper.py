@@ -309,11 +309,15 @@ async def test_scrapers(city: str = "Montpellier") -> dict:
             async with httpx.AsyncClient(timeout=8) as client:
                 resp = await client.get(
                     "https://www.googleapis.com/customsearch/v1",
-                    params={"key": api_key, "cx": cx, "q": "test", "num": 1},
+                    params={"key": api_key, "cx": cx, "q": "coiffeur montpellier", "num": 1},
                 )
             if resp.status_code == 200:
                 enrich_ok = True
                 enrich_msg = "Google Custom Search actif"
+            elif resp.status_code == 400:
+                # Clés présentes mais API non activée ou CX invalide → dégradé, pas bloquant
+                enrich_ok = True
+                enrich_msg = "Google CSE : activez l'API Custom Search dans Google Cloud Console"
             else:
                 enrich_msg = f"Erreur API Google ({resp.status_code})"
         except Exception as e:
@@ -321,7 +325,7 @@ async def test_scrapers(city: str = "Montpellier") -> dict:
     else:
         # Pas de clés → mode dégradé (devinette de domaines), pas une erreur
         enrich_ok = True
-        enrich_msg = "Mode dégradé — configurez GOOGLE_SEARCH_API_KEY pour l'enrichissement"
+        enrich_msg = "Clés non configurées — enrichissement par devinette de domaine"
 
     return {
         "pages_jaunes": {"ok": enrich_ok, "message": enrich_msg},
