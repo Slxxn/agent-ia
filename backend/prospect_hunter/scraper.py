@@ -301,7 +301,7 @@ async def test_scrapers(city: str = "Montpellier") -> dict:
     except Exception as e:
         gouv_msg = f"Erreur : {str(e)[:60]}"
 
-    # Test enrichissement : Google CSE si clés présentes, sinon connectivité basique
+    # Test enrichissement : Google CSE si clés présentes, sinon fallback domaines
     api_key = os.getenv("GOOGLE_SEARCH_API_KEY", "")
     cx = os.getenv("GOOGLE_SEARCH_CX", "")
     if api_key and cx:
@@ -319,16 +319,9 @@ async def test_scrapers(city: str = "Montpellier") -> dict:
         except Exception as e:
             enrich_msg = f"Erreur : {str(e)[:60]}"
     else:
-        try:
-            async with httpx.AsyncClient(timeout=6) as client:
-                resp = await client.get("https://www.google.com", headers=_HEADERS)
-            if resp.status_code < 400:
-                enrich_ok = True
-                enrich_msg = "Enrichissement domaines — connectivité OK"
-            else:
-                enrich_msg = f"HTTP {resp.status_code}"
-        except Exception as e:
-            enrich_msg = f"Erreur : {str(e)[:60]}"
+        # Pas de clés → mode dégradé (devinette de domaines), pas une erreur
+        enrich_ok = True
+        enrich_msg = "Mode dégradé — configurez GOOGLE_SEARCH_API_KEY pour l'enrichissement"
 
     return {
         "pages_jaunes": {"ok": enrich_ok, "message": enrich_msg},
