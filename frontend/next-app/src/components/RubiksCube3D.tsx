@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState, useMemo, Suspense } from "react";
+import { useRef, useState, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { RoundedBox, PresentationControls, Float, Environment } from "@react-three/drei";
+import { RoundedBox, PresentationControls, Float, Environment, Lightformer } from "@react-three/drei";
+import { EffectComposer, N8AO, Bloom } from "@react-three/postprocessing";
 import { Vector3, Quaternion, CanvasTexture, RepeatWrapping } from "three";
 import type { Group } from "three";
 
@@ -82,7 +83,7 @@ function Cubies() {
   const cube = useRef<Group>(null);
   const cubies = useRef<(Group | null)[]>([]);
   const move = useRef<SliceMove | null>(null);
-  const wait = useRef(1.2);
+  const wait = useRef(2.2);
 
   useFrame((_, delta) => {
     if (cube.current) cube.current.rotation.y += delta * 0.12;
@@ -97,10 +98,11 @@ function Cubies() {
         move.current = {
           axis,
           axisIdx,
-          layer: [-1, 0, 1][Math.floor(Math.random() * 3)],
+          // uniquement les couches externes — les tranches du milieu cassent la silhouette
+          layer: Math.random() < 0.5 ? -1 : 1,
           dir: Math.random() < 0.5 ? 1 : -1,
           t: 0,
-          dur: 1.1,
+          dur: 1.6,
           prevEased: 0,
         };
       }
@@ -128,7 +130,7 @@ function Cubies() {
         c.position.set(Math.round(c.position.x), Math.round(c.position.y), Math.round(c.position.z));
       }
       move.current = null;
-      wait.current = 0.8 + Math.random() * 2;
+      wait.current = 1.8 + Math.random() * 2.4;
     }
   });
 
@@ -138,29 +140,43 @@ function Cubies() {
   );
 
   return (
-    <group ref={cube} rotation={[0, 0, 0.12]}>
-      {/* noyau noir : empêche de voir à travers les interstices */}
-      <mesh>
-        <boxGeometry args={[2.88, 2.88, 2.88]} />
-        <meshStandardMaterial color="#020204" roughness={0.95} metalness={0} />
-      </mesh>
+    <group ref={cube} rotation={[0, 0, 0.1]}>
+      {/* noyau arrondi : mécanisme interne discret, jamais une face plate visible */}
+      <RoundedBox args={[2.78, 2.78, 2.78]} radius={0.32} smoothness={8}>
+        <meshStandardMaterial color="#030305" roughness={0.85} metalness={0} envMapIntensity={0.25} />
+      </RoundedBox>
       {POSITIONS.map((p, i) => {
         const h = hash(i);
-        // majorité grain fin, quelques brossés, quelques perforés (comme Resend)
+        // majorité lisse brillant, quelques brossés, quelques perforés (comme Resend)
         const kind = h < 0.5 ? 0 : h < 0.78 ? 1 : 2;
         return (
           <group key={i} ref={el => { cubies.current[i] = el; }} position={p}>
-            <RoundedBox args={[0.975, 0.975, 0.975]} radius={0.05} smoothness={4}>
-              <meshPhysicalMaterial
-                color="#08080a"
-                roughness={kind === 2 ? 0.55 : 0.34 + h * 0.16}
-                metalness={0.35}
-                clearcoat={kind === 0 ? 0.7 : 0.2}
-                clearcoatRoughness={0.22 + h * 0.1}
-                envMapIntensity={0.35}
-                bumpMap={textures[kind]}
-                bumpScale={kind === 0 ? 0.35 : kind === 1 ? 0.5 : 0.9}
-              />
+            <RoundedBox args={[0.96, 0.96, 0.96]} radius={0.05} smoothness={4}>
+              {kind === 0 ? (
+                <meshPhysicalMaterial
+                  color="#060608" metalness={0.05}
+                  roughness={0.3 + h * 0.1}
+                  clearcoat={1} clearcoatRoughness={0.16}
+                  envMapIntensity={1.1}
+                  bumpMap={textures[0]} bumpScale={0.25}
+                />
+              ) : kind === 1 ? (
+                <meshPhysicalMaterial
+                  color="#08080a" metalness={0.4}
+                  roughness={0.45}
+                  clearcoat={0.4} clearcoatRoughness={0.3}
+                  envMapIntensity={0.9}
+                  bumpMap={textures[1]} bumpScale={0.4}
+                />
+              ) : (
+                <meshPhysicalMaterial
+                  color="#060608" metalness={0.1}
+                  roughness={0.6}
+                  clearcoat={0.2} clearcoatRoughness={0.35}
+                  envMapIntensity={0.8}
+                  bumpMap={textures[2]} bumpScale={0.9}
+                />
+              )}
             </RoundedBox>
           </group>
         );
@@ -172,28 +188,31 @@ function Cubies() {
 function Scene() {
   return (
     <>
-      {/* éclairage low-key : faces noires, seuls les biseaux accrochent la lumière */}
-      <ambientLight intensity={0.11} />
-      <directionalLight position={[5, 9, 6]} intensity={1.6} />
-      <directionalLight position={[0, 0, 8]} intensity={0.12} />
-      <directionalLight position={[-7, 3, -5]} intensity={0.7} color="#9aa0ff" />
-      <directionalLight position={[-5, -5, 4]} intensity={0.35} color="#6366f1" />
+      <ambientLight intensity={0.06} />
       <PresentationControls
         global
         cursor
         speed={1.5}
-        rotation={[0.5, -0.75, 0]}
+        rotation={[0.45, -0.7, 0]}
         polar={[-Math.PI / 3, Math.PI / 3]}
         config={{ mass: 1, tension: 170, friction: 26 }}
       >
-        <Float speed={1.3} rotationIntensity={0.1} floatIntensity={0.3}>
+        <Float speed={1.2} rotationIntensity={0.08} floatIntensity={0.25}>
           <Cubies />
         </Float>
       </PresentationControls>
-      {/* Reflets studio — si le HDR ne charge pas, les lumières directes suffisent */}
-      <Suspense fallback={null}>
-        <Environment preset="city" />
-      </Suspense>
+      {/* studio virtuel : softboxes — donne les longs dégradés doux sur les faces noires */}
+      <Environment resolution={256}>
+        <Lightformer form="rect" intensity={3.5} position={[0, 6, 1]} rotation-x={-Math.PI / 2} scale={[9, 9, 1]} />
+        <Lightformer form="rect" intensity={1.4} position={[7, 1, -2]} rotation-y={-Math.PI / 2} scale={[7, 2.5, 1]} color="#eef" />
+        <Lightformer form="rect" intensity={1.1} position={[-7, -1, 2]} rotation-y={Math.PI / 2} scale={[6, 2, 1]} color="#6366f1" />
+        <Lightformer form="rect" intensity={0.5} position={[0, 0, 7]} scale={[5, 5, 1]} />
+      </Environment>
+      {/* AO dans les rainures + lueur subtile des hautes lumières */}
+      <EffectComposer multisampling={4}>
+        <N8AO aoRadius={0.5} intensity={4} distanceFalloff={1} quality="medium" />
+        <Bloom mipmapBlur intensity={0.3} luminanceThreshold={0.5} radius={0.6} />
+      </EffectComposer>
     </>
   );
 }
