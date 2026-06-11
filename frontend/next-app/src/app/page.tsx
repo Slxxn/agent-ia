@@ -13,10 +13,9 @@ const stagger = (delay = 0) => ({
   visible: { transition: { staggerChildren: 0.1, delayChildren: delay } },
 });
 
-// ── Remplace par ton numéro, ex: "+33612345678"
-const PHONE = "[NUMERO]";
-// ── Format international sans +, ex: "33612345678"
-const WA_NUMBER = "[NUMERO]";
+const PHONE = "+33 6 95 62 43 74";
+const PHONE_TEL = "+33695624374";
+const WA_NUMBER = "33695624374";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -209,7 +208,7 @@ export default function LandingPage() {
                     {label}
                   </a>
                 ))}
-                <a href={`tel:${PHONE}`} onClick={() => track("click_phone")}
+                <a href={`tel:${PHONE_TEL}`} onClick={() => track("click_phone")}
                   style={{ fontSize: 13, color: "rgba(226,226,234,0.45)", textDecoration: "none", padding: "6px 12px", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 5 }}>
                   <PhoneIcon />{PHONE}
                 </a>
@@ -559,7 +558,7 @@ export default function LandingPage() {
               Sites web professionnels sur mesure, livrés sous 5 jours pour les TPE et PME.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
-              <a href={`tel:${PHONE}`} onClick={() => track("click_phone")}
+              <a href={`tel:${PHONE_TEL}`} onClick={() => track("click_phone")}
                 style={{ fontSize: 12, color: "rgba(226,226,234,0.35)", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
                 <PhoneIcon />{PHONE}
               </a>

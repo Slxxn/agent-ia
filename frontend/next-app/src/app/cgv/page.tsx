@@ -27,7 +27,7 @@ export default function CGV() {
           <section>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 16, letterSpacing: "-0.02em" }}>1. Objet</h2>
             <p style={{ fontSize: 14, color: "rgba(226,226,234,0.55)", lineHeight: 1.9 }}>
-              Les présentes conditions générales régissent la prestation de création de sites web proposée par [NOM] (ci-après &laquo; le Prestataire &raquo;) via le site builderz.shop.
+              Les présentes conditions générales régissent la prestation de création de sites web proposée par builderz (ci-après &laquo; le Prestataire &raquo;) via le site builderz.shop.
             </p>
           </section>
 
@@ -52,7 +52,7 @@ export default function CGV() {
           <section>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 16, letterSpacing: "-0.02em" }}>4. Modalités de paiement</h2>
             <p style={{ fontSize: 14, color: "rgba(226,226,234,0.55)", lineHeight: 1.9 }}>
-              [MODALITÉS DE PAIEMENT — ex : paiement intégral à la commande par virement ou carte bancaire. Le site est mis en ligne après réception du paiement.]
+              Le paiement s&apos;effectue en intégralité à la commande, par virement bancaire. Le site est mis en ligne après réception et confirmation du paiement.
             </p>
           </section>
 

@@ -27,14 +27,14 @@ export default function MentionsLegales() {
           <section>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 16, letterSpacing: "-0.02em" }}>Éditeur du site</h2>
             <div style={{ fontSize: 14, color: "rgba(226,226,234,0.55)", lineHeight: 2 }}>
-              <p><strong style={{ color: "rgba(226,226,234,0.8)" }}>Nom :</strong> [NOM]</p>
-              <p><strong style={{ color: "rgba(226,226,234,0.8)" }}>Forme juridique :</strong> [FORME JURIDIQUE, ex : Auto-entrepreneur]</p>
-              <p><strong style={{ color: "rgba(226,226,234,0.8)" }}>SIRET :</strong> [SIRET]</p>
-              <p><strong style={{ color: "rgba(226,226,234,0.8)" }}>Adresse :</strong> [ADRESSE]</p>
+              <p><strong style={{ color: "rgba(226,226,234,0.8)" }}>Nom :</strong> builderz</p>
+              <p><strong style={{ color: "rgba(226,226,234,0.8)" }}>Forme juridique :</strong> Entrepreneur individuel (immatriculation en cours)</p>
+              <p><strong style={{ color: "rgba(226,226,234,0.8)" }}>SIRET :</strong> en cours d&apos;attribution</p>
+              <p><strong style={{ color: "rgba(226,226,234,0.8)" }}>Adresse :</strong> 145 rue de Salaison</p>
               <p><strong style={{ color: "rgba(226,226,234,0.8)" }}>Email :</strong>{" "}
                 <a href="mailto:contact@builderz.shop" style={{ color: "#6366f1", textDecoration: "none" }}>contact@builderz.shop</a>
               </p>
-              <p><strong style={{ color: "rgba(226,226,234,0.8)" }}>Directeur de la publication :</strong> [NOM]</p>
+              <p><strong style={{ color: "rgba(226,226,234,0.8)" }}>Directeur de la publication :</strong> builderz</p>
             </div>
           </section>
 
@@ -50,7 +50,7 @@ export default function MentionsLegales() {
           <section>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 16, letterSpacing: "-0.02em" }}>Propriété intellectuelle</h2>
             <p style={{ fontSize: 14, color: "rgba(226,226,234,0.55)", lineHeight: 1.9 }}>
-              L&apos;ensemble du contenu de ce site (textes, images, code, design) est la propriété exclusive de [NOM] sauf mention contraire. Toute reproduction, même partielle, est interdite sans autorisation préalable.
+              L&apos;ensemble du contenu de ce site (textes, images, code, design) est la propriété exclusive de builderz sauf mention contraire. Toute reproduction, même partielle, est interdite sans autorisation préalable.
             </p>
           </section>
 
