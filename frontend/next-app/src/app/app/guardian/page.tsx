@@ -85,7 +85,8 @@ export default function GuardianPage() {
       // Load admin tokens for each site
       const tokenMap: Record<string, string> = {};
       await Promise.all((s as GuardianSite[]).map(async (site) => {
-        const key = `${site.id.toUpperCase().replace(/-/g, "-")}_ADMIN_TOKEN`;
+        const slug = site.site_url.replace(/^https?:\/\//, "").split(".")[0].toUpperCase();
+        const key = `${slug}_ADMIN_TOKEN`;
         const res = await fetch(`${API}/settings/${key}`);
         if (res.ok) { const d = await res.json(); tokenMap[site.id] = d.value || ""; }
         else tokenMap[site.id] = "";
@@ -118,10 +119,15 @@ export default function GuardianPage() {
     } finally { setSavingEmail(null); }
   };
 
-  const saveToken = async (siteId: string) => {
+  const tokenKey = (siteUrl: string) => {
+    const slug = siteUrl.replace(/^https?:\/\//, "").split(".")[0].toUpperCase();
+    return `${slug}_ADMIN_TOKEN`;
+  };
+
+  const saveToken = async (siteId: string, siteUrl: string) => {
     setSavingToken(siteId);
     try {
-      const key = `${siteId.toUpperCase().replace(/-/g, "-")}_ADMIN_TOKEN`;
+      const key = tokenKey(siteUrl);
       await fetch(`${API}/settings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -302,10 +308,10 @@ export default function GuardianPage() {
                         placeholder="Mot de passe admin…"
                         value={tokenDraft[site.id] ?? tokens[site.id] ?? ""}
                         onChange={e => setTokenDraft(p => ({ ...p, [site.id]: e.target.value }))}
-                        onKeyDown={e => { if (e.key === "Enter") saveToken(site.id); if (e.key === "Escape") setEditingToken(null); }}
+                        onKeyDown={e => { if (e.key === "Enter") saveToken(site.id, site.site_url); if (e.key === "Escape") setEditingToken(null); }}
                         style={{ flex: 1, padding: "5px 9px", borderRadius: 6, border: "1px solid #6366f1", background: "var(--surface2)", color: "var(--text)", fontSize: 12, outline: "none" }}
                       />
-                      <button onClick={() => saveToken(site.id)} disabled={savingToken === site.id}
+                      <button onClick={() => saveToken(site.id, site.site_url)} disabled={savingToken === site.id}
                         style={{ padding: "5px 9px", borderRadius: 6, border: "1px solid rgba(16,185,129,0.3)", background: "rgba(16,185,129,0.1)", color: "#10B981", cursor: "pointer", display: "flex", alignItems: "center" }}>
                         <Save size={11} />
                       </button>
@@ -317,6 +323,7 @@ export default function GuardianPage() {
                   ) : (
                     <button
                       onClick={() => { setEditingToken(site.id); setTokenDraft(p => ({ ...p, [site.id]: tokens[site.id] ?? "" })); }}
+                      title={`Clé : ${tokenKey(site.site_url)}`}
                       style={{ width: "100%", display: "flex", alignItems: "center", gap: 5, padding: "5px 9px", marginBottom: 8, borderRadius: 6, border: "1px solid var(--bd)", background: "transparent", color: "var(--muted)", fontSize: 11, cursor: "pointer", textAlign: "left" }}
                     >
                       <KeyRound size={10} />

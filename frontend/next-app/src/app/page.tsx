@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const fadeUp = {
@@ -12,6 +12,11 @@ const stagger = (delay = 0) => ({
   hidden: {},
   visible: { transition: { staggerChildren: 0.1, delayChildren: delay } },
 });
+
+// ── Remplace par ton numéro, ex: "+33612345678"
+const PHONE = "[NUMERO]";
+// ── Format international sans +, ex: "33612345678"
+const WA_NUMBER = "[NUMERO]";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -24,21 +29,10 @@ function useIsMobile() {
   return isMobile;
 }
 
-function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-  const mv = useMotionValue(0);
-  const spring = useSpring(mv, { stiffness: 55, damping: 18 });
-  const [display, setDisplay] = useState(0);
-  useEffect(() => { if (inView) mv.set(to); }, [inView, mv, to]);
-  useEffect(() => spring.on("change", v => setDisplay(Math.round(v))), [spring]);
-  return <span ref={ref}>{display}{suffix}</span>;
-}
-
 const TICKER_ITEMS = [
-  "Site Vitrine", "Scrollytelling", "3D / WebGL", "72h livraison",
-  "React", "TypeScript", "à partir de 290€", "100% sur mesure",
-  "Firebase Hosting", "SSL inclus", "Domaine custom",
+  "Site Vitrine", "Sous 5 jours", "à partir de 290€", "100% sur mesure",
+  "Responsive mobile", "SSL inclus", "Domaine custom", "Formulaire de contact",
+  "30 jours de retouches", "Hébergement inclus",
 ];
 
 function Marquee() {
@@ -60,54 +54,94 @@ function Marquee() {
 
 const PixelLogo = ({ size = 26 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-    <rect x="3" y="3" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: 'px1 3.2s ease-in-out infinite' }}/>
-    <rect x="19" y="3" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: 'px2 2.8s ease-in-out infinite' }}/>
-    <rect x="35" y="3" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: 'px3 3.5s ease-in-out infinite' }}/>
-    <rect x="3" y="19" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: 'px4 2.6s ease-in-out infinite' }}/>
-    <rect x="19" y="19" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: 'px5 3.8s ease-in-out infinite' }}/>
-    <rect x="35" y="19" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: 'px6 2.9s ease-in-out infinite' }}/>
-    <rect x="3" y="35" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: 'px7 3.1s ease-in-out infinite' }}/>
-    <rect x="19" y="35" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: 'px8 2.7s ease-in-out infinite' }}/>
-    <rect x="35" y="35" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: 'px9 3.4s ease-in-out infinite' }}/>
+    <rect x="3" y="3" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: "px1 3.2s ease-in-out infinite" }}/>
+    <rect x="19" y="3" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: "px2 2.8s ease-in-out infinite" }}/>
+    <rect x="35" y="3" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: "px3 3.5s ease-in-out infinite" }}/>
+    <rect x="3" y="19" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: "px4 2.6s ease-in-out infinite" }}/>
+    <rect x="19" y="19" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: "px5 3.8s ease-in-out infinite" }}/>
+    <rect x="35" y="19" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: "px6 2.9s ease-in-out infinite" }}/>
+    <rect x="3" y="35" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: "px7 3.1s ease-in-out infinite" }}/>
+    <rect x="19" y="35" width="13" height="13" rx="3" fill="#818cf8" style={{ animation: "px8 2.7s ease-in-out infinite" }}/>
+    <rect x="35" y="35" width="13" height="13" rx="3" fill="#6366f1" style={{ animation: "px9 3.4s ease-in-out infinite" }}/>
   </svg>
 );
 
 const STEPS = [
-  { n: "01", title: "Remplissez le formulaire", desc: "Décrivez votre activité, vos préférences visuelles et choisissez votre type de site. 5 minutes suffisent.", tag: "Formulaire guidé · 5 étapes" },
-  { n: "02", title: "L'IA génère votre site", desc: "Notre agent analyse votre brief et produit un site React complet — code, design, contenu. Tout.", tag: "Agent IA · React · TypeScript" },
-  { n: "03", title: "Livraison & mise en ligne", desc: "Vous recevez votre site déployé sur Firebase. URL permanente, SSL inclus, domaine custom possible.", tag: "Firebase Hosting · SSL · 72h" },
+  {
+    n: "01",
+    title: "Remplissez le formulaire",
+    desc: "Décrivez votre activité en 5 minutes : secteur, style visuel, infos de contact. Aucune compétence technique requise.",
+    tag: "Formulaire guidé · 5 minutes",
+  },
+  {
+    n: "02",
+    title: "Nous créons votre site",
+    desc: "Votre site est conçu sur mesure — design, contenu, mise en page — avec l'aide de notre IA, supervisé par un expert. Vous validez avant la mise en ligne.",
+    tag: "Design sur mesure · Supervisé par un expert",
+  },
+  {
+    n: "03",
+    title: "Mise en ligne sous 5 jours",
+    desc: "Votre site est déployé sur un hébergement professionnel. URL permanente, SSL inclus, domaine personnalisé possible. 30 jours de retouches incluses.",
+    tag: "Hébergement Google · SSL inclus · Domaine custom",
+  },
 ];
 
-const PRICING = [
-  {
-    tag: "STANDARD", name: "Site Vitrine", price: "290",
-    color: "#6366F1", bg: "rgba(99,102,241,0.06)", border: "rgba(99,102,241,0.2)",
-    desc: "Landing page premium. Hero animé, sections fluides, optimisé conversion.",
-    features: ["Animations Framer Motion", "Design sur mesure", "100% responsive", "Formulaire de contact"],
-  },
-  {
-    tag: "NARRATIF", name: "Scrollytelling", price: "490",
-    color: "#6366F1", bg: "rgba(99,102,241,0.06)", border: "rgba(99,102,241,0.2)",
-    desc: "Narration visuelle déclenchée au scroll. Séquences cinématiques, typographie XXL.",
-    features: ["GSAP + Lenis scroll", "Sections pinned", "Typographie XXL", "Révélations au scroll"],
-    featured: true,
-  },
-  {
-    tag: "IMMERSIF", name: "3D / WebGL", price: "690",
-    color: "#6366F1", bg: "rgba(99,102,241,0.06)", border: "rgba(99,102,241,0.2)",
-    desc: "Expérience immersive Three.js. Scènes 3D, shaders, interactions GPU.",
-    features: ["Three.js / R3F", "Particules & shaders", "Curseur custom", "Fallback mobile"],
-  },
+const INCLUDED_FEATURES = [
+  "Site vitrine une page, sur mesure",
+  "Design adapté à votre activité",
+  "100% responsive (mobile, tablette, ordi)",
+  "Formulaire de contact intégré",
+  "Hébergement + SSL inclus",
+  "Mise en ligne sous 5 jours",
+  "30 jours de retouches incluses",
+  "Code source livré",
+];
+
+const OPTION_ITEMS = [
+  { label: "Pages supplémentaires", desc: "Menu, équipe, galerie, blog…" },
+  { label: "Prise de rendez-vous en ligne", desc: "Réservation et agenda intégré" },
+  { label: "Nom de domaine personnalisé", desc: ".fr, .com selon votre activité" },
+  { label: "Animations avancées", desc: "Effets au défilement, transitions cinématiques" },
+  { label: "Expérience 3D immersive", desc: "Scènes interactives, effets visuels uniques" },
+  { label: "Référencement Google renforcé", desc: "Optimisation technique SEO avancée" },
+  { label: "Site multilingue", desc: "Français, anglais et autres langues" },
 ];
 
 const FAQ_ITEMS = [
-  { q: "Combien de temps faut-il pour recevoir mon site ?", a: "La livraison est garantie en 72h ouvrées après validation du formulaire. La plupart des sites sont livrés en 48h." },
-  { q: "Est-ce que je peux modifier le site après livraison ?", a: "Oui. Vous recevez le code source complet en React. Vous pouvez le modifier vous-même ou nous demander des retouches." },
-  { q: "Qu'est-ce qui est inclus dans le prix ?", a: "Conception, développement, déploiement Firebase, SSL, et un nom de domaine .web.app. Le domaine custom est en option." },
-  { q: "Les sites sont-ils vraiment faits par IA ?", a: "Oui — notre agent génère le code React/TypeScript à partir de votre brief. Chaque site est unique, aucun template." },
-  { q: "Quelle est la différence entre les 3 formules ?", a: "Standard = site vitrine classique. Narratif = narration au scroll (GSAP). Immersif = expérience 3D/WebGL (Three.js). Le niveau technique et visuel monte en gamme." },
-  { q: "Puis-je voir des exemples de sites générés ?", a: "Oui, consultez la section Réalisations sur cette page. D'autres exemples sont disponibles sur demande." },
+  {
+    q: "Combien de temps faut-il pour recevoir mon site ?",
+    a: "La livraison est garantie sous 5 jours ouvrés après validation de votre brief. La plupart des sites sont livrés en 3 à 4 jours.",
+  },
+  {
+    q: "Que comprend le site à 290€ ?",
+    a: "Un site une page professionnel sur mesure : design adapté à votre activité, animations élégantes et fluides, 100% responsive (mobile, tablette, ordinateur), formulaire de contact, hébergement et SSL inclus. Mise en ligne sous 5 jours.",
+  },
+  {
+    q: "Combien coûtent les options ?",
+    a: "Les options (pages supplémentaires, réservation en ligne, domaine personnalisé…) sont sur devis. La plupart des projets avec options se situent entre 290€ et 600€. Vous recevez un devis sous 48h après votre demande.",
+  },
+  {
+    q: "Est-ce que je peux modifier le site après livraison ?",
+    a: "30 jours de retouches incluses : jusqu'à 3 demandes groupées portant sur les textes, images, couleurs, coordonnées et petits ajustements. Les nouvelles pages ou fonctionnalités sont disponibles en option.",
+  },
+  {
+    q: "Est-ce que mon site sera vraiment unique ?",
+    a: "Oui. Chaque site est conçu sur mesure à partir de votre brief, avec l'aide de notre IA supervisée par un expert. Aucun template, aucune copie.",
+  },
+  {
+    q: "Puis-je voir des exemples de réalisations ?",
+    a: "Oui, consultez la section Réalisations sur cette page. D'autres exemples sont disponibles sur demande à contact@builderz.shop.",
+  },
 ];
+
+function CheckIcon() {
+  return (
+    <span style={{ width: 16, height: 16, borderRadius: "50%", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2L6.5 2" stroke="#6366f1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    </span>
+  );
+}
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -128,6 +162,18 @@ function FaqItem({ q, a }: { q: string; a: string }) {
       )}
     </div>
   );
+}
+
+function PhoneIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+      <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C9.6 21 3 14.4 3 6c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z" fill="currentColor"/>
+    </svg>
+  );
+}
+
+function track(event: string) {
+  (window as unknown as { plausible?: (e: string) => void }).plausible?.(event);
 }
 
 export default function LandingPage() {
@@ -163,10 +209,15 @@ export default function LandingPage() {
                     {label}
                   </a>
                 ))}
+                <a href={`tel:${PHONE}`} onClick={() => track("click_phone")}
+                  style={{ fontSize: 13, color: "rgba(226,226,234,0.45)", textDecoration: "none", padding: "6px 12px", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 5 }}>
+                  <PhoneIcon />{PHONE}
+                </a>
                 <a href="/login" style={{ fontSize: 13, color: "rgba(226,226,234,0.35)", textDecoration: "none", padding: "6px 12px", whiteSpace: "nowrap" }}>Connexion</a>
               </>
             )}
-            <a href="/form" style={{ fontSize: 13, fontWeight: 600, color: "#fff", textDecoration: "none", padding: isMobile ? "8px 16px" : "8px 20px", borderRadius: 8, background: "#6366f1", whiteSpace: "nowrap" }}>
+            <a href="/form" onClick={() => track("click_cta_nav")}
+              style={{ fontSize: 13, fontWeight: 600, color: "#fff", textDecoration: "none", padding: isMobile ? "8px 16px" : "8px 20px", borderRadius: 8, background: "#6366f1", whiteSpace: "nowrap" }}>
               Créer mon site →
             </a>
           </div>
@@ -182,9 +233,9 @@ export default function LandingPage() {
               <motion.div variants={fadeUp} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px 5px 7px", borderRadius: 99, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.22)", marginBottom: 24, width: "fit-content" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#6366F1", borderRadius: 99, padding: "3px 9px", fontSize: 10, fontWeight: 700, color: "#fff", letterSpacing: "0.05em" }}>
                   <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#6EE7B7", boxShadow: "0 0 5px #6EE7B7" }} />
-                  NOUVEAU
+                  DISPONIBLE
                 </span>
-                <span style={{ fontSize: 12, color: "rgba(226,226,234,0.55)", fontWeight: 500 }}>Sites React premium générés par IA</span>
+                <span style={{ fontSize: 12, color: "rgba(226,226,234,0.55)", fontWeight: 500 }}>Sites web pro, créés avec l&apos;IA</span>
               </motion.div>
 
               <motion.h1 variants={fadeUp}
@@ -192,7 +243,7 @@ export default function LandingPage() {
                 Votre site web pro,{" "}
                 <span style={{ position: "relative", display: "inline-block" }}>
                   <span style={{ background: "linear-gradient(135deg, #818CF8 0%, #6366F1 40%, #06B6D4 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                    livré en 72h.
+                    sous 5 jours.
                   </span>
                   <motion.span initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.9, duration: 0.5, ease: EASE }}
                     style={{ position: "absolute", bottom: 3, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, #6366F1, #06B6D4)", borderRadius: 2, transformOrigin: "left", display: "block" }} />
@@ -200,11 +251,12 @@ export default function LandingPage() {
               </motion.h1>
 
               <motion.p variants={fadeUp} style={{ fontSize: isMobile ? 14 : 15, color: "rgba(226,226,234,0.45)", lineHeight: 1.75, marginTop: 18, marginBottom: 28, maxWidth: 440 }}>
-                Nous utilisons un agent IA pour créer des sites React professionnels, sur mesure, adaptés à votre secteur — sans template, sans compromis.
+                Nous créons votre site web professionnel sur mesure, adapté à votre activité — design, contenu, mise en ligne. À partir de 290€.
               </motion.p>
 
               <motion.div variants={fadeUp} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 40 }}>
-                <a href="/form" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: isMobile ? "12px 22px" : "13px 26px", borderRadius: 9, background: "#6366f1", color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", fontFamily: "var(--font-syne)" }}>
+                <a href="/form" onClick={() => track("click_cta_hero")}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: isMobile ? "12px 22px" : "13px 26px", borderRadius: 9, background: "#6366f1", color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", fontFamily: "var(--font-syne)" }}>
                   Créer mon site
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7h9M8 3.5l3.5 3.5L8 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </a>
@@ -213,11 +265,15 @@ export default function LandingPage() {
                 </a>
               </motion.div>
 
-              <motion.div variants={fadeUp} style={{ display: "flex", gap: isMobile ? 28 : 36 }}>
-                {[{ label: "Délai livraison", to: 72, suffix: "h" }, { label: "Sites livrés", to: 12, suffix: "+" }, { label: "Satisfaction", to: 100, suffix: "%" }].map(({ label, to, suffix }) => (
+              <motion.div variants={fadeUp} style={{ display: "flex", gap: isMobile ? 20 : 32, flexWrap: "wrap" }}>
+                {[
+                  { value: "Sous 5 jours", label: "Livraison garantie" },
+                  { value: "100% sur mesure", label: "Aucun template" },
+                  { value: "30 jours", label: "Retouches incluses" },
+                ].map(({ value, label }) => (
                   <div key={label}>
-                    <div style={{ fontFamily: "var(--font-syne)", fontSize: isMobile ? "clamp(24px, 7vw, 32px)" : "clamp(26px, 3vw, 36px)", fontWeight: 700, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1 }}>
-                      <Counter to={to} suffix={suffix} />
+                    <div style={{ fontFamily: "var(--font-syne)", fontSize: isMobile ? 14 : 15, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                      {value}
                     </div>
                     <div style={{ fontSize: 11, color: "rgba(226,226,234,0.3)", marginTop: 5, fontWeight: 500, letterSpacing: "0.02em" }}>{label}</div>
                   </div>
@@ -225,7 +281,7 @@ export default function LandingPage() {
               </motion.div>
             </motion.div>
 
-            {/* iframe preview — desktop only */}
+            {/* capture d'écran — desktop only */}
             {!isMobile && (
               <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4, duration: 0.8, ease: EASE }}
                 style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -233,7 +289,7 @@ export default function LandingPage() {
                   <div style={{ position: "absolute", inset: -40, background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.13) 0%, transparent 70%)", pointerEvents: "none" }} />
                   <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1, duration: 0.4 }}
                     style={{ position: "absolute", top: -14, right: -14, zIndex: 10, display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 99, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.22)", fontSize: 11, fontWeight: 600, color: "#22C55E" }}>
-                    ✓ Déployé en 48h
+                    ✓ Livré sous 5 jours
                   </motion.div>
                   <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", background: "#0D0D14", boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", background: "#13131C", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
@@ -248,11 +304,10 @@ export default function LandingPage() {
                       </div>
                     </div>
                     <div style={{ height: 340, overflow: "hidden", position: "relative" }}>
-                      <iframe
-                        src="https://agent-ia-2d81a-p51.firebaseapp.com/"
-                        style={{ width: "180%", height: "180%", border: "none", pointerEvents: "none", transformOrigin: "top left", transform: "scale(0.556)", position: "absolute", top: 0, left: 0 }}
-                        loading="lazy"
-                        title="Exemple de site généré par builderz"
+                      <img
+                        src="/realisations/ixshel-co.jpg"
+                        alt="IXSHEL&CO — site vitrine bijoux, réalisé par builderz"
+                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }}
                       />
                     </div>
                   </div>
@@ -276,48 +331,60 @@ export default function LandingPage() {
             </h2>
           </motion.div>
 
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
-
-            {/* IXSHEL&CO */}
-            <motion.div variants={fadeUp}>
-              <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", background: "#0E0E15" }}>
-                <div style={{ height: 200, overflow: "hidden", position: "relative", background: "#0a0a12" }}>
-                  <iframe
-                    src="https://agent-ia-2d81a-p51.firebaseapp.com/"
-                    style={{ width: "200%", height: "200%", border: "none", pointerEvents: "none", transformOrigin: "top left", transform: "scale(0.5)", position: "absolute", top: 0, left: 0 }}
-                    loading="lazy"
-                    title="IXSHEL&CO"
-                  />
+          {/* IXSHEL&CO — carte élargie */}
+          <motion.div variants={fadeUp}>
+            <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", background: "#0E0E15", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+              <div style={{ height: isMobile ? 220 : 340, overflow: "hidden", position: "relative", background: "#0a0a12" }}>
+                <img
+                  src="/realisations/ixshel-co.jpg"
+                  alt="IXSHEL&CO — site vitrine bijoux"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }}
+                />
+              </div>
+              <div style={{ padding: isMobile ? "24px 20px" : "36px 32px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                  <span style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 20, color: "#fff" }}>IXSHEL&CO</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: "#6366F1", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", borderRadius: 99 }}>SITE VITRINE</span>
                 </div>
-                <div style={{ padding: "18px 20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 14, color: "#fff" }}>IXSHEL&CO</span>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: "#6366F1", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", borderRadius: 99 }}>STANDARD</span>
-                  </div>
-                  <p style={{ fontSize: 12, color: "rgba(226,226,234,0.4)", lineHeight: 1.6, marginBottom: 14 }}>Site vitrine — bijoux artisanaux. Livré en 48h.</p>
-                  <a href="https://agent-ia-2d81a-p51.firebaseapp.com/" target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: 12, color: "#6366F1", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
-                    Voir le site →
-                  </a>
+                <p style={{ fontSize: 13, color: "rgba(226,226,234,0.45)", lineHeight: 1.75, marginBottom: 20 }}>
+                  Site vitrine pour une créatrice de bijoux artisanaux. Design sur mesure, mise en valeur des collections, formulaire de contact. Livré sous 5 jours.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+                  {[
+                    "Design adapté à l'univers bijoux artisanaux",
+                    "100% responsive — mobile et desktop",
+                    "Animations élégantes et fluides",
+                  ].map(f => (
+                    <div key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "rgba(226,226,234,0.45)" }}>
+                      <CheckIcon />{f}
+                    </div>
+                  ))}
+                </div>
+                <a href="https://ixshel-co.web.app" target="_blank" rel="noopener noreferrer"
+                  onClick={() => track("click_realisation")}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6366F1", textDecoration: "none", fontWeight: 600 }}>
+                  Voir le site →
+                </a>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Témoignage */}
+          <motion.div variants={fadeUp} style={{ marginTop: 24 }}>
+            <div style={{ borderRadius: 16, padding: isMobile ? "24px 20px" : "32px 36px", border: "1px solid rgba(255,255,255,0.05)", background: "rgba(14,14,21,0.5)", position: "relative" }}>
+              <div style={{ fontSize: 44, color: "rgba(99,102,241,0.2)", fontFamily: "Georgia, serif", lineHeight: 1, marginBottom: 10, userSelect: "none" }}>&ldquo;</div>
+              <p style={{ fontSize: 15, color: "rgba(226,226,234,0.55)", lineHeight: 1.8, fontStyle: "italic", marginBottom: 20, maxWidth: 640 }}>
+                [Témoignage à venir — contactez-moi pour partager votre expérience]
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)" }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Client IXSHEL&CO</div>
+                  <div style={{ fontSize: 11, color: "rgba(226,226,234,0.3)" }}>Créatrice de bijoux artisanaux</div>
                 </div>
               </div>
-            </motion.div>
-
-            {/* Bientôt 1 */}
-            {[1, 2].map(i => (
-              <motion.div key={i} variants={fadeUp}>
-                <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", background: "#0E0E15", height: "100%", minHeight: 280, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ textAlign: "center", padding: 24 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="rgba(99,102,241,0.5)" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(226,226,234,0.25)", marginBottom: 6 }}>Bientôt</div>
-                    <div style={{ fontSize: 11, color: "rgba(226,226,234,0.15)" }}>Prochain site livré</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+            </div>
+          </motion.div>
         </motion.div>
       </section>
 
@@ -350,63 +417,83 @@ export default function LandingPage() {
 
       {/* ── tarifs ── */}
       <section id="tarifs" style={{ position: "relative", zIndex: 1, padding: isMobile ? "60px 18px 80px" : "100px 28px 110px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto" }}>
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={stagger()}>
             <motion.div variants={fadeUp} style={{ marginBottom: isMobile ? 36 : 56 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: "#6366F1", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12, fontFamily: "var(--font-syne)" }}>Tarifs</div>
               <h2 style={{ fontFamily: "var(--font-syne)", fontSize: isMobile ? "clamp(22px, 7vw, 32px)" : "clamp(26px, 3.5vw, 44px)", fontWeight: 700, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 10 }}>
-                Choisissez votre site
+                Un site pro. Un prix clair.
               </h2>
               <p style={{ fontSize: 13, color: "rgba(226,226,234,0.3)", lineHeight: 1.7 }}>
-                Prix fixe, livraison garantie en 72h. Hébergement Firebase inclus.
+                Prix fixe, livraison garantie sous 5 jours. Hébergement inclus.
               </p>
             </motion.div>
 
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
-              {PRICING.map((plan) => (
-                <motion.div key={plan.name} variants={fadeUp}>
-                  <div style={{ position: "relative", borderRadius: 18, background: "rgba(12,12,18,0.9)", border: `1px solid ${plan.featured ? "rgba(99,102,241,0.35)" : "rgba(255,255,255,0.06)"}`, overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
-                    {plan.featured && (
-                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, #6366f1, transparent)" }} />
-                    )}
-                    <div style={{ padding: "26px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
-                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18, gap: 8 }}>
-                        <div>
-                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "#6366F1", marginBottom: 6 }}>{plan.tag}</div>
-                          <h3 style={{ fontFamily: "var(--font-syne)", fontSize: 18, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em", margin: 0 }}>{plan.name}</h3>
-                        </div>
-                        <div style={{ textAlign: "right", flexShrink: 0 }}>
-                          <div style={{ fontSize: 10, color: "rgba(226,226,234,0.3)", marginBottom: 2 }}>à partir de</div>
-                          <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
-                            <span style={{ fontFamily: "var(--font-syne)", fontSize: 28, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1 }}>{plan.price}</span>
-                            <span style={{ fontSize: 13, color: "rgba(226,226,234,0.4)", fontWeight: 500 }}>€</span>
-                          </div>
-                        </div>
+            {/* Carte principale 290€ */}
+            <motion.div variants={fadeUp}>
+              <div style={{ position: "relative", borderRadius: 20, background: "rgba(12,12,18,0.9)", border: "1px solid rgba(99,102,241,0.35)", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, #6366f1, transparent)" }} />
+                <div style={{ padding: isMobile ? "28px 22px" : "40px 44px" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "#6366F1", marginBottom: 8 }}>VOTRE SITE WEB PRO</div>
+                      <h3 style={{ fontFamily: "var(--font-syne)", fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em", margin: 0, lineHeight: 1.1 }}>Site vitrine one-page</h3>
+                      <p style={{ fontSize: 13, color: "rgba(226,226,234,0.4)", marginTop: 10, lineHeight: 1.65, maxWidth: 400 }}>
+                        Sur mesure, adapté à votre activité et votre clientèle. Aucun template, aucune copie.
+                      </p>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ fontFamily: "var(--font-syne)", fontSize: isMobile ? 46 : 56, fontWeight: 700, color: "#fff", letterSpacing: "-0.04em", lineHeight: 1 }}>
+                        290<span style={{ fontSize: 22, color: "rgba(226,226,234,0.45)", fontWeight: 500 }}>€</span>
                       </div>
-
-                      <p style={{ fontSize: 13, color: "rgba(226,226,234,0.42)", lineHeight: 1.65, marginBottom: 20 }}>{plan.desc}</p>
-
-                      <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
-                        {plan.features.map(f => (
-                          <li key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "rgba(226,226,234,0.55)" }}>
-                            <span style={{ width: 16, height: 16, borderRadius: "50%", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2L6.5 2" stroke="#6366f1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            </span>
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-
-                      <a href="/form" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 16px", borderRadius: 9, background: "#6366f1", color: "#fff", fontWeight: 600, fontSize: 13, textDecoration: "none", fontFamily: "var(--font-syne)" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "#5558e8")}
-                        onMouseLeave={e => (e.currentTarget.style.background = "#6366f1")}>
-                        Démarrer →
-                      </a>
+                      <div style={{ fontSize: 11, color: "rgba(226,226,234,0.3)", marginTop: 4 }}>prix fixe · tout inclus</div>
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 12, marginBottom: 32 }}>
+                    {INCLUDED_FEATURES.map(f => (
+                      <div key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "rgba(226,226,234,0.65)" }}>
+                        <CheckIcon />{f}
+                      </div>
+                    ))}
+                  </div>
+
+                  <a href="/form" onClick={() => track("click_cta_pricing")}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: isMobile ? "12px 24px" : "13px 28px", borderRadius: 10, background: "#6366f1", color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", fontFamily: "var(--font-syne)" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "#5558e8")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "#6366f1")}>
+                    Démarrer à 290€ →
+                  </a>
+                  <div style={{ marginTop: 14, fontSize: 11, color: "rgba(226,226,234,0.18)", letterSpacing: "0.04em" }}>
+                    Technologie : React · Hébergement Google Firebase · SSL
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Options */}
+            <motion.div variants={fadeUp} style={{ marginTop: 44 }}>
+              <div style={{ marginBottom: 20 }}>
+                <h3 style={{ fontFamily: "var(--font-syne)", fontSize: 17, fontWeight: 700, color: "#fff", marginBottom: 6, letterSpacing: "-0.02em" }}>Options selon vos besoins</h3>
+                <p style={{ fontSize: 13, color: "rgba(226,226,234,0.3)" }}>Sur devis — je vous réponds sous 48h.</p>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 10 }}>
+                {OPTION_ITEMS.map(opt => (
+                  <div key={opt.label} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)", background: "rgba(14,14,21,0.5)" }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(99,102,241,0.5)", flexShrink: 0, marginTop: 6 }} />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(226,226,234,0.75)", marginBottom: 2 }}>{opt.label}</div>
+                      <div style={{ fontSize: 11, color: "rgba(226,226,234,0.3)" }}>{opt.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 18, padding: "16px 20px", borderRadius: 10, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.14)", fontSize: 13, color: "rgba(226,226,234,0.45)", lineHeight: 1.7 }}>
+                La plupart des projets avec options se situent entre{" "}
+                <strong style={{ color: "rgba(226,226,234,0.75)" }}>290€ et 600€</strong>.{" "}
+                Devis précis sous 48h après votre demande.
+              </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -442,15 +529,17 @@ export default function LandingPage() {
             Prêt à avoir un site<br/>qui convertit ?
           </motion.h2>
           <motion.p variants={fadeUp} style={{ fontSize: isMobile ? 14 : 15, color: "rgba(226,226,234,0.38)", lineHeight: 1.75, marginBottom: 32, maxWidth: 380, margin: "0 auto 32px" }}>
-            Remplissez le formulaire en 5 minutes.<br/>L&apos;IA s&apos;occupe du reste.
+            Remplissez le formulaire en 5 minutes.<br/>Nous nous occupons du reste.
           </motion.p>
           <motion.div variants={fadeUp}>
-            <a href="/form" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: isMobile ? "12px 24px" : "13px 28px", borderRadius: 10, background: "#6366f1", color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", fontFamily: "var(--font-syne)" }}>
+            <a href="/form" onClick={() => track("click_cta_final")}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: isMobile ? "12px 24px" : "13px 28px", borderRadius: 10, background: "#6366f1", color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", fontFamily: "var(--font-syne)" }}>
               Commander mon site
               <svg width="14" height="14" viewBox="0 0 15 15" fill="none"><path d="M3 7.5h9M8 4l4 3.5L8 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </a>
             <div style={{ marginTop: 14, fontSize: 12, color: "rgba(226,226,234,0.2)", letterSpacing: "0.03em" }}>
-              Paiement sécurisé · Livraison 72h · Satisfaction garantie
+              Paiement sécurisé · Livraison sous 5 jours ·{" "}
+              <a href="/cgv" style={{ color: "inherit", textDecoration: "underline" }}>30 jours de retouches incluses</a>
             </div>
           </motion.div>
         </motion.div>
@@ -467,15 +556,30 @@ export default function LandingPage() {
               <span style={{ fontFamily: "var(--font-syne)", fontWeight: 800, fontSize: 14, letterSpacing: "-0.04em", color: "#fff" }}>builderz</span>
             </div>
             <p style={{ fontSize: 12, color: "rgba(226,226,234,0.3)", lineHeight: 1.75, maxWidth: 240 }}>
-              Sites web professionnels générés par IA en 72h pour les TPE/PME.
+              Sites web professionnels sur mesure, livrés sous 5 jours pour les TPE et PME.
             </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+              <a href={`tel:${PHONE}`} onClick={() => track("click_phone")}
+                style={{ fontSize: 12, color: "rgba(226,226,234,0.35)", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
+                <PhoneIcon />{PHONE}
+              </a>
+              <a href={`https://wa.me/${WA_NUMBER}`} target="_blank" rel="noopener noreferrer"
+                onClick={() => track("click_whatsapp")}
+                style={{ fontSize: 12, color: "rgba(226,226,234,0.35)", textDecoration: "none" }}>
+                WhatsApp
+              </a>
+              <a href="mailto:contact@builderz.shop"
+                style={{ fontSize: 12, color: "rgba(226,226,234,0.35)", textDecoration: "none" }}>
+                contact@builderz.shop
+              </a>
+            </div>
           </div>
 
           {/* col 2 */}
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(226,226,234,0.25)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>Liens</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(226,226,234,0.25)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>Navigation</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[["#comment", "Comment ça marche"], ["#realisations", "Réalisations"], ["#tarifs", "Tarifs"], ["/form", "Commander"]].map(([href, label]) => (
+              {[["#comment", "Comment ça marche"], ["#realisations", "Réalisations"], ["#tarifs", "Tarifs"], ["/form", "Commander mon site"]].map(([href, label]) => (
                 <a key={href} href={href} style={{ fontSize: 13, color: "rgba(226,226,234,0.35)", textDecoration: "none", transition: "color 0.15s" }}
                   onMouseEnter={e => (e.currentTarget.style.color = "rgba(226,226,234,0.7)")}
                   onMouseLeave={e => (e.currentTarget.style.color = "rgba(226,226,234,0.35)")}>
@@ -489,9 +593,18 @@ export default function LandingPage() {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(226,226,234,0.25)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>Légal</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <span style={{ fontSize: 12, color: "rgba(226,226,234,0.25)" }}>© 2025 builderz</span>
+              <span style={{ fontSize: 12, color: "rgba(226,226,234,0.25)" }}>© {new Date().getFullYear()} builderz</span>
               <span style={{ fontSize: 12, color: "rgba(226,226,234,0.25)" }}>builderz.shop</span>
-              <a href="mailto:contact@builderz.shop" style={{ fontSize: 12, color: "rgba(226,226,234,0.3)", textDecoration: "none" }}>contact@builderz.shop</a>
+              <a href="/mentions-legales" style={{ fontSize: 12, color: "rgba(226,226,234,0.3)", textDecoration: "none" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "rgba(226,226,234,0.6)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(226,226,234,0.3)")}>
+                Mentions légales
+              </a>
+              <a href="/cgv" style={{ fontSize: 12, color: "rgba(226,226,234,0.3)", textDecoration: "none" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "rgba(226,226,234,0.6)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(226,226,234,0.3)")}>
+                Conditions générales de vente
+              </a>
             </div>
           </div>
         </div>
