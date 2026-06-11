@@ -17,7 +17,7 @@ const hash = (i: number) => {
   return s - Math.floor(s);
 };
 
-// Textures procédurales (bump) : grain fin, métal brossé, moletage diamant
+// Textures procédurales (bump) : grain + flecks, brossé, perforations
 function makeBumpTexture(kind: 0 | 1 | 2): CanvasTexture {
   const size = 256;
   const c = document.createElement("canvas");
@@ -26,24 +26,37 @@ function makeBumpTexture(kind: 0 | 1 | 2): CanvasTexture {
   ctx.fillStyle = "#7f7f7f";
   ctx.fillRect(0, 0, size, size);
   if (kind === 0) {
+    // grain fin + flecks brillants (paillettes qui accrochent la lumière)
     const img = ctx.getImageData(0, 0, size, size);
     for (let i = 0; i < img.data.length; i += 4) {
-      const v = 116 + Math.random() * 24;
+      const v = 118 + Math.random() * 20;
       img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
     }
     ctx.putImageData(img, 0, 0);
+    ctx.fillStyle = "#e8e8e8";
+    for (let n = 0; n < 350; n++) {
+      ctx.fillRect(Math.random() * size, Math.random() * size, 1.5, 1.5);
+    }
   } else if (kind === 1) {
     for (let y = 0; y < size; y++) {
-      const v = 118 + Math.random() * 18;
+      const v = 116 + Math.random() * 24;
       ctx.fillStyle = `rgb(${v},${v},${v})`;
       ctx.fillRect(0, y, size, 1);
     }
   } else {
-    ctx.strokeStyle = "#a8a8a8";
-    ctx.lineWidth = 2;
-    for (let i = -size; i < size * 2; i += 11) {
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + size, size); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(i + size, 0); ctx.lineTo(i, size); ctx.stroke();
+    // perforations en quinconce (grille type haut-parleur, comme Resend)
+    ctx.fillStyle = "#9a9a9a";
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = "#2e2e2e";
+    const step = 18;
+    let row = 0;
+    for (let y = step / 2; y < size; y += step, row++) {
+      const offset = row % 2 ? step / 2 : 0;
+      for (let x = step / 2; x < size + step; x += step) {
+        ctx.beginPath();
+        ctx.arc(x + offset, y, 4.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
   const tex = new CanvasTexture(c);
@@ -125,23 +138,28 @@ function Cubies() {
   );
 
   return (
-    <group ref={cube}>
+    <group ref={cube} rotation={[0, 0, 0.12]}>
+      {/* noyau noir : empêche de voir à travers les interstices */}
+      <mesh>
+        <boxGeometry args={[2.88, 2.88, 2.88]} />
+        <meshStandardMaterial color="#020204" roughness={0.95} metalness={0} />
+      </mesh>
       {POSITIONS.map((p, i) => {
         const h = hash(i);
-        // majorité grain fin, quelques brossés, quelques moletés (comme Resend)
-        const kind = h < 0.55 ? 0 : h < 0.8 ? 1 : 2;
+        // majorité grain fin, quelques brossés, quelques perforés (comme Resend)
+        const kind = h < 0.5 ? 0 : h < 0.78 ? 1 : 2;
         return (
           <group key={i} ref={el => { cubies.current[i] = el; }} position={p}>
-            <RoundedBox args={[0.97, 0.97, 0.97]} radius={0.06} smoothness={8}>
+            <RoundedBox args={[0.975, 0.975, 0.975]} radius={0.05} smoothness={4}>
               <meshPhysicalMaterial
-                color="#0a0a0e"
-                roughness={0.3 + h * 0.18}
-                metalness={0.88}
-                clearcoat={kind === 0 ? 0.8 : 0.25}
-                clearcoatRoughness={0.2 + h * 0.1}
-                envMapIntensity={0.75}
+                color="#08080a"
+                roughness={kind === 2 ? 0.55 : 0.34 + h * 0.16}
+                metalness={0.35}
+                clearcoat={kind === 0 ? 0.7 : 0.2}
+                clearcoatRoughness={0.22 + h * 0.1}
+                envMapIntensity={0.35}
                 bumpMap={textures[kind]}
-                bumpScale={kind === 0 ? 0.12 : kind === 1 ? 0.18 : 0.45}
+                bumpScale={kind === 0 ? 0.35 : kind === 1 ? 0.5 : 0.9}
               />
             </RoundedBox>
           </group>
@@ -154,20 +172,21 @@ function Cubies() {
 function Scene() {
   return (
     <>
-      {/* éclairage low-key : fond sombre, fortes hautes lumières */}
-      <ambientLight intensity={0.12} />
-      <directionalLight position={[6, 10, 4]} intensity={2.4} />
-      <directionalLight position={[-8, 2, -6]} intensity={0.9} color="#b9bdfa" />
-      <directionalLight position={[-6, -4, 5]} intensity={0.45} color="#6366f1" />
+      {/* éclairage low-key : faces noires, seuls les biseaux accrochent la lumière */}
+      <ambientLight intensity={0.11} />
+      <directionalLight position={[5, 9, 6]} intensity={1.6} />
+      <directionalLight position={[0, 0, 8]} intensity={0.12} />
+      <directionalLight position={[-7, 3, -5]} intensity={0.7} color="#9aa0ff" />
+      <directionalLight position={[-5, -5, 4]} intensity={0.35} color="#6366f1" />
       <PresentationControls
         global
         cursor
         speed={1.5}
-        rotation={[0.5, -0.65, 0]}
+        rotation={[0.5, -0.75, 0]}
         polar={[-Math.PI / 3, Math.PI / 3]}
         config={{ mass: 1, tension: 170, friction: 26 }}
       >
-        <Float speed={1.4} rotationIntensity={0.15} floatIntensity={0.5}>
+        <Float speed={1.3} rotationIntensity={0.1} floatIntensity={0.3}>
           <Cubies />
         </Float>
       </PresentationControls>
@@ -236,7 +255,7 @@ export default function RubiksCube3D() {
     <div style={{ width: "100%", height: "100%", animation: "fadeIn 0.8s ease both", touchAction: "pan-y" }}>
       {webgl ? (
         <Canvas
-          camera={{ position: [0, 0, 10.8], fov: 30 }}
+          camera={{ position: [0, 0, 10.2], fov: 30 }}
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true }}
         >

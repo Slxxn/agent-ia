@@ -293,7 +293,7 @@ export default function LandingPage() {
                     style={{ position: "absolute", top: 6, right: -8, zIndex: 10, display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 99, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.22)", fontSize: 11, fontWeight: 600, color: "#22C55E" }}>
                     ✓ Livré sous 5 jours
                   </motion.div>
-                  <div style={{ width: 480, height: 480 }}>
+                  <div style={{ width: 540, height: 540 }}>
                     <RubiksCube3D />
                   </div>
                 </div>
