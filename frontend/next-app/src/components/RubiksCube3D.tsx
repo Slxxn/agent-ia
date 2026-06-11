@@ -3,41 +3,116 @@
 import { useRef, useState, Suspense } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { RoundedBox, PresentationControls, Float, Environment } from "@react-three/drei";
+import { Vector3, Quaternion } from "three";
 import type { Group } from "three";
 
 // Cubies accent indigo (clin d'œil au logo pixel builderz)
-const ACCENTS = new Set(["0,0,1", "1,1,0", "-1,0,-1"]);
+const ACCENTS = new Set([4, 14, 22]);
 
 const POSITIONS: [number, number, number][] = [];
 for (let x = -1; x <= 1; x++)
   for (let y = -1; y <= 1; y++)
     for (let z = -1; z <= 1; z++) POSITIONS.push([x, y, z]);
 
+// variation de surface par cubie pour un rendu moins uniforme
+const hash = (i: number) => {
+  const s = Math.sin(i * 12.9898) * 43758.5453;
+  return s - Math.floor(s);
+};
+
+const easeInOutCubic = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+type SliceMove = {
+  axis: Vector3;
+  axisIdx: number;
+  layer: number;
+  dir: number;
+  t: number;
+  dur: number;
+  prevEased: number;
+};
+
 function Cubies() {
-  const group = useRef<Group>(null);
+  const cube = useRef<Group>(null);
+  const cubies = useRef<(Group | null)[]>([]);
+  const move = useRef<SliceMove | null>(null);
+  const wait = useRef(1.2);
+
   useFrame((_, delta) => {
-    if (group.current) group.current.rotation.y += delta * 0.2;
+    if (cube.current) cube.current.rotation.y += delta * 0.12;
+
+    // tranche au repos : on attend avant le prochain mouvement
+    if (!move.current) {
+      wait.current -= delta;
+      if (wait.current <= 0) {
+        const axisIdx = Math.floor(Math.random() * 3);
+        const axis = new Vector3();
+        axis.setComponent(axisIdx, 1);
+        move.current = {
+          axis,
+          axisIdx,
+          layer: [-1, 0, 1][Math.floor(Math.random() * 3)],
+          dir: Math.random() < 0.5 ? 1 : -1,
+          t: 0,
+          dur: 1.1,
+          prevEased: 0,
+        };
+      }
+      return;
+    }
+
+    // rotation de la tranche active, par incréments easés (total exact : 90°)
+    const m = move.current;
+    m.t = Math.min(m.t + delta / m.dur, 1);
+    const eased = easeInOutCubic(m.t);
+    const dAngle = (eased - m.prevEased) * (Math.PI / 2) * m.dir;
+    m.prevEased = eased;
+    const q = new Quaternion().setFromAxisAngle(m.axis, dAngle);
+    for (const c of cubies.current) {
+      if (!c) continue;
+      if (Math.abs(c.position.getComponent(m.axisIdx) - m.layer) < 0.4) {
+        c.position.applyQuaternion(q);
+        c.quaternion.premultiply(q);
+      }
+    }
+
+    if (m.t >= 1) {
+      for (const c of cubies.current) {
+        if (!c) continue;
+        c.position.set(Math.round(c.position.x), Math.round(c.position.y), Math.round(c.position.z));
+      }
+      move.current = null;
+      wait.current = 0.8 + Math.random() * 2;
+    }
   });
+
   return (
-    <group ref={group}>
-      {POSITIONS.map(([x, y, z]) => {
-        const accent = ACCENTS.has(`${x},${y},${z}`);
+    <group ref={cube}>
+      {POSITIONS.map((p, i) => {
+        const accent = ACCENTS.has(i);
+        const h = hash(i);
         return (
-          <RoundedBox key={`${x},${y},${z}`} args={[0.94, 0.94, 0.94]} radius={0.1} smoothness={8} position={[x, y, z]}>
-            {accent ? (
-              <meshPhysicalMaterial
-                color="#5b5ef0" emissive="#4338ca" emissiveIntensity={0.35}
-                roughness={0.22} metalness={0.5} clearcoat={1} clearcoatRoughness={0.12}
-                envMapIntensity={1.4}
-              />
-            ) : (
-              <meshPhysicalMaterial
-                color="#0d0d14" roughness={0.32} metalness={0.92}
-                clearcoat={0.9} clearcoatRoughness={0.22}
-                envMapIntensity={1.15}
-              />
-            )}
-          </RoundedBox>
+          <group key={i} ref={el => { cubies.current[i] = el; }} position={p}>
+            <RoundedBox args={[0.965, 0.965, 0.965]} radius={0.07} smoothness={6}>
+              {accent ? (
+                <meshPhysicalMaterial
+                  color="#4f46e5" emissive="#312e81" emissiveIntensity={0.45}
+                  roughness={0.24} metalness={0.55} clearcoat={1} clearcoatRoughness={0.15}
+                  envMapIntensity={0.9}
+                />
+              ) : (
+                <meshPhysicalMaterial
+                  color="#08080b"
+                  roughness={0.26 + h * 0.24}
+                  metalness={0.82 + h * 0.14}
+                  clearcoat={0.65}
+                  clearcoatRoughness={0.25 + h * 0.15}
+                  envMapIntensity={0.7}
+                />
+              )}
+            </RoundedBox>
+          </group>
         );
       })}
     </group>
@@ -47,18 +122,20 @@ function Cubies() {
 function Scene() {
   return (
     <>
-      <ambientLight intensity={0.25} />
-      <directionalLight position={[4, 7, 6]} intensity={1.3} />
-      <directionalLight position={[-5, -3, 4]} intensity={0.5} color="#6366f1" />
+      {/* éclairage low-key : fond sombre, fortes hautes lumières */}
+      <ambientLight intensity={0.12} />
+      <directionalLight position={[6, 10, 4]} intensity={2.4} />
+      <directionalLight position={[-8, 2, -6]} intensity={0.9} color="#b9bdfa" />
+      <directionalLight position={[-6, -4, 5]} intensity={0.45} color="#6366f1" />
       <PresentationControls
         global
         cursor
         speed={1.5}
-        rotation={[0.45, -0.55, 0]}
+        rotation={[0.5, -0.65, 0]}
         polar={[-Math.PI / 3, Math.PI / 3]}
         config={{ mass: 1, tension: 170, friction: 26 }}
       >
-        <Float speed={1.6} rotationIntensity={0.25} floatIntensity={0.7}>
+        <Float speed={1.4} rotationIntensity={0.15} floatIntensity={0.5}>
           <Cubies />
         </Float>
       </PresentationControls>
@@ -127,7 +204,7 @@ export default function RubiksCube3D() {
     <div style={{ width: "100%", height: "100%", animation: "fadeIn 0.8s ease both", touchAction: "pan-y" }}>
       {webgl ? (
         <Canvas
-          camera={{ position: [0, 0, 8.5], fov: 30 }}
+          camera={{ position: [0, 0, 8.2], fov: 30 }}
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true }}
         >
