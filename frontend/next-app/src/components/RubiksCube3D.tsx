@@ -1,13 +1,10 @@
 "use client";
 
-import { useRef, useState, Suspense } from "react";
+import { useRef, useState, useMemo, Suspense } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { RoundedBox, PresentationControls, Float, Environment } from "@react-three/drei";
-import { Vector3, Quaternion } from "three";
+import { Vector3, Quaternion, CanvasTexture, RepeatWrapping } from "three";
 import type { Group } from "three";
-
-// Cubies accent indigo (clin d'œil au logo pixel builderz)
-const ACCENTS = new Set([4, 14, 22]);
 
 const POSITIONS: [number, number, number][] = [];
 for (let x = -1; x <= 1; x++)
@@ -19,6 +16,41 @@ const hash = (i: number) => {
   const s = Math.sin(i * 12.9898) * 43758.5453;
   return s - Math.floor(s);
 };
+
+// Textures procédurales (bump) : grain fin, métal brossé, moletage diamant
+function makeBumpTexture(kind: 0 | 1 | 2): CanvasTexture {
+  const size = 256;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#7f7f7f";
+  ctx.fillRect(0, 0, size, size);
+  if (kind === 0) {
+    const img = ctx.getImageData(0, 0, size, size);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = 116 + Math.random() * 24;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+    }
+    ctx.putImageData(img, 0, 0);
+  } else if (kind === 1) {
+    for (let y = 0; y < size; y++) {
+      const v = 118 + Math.random() * 18;
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.fillRect(0, y, size, 1);
+    }
+  } else {
+    ctx.strokeStyle = "#a8a8a8";
+    ctx.lineWidth = 2;
+    for (let i = -size; i < size * 2; i += 11) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + size, size); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(i + size, 0); ctx.lineTo(i, size); ctx.stroke();
+    }
+  }
+  const tex = new CanvasTexture(c);
+  tex.wrapS = tex.wrapT = RepeatWrapping;
+  tex.repeat.set(2, 2);
+  return tex;
+}
 
 const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -87,30 +119,30 @@ function Cubies() {
     }
   });
 
+  const textures = useMemo(
+    () => [makeBumpTexture(0), makeBumpTexture(1), makeBumpTexture(2)],
+    []
+  );
+
   return (
     <group ref={cube}>
       {POSITIONS.map((p, i) => {
-        const accent = ACCENTS.has(i);
         const h = hash(i);
+        // majorité grain fin, quelques brossés, quelques moletés (comme Resend)
+        const kind = h < 0.55 ? 0 : h < 0.8 ? 1 : 2;
         return (
           <group key={i} ref={el => { cubies.current[i] = el; }} position={p}>
-            <RoundedBox args={[0.965, 0.965, 0.965]} radius={0.07} smoothness={6}>
-              {accent ? (
-                <meshPhysicalMaterial
-                  color="#4f46e5" emissive="#312e81" emissiveIntensity={0.45}
-                  roughness={0.24} metalness={0.55} clearcoat={1} clearcoatRoughness={0.15}
-                  envMapIntensity={0.9}
-                />
-              ) : (
-                <meshPhysicalMaterial
-                  color="#08080b"
-                  roughness={0.26 + h * 0.24}
-                  metalness={0.82 + h * 0.14}
-                  clearcoat={0.65}
-                  clearcoatRoughness={0.25 + h * 0.15}
-                  envMapIntensity={0.7}
-                />
-              )}
+            <RoundedBox args={[0.97, 0.97, 0.97]} radius={0.06} smoothness={8}>
+              <meshPhysicalMaterial
+                color="#0a0a0e"
+                roughness={0.3 + h * 0.18}
+                metalness={0.88}
+                clearcoat={kind === 0 ? 0.8 : 0.25}
+                clearcoatRoughness={0.2 + h * 0.1}
+                envMapIntensity={0.75}
+                bumpMap={textures[kind]}
+                bumpScale={kind === 0 ? 0.12 : kind === 1 ? 0.18 : 0.45}
+              />
             </RoundedBox>
           </group>
         );
@@ -204,7 +236,7 @@ export default function RubiksCube3D() {
     <div style={{ width: "100%", height: "100%", animation: "fadeIn 0.8s ease both", touchAction: "pan-y" }}>
       {webgl ? (
         <Canvas
-          camera={{ position: [0, 0, 8.2], fov: 30 }}
+          camera={{ position: [0, 0, 10.8], fov: 30 }}
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true }}
         >
