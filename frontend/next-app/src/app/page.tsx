@@ -65,6 +65,47 @@ const PixelLogo = ({ size = 26 }: { size?: number }) => (
   </svg>
 );
 
+const CUBE = 250;
+const CUBE_FACES = [
+  { transform: `translateZ(${CUBE / 2}px)`, shade: "rgba(255,255,255,0.03)" },
+  { transform: `rotateY(180deg) translateZ(${CUBE / 2}px)`, shade: "rgba(0,0,0,0.55)" },
+  { transform: `rotateY(90deg) translateZ(${CUBE / 2}px)`, shade: "rgba(0,0,0,0.28)" },
+  { transform: `rotateY(-90deg) translateZ(${CUBE / 2}px)`, shade: "rgba(0,0,0,0.28)" },
+  { transform: `rotateX(90deg) translateZ(${CUBE / 2}px)`, shade: "rgba(255,255,255,0.08)" },
+  { transform: `rotateX(-90deg) translateZ(${CUBE / 2}px)`, shade: "rgba(0,0,0,0.65)" },
+];
+// tuiles indigo (clin d'œil au logo pixel) : { face: [index de tuile] }
+const CUBE_ACCENTS: Record<number, number[]> = { 0: [4], 2: [2], 4: [6] };
+
+function RubiksCube() {
+  return (
+    <div style={{ width: CUBE + 140, height: CUBE + 140, display: "flex", alignItems: "center", justifyContent: "center", perspective: 1100 }}>
+      <div style={{ width: CUBE, height: CUBE, position: "relative", transformStyle: "preserve-3d", animation: "cubeSpin 30s linear infinite" }}>
+        {CUBE_FACES.map((face, f) => (
+          <div key={f} style={{ position: "absolute", inset: 0, transform: face.transform, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7, background: "#04040a", borderRadius: 14, padding: 7 }}>
+            {Array.from({ length: 9 }).map((_, i) => {
+              const accent = CUBE_ACCENTS[f]?.includes(i);
+              return (
+                <div key={i} style={{
+                  borderRadius: 10,
+                  background: accent
+                    ? "linear-gradient(145deg, #818cf8 0%, #4f46e5 70%)"
+                    : "linear-gradient(145deg, #24242f 0%, #0b0b13 65%)",
+                  border: accent ? "1px solid rgba(165,180,252,0.55)" : "1px solid rgba(255,255,255,0.05)",
+                  boxShadow: accent
+                    ? "0 0 26px rgba(99,102,241,0.5), inset 0 1px 0 rgba(255,255,255,0.35)"
+                    : "inset 0 1px 0 rgba(255,255,255,0.06)",
+                }} />
+              );
+            })}
+            <div style={{ position: "absolute", inset: 0, background: face.shade, borderRadius: 14, pointerEvents: "none" }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const STEPS = [
   {
     n: "01",
@@ -187,7 +228,7 @@ export default function LandingPage() {
         <div style={{ position: "absolute", top: "-20%", left: "-10%", width: 700, height: 700, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 70%)", filter: "blur(40px)", animation: "orb1 18s ease-in-out infinite" }} />
         <div style={{ position: "absolute", top: "40%", right: "-15%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)", filter: "blur(40px)", animation: "orb2 22s ease-in-out infinite" }} />
         <div style={{ position: "absolute", bottom: "10%", left: "30%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(6,182,212,0.05) 0%, transparent 70%)", filter: "blur(60px)", animation: "orb3 26s ease-in-out infinite" }} />
-        <style>{`@keyframes orb1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,40px)}}@keyframes orb2{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,60px)}}@keyframes orb3{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-50px)}}`}</style>
+        <style>{`@keyframes orb1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,40px)}}@keyframes orb2{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,60px)}}@keyframes orb3{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-50px)}}@keyframes cubeSpin{0%{transform:rotateX(-28deg) rotateY(0deg)}100%{transform:rotateX(-28deg) rotateY(360deg)}}`}</style>
       </div>
 
       {/* ── nav ── */}
@@ -280,36 +321,19 @@ export default function LandingPage() {
               </motion.div>
             </motion.div>
 
-            {/* capture d'écran — desktop only */}
+            {/* cube 3D — desktop only */}
             {!isMobile && (
               <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4, duration: 0.8, ease: EASE }}
-                style={{ display: "flex", justifyContent: "flex-end" }}>
-                <div style={{ position: "relative", width: "100%", maxWidth: 480 }}>
-                  <div style={{ position: "absolute", inset: -40, background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.13) 0%, transparent 70%)", pointerEvents: "none" }} />
+                style={{ display: "flex", justifyContent: "center" }}>
+                <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                  <div style={{ position: "absolute", inset: -60, background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.13) 0%, transparent 70%)", pointerEvents: "none" }} />
                   <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1, duration: 0.4 }}
-                    style={{ position: "absolute", top: -14, right: -14, zIndex: 10, display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 99, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.22)", fontSize: 11, fontWeight: 600, color: "#22C55E" }}>
+                    style={{ position: "absolute", top: 6, right: -8, zIndex: 10, display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 99, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.22)", fontSize: 11, fontWeight: 600, color: "#22C55E" }}>
                     ✓ Livré sous 5 jours
                   </motion.div>
-                  <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", background: "#0D0D14", boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", background: "#13131C", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {["#FF5F57","#FEBC2E","#28C840"].map(c => (
-                          <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c, opacity: 0.8 }} />
-                        ))}
-                      </div>
-                      <div style={{ flex: 1, height: 22, borderRadius: 5, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", padding: "0 10px", gap: 6 }}>
-                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "rgba(255,255,255,0.1)" }} />
-                        <span style={{ fontSize: 10, color: "rgba(226,226,234,0.25)", fontFamily: "monospace" }}>ixshel-co.web.app</span>
-                      </div>
-                    </div>
-                    <div style={{ height: 340, overflow: "hidden", position: "relative" }}>
-                      <img
-                        src="/realisations/ixshel-co.jpg"
-                        alt="IXSHEL&CO — site vitrine bijoux, réalisé par builderz"
-                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }}
-                      />
-                    </div>
-                  </div>
+                  <motion.div animate={{ y: [0, -14, 0] }} transition={{ duration: 6, ease: "easeInOut", repeat: Infinity }}>
+                    <RubiksCube />
+                  </motion.div>
                 </div>
               </motion.div>
             )}
