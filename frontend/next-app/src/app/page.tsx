@@ -238,6 +238,17 @@ export default function LandingPage() {
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 40 : 64, alignItems: "center", width: "100%" }}>
 
             <motion.div initial="hidden" animate="visible" variants={stagger(0.1)}>
+              {/* cube en vidéo sur mobile (léger), WebGL sur desktop — comme resend.com */}
+              {isMobile && (
+                <motion.div variants={fadeUp} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+                  <video
+                    autoPlay loop muted playsInline aria-hidden="true"
+                    poster="/cube-poster.jpg" src="/cube.mp4"
+                    width={240} height={240}
+                    style={{ width: 240, height: 240, objectFit: "cover", display: "block" }}
+                  />
+                </motion.div>
+              )}
               <motion.div variants={fadeUp} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 12px 5px 7px", borderRadius: 99, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.22)", marginBottom: 24, width: "fit-content" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#6366F1", borderRadius: 99, padding: "3px 9px", fontSize: 10, fontWeight: 700, color: "#fff", letterSpacing: "0.05em" }}>
                   <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#6EE7B7", boxShadow: "0 0 5px #6EE7B7" }} />
