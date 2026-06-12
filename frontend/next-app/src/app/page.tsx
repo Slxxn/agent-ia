@@ -202,6 +202,12 @@ export default function LandingPage() {
             <span style={{ fontWeight: 800, fontSize: 15, letterSpacing: "-0.04em", color: "#fff", fontFamily: "var(--font-syne)" }}>builderz</span>
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 4 : 2 }}>
+            {isMobile && (
+              <a href={`tel:${PHONE_TEL}`} onClick={() => track("click_phone")} aria-label="Appeler builderz"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(255,255,255,0.09)", color: "rgba(226,226,234,0.6)", marginRight: 6 }}>
+                <PhoneIcon />
+              </a>
+            )}
             {!isMobile && (
               <>
                 {[["#comment", "Comment ça marche"], ["#realisations", "Réalisations"], ["#tarifs", "Tarifs"]].map(([href, label]) => (
@@ -354,22 +360,6 @@ export default function LandingPage() {
             </div>
           </motion.div>
 
-          {/* Témoignage */}
-          <motion.div variants={fadeUp} style={{ marginTop: 24 }}>
-            <div style={{ borderRadius: 16, padding: isMobile ? "24px 20px" : "32px 36px", border: "1px solid rgba(255,255,255,0.05)", background: "rgba(14,14,21,0.5)", position: "relative" }}>
-              <div style={{ fontSize: 44, color: "rgba(99,102,241,0.2)", fontFamily: "Georgia, serif", lineHeight: 1, marginBottom: 10, userSelect: "none" }}>&ldquo;</div>
-              <p style={{ fontSize: 15, color: "rgba(226,226,234,0.55)", lineHeight: 1.8, fontStyle: "italic", marginBottom: 20, maxWidth: 640 }}>
-                [Témoignage à venir — contactez-moi pour partager votre expérience]
-              </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)" }} />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Client IXSHEL&CO</div>
-                  <div style={{ fontSize: 11, color: "rgba(226,226,234,0.3)" }}>Créatrice de bijoux artisanaux</div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </motion.div>
       </section>
 
@@ -460,7 +450,7 @@ export default function LandingPage() {
             <motion.div variants={fadeUp} style={{ marginTop: 44 }}>
               <div style={{ marginBottom: 20 }}>
                 <h3 style={{ fontFamily: "var(--font-syne)", fontSize: 17, fontWeight: 700, color: "#fff", marginBottom: 6, letterSpacing: "-0.02em" }}>Options selon vos besoins</h3>
-                <p style={{ fontSize: 13, color: "rgba(226,226,234,0.3)" }}>Sur devis — je vous réponds sous 48h.</p>
+                <p style={{ fontSize: 13, color: "rgba(226,226,234,0.3)" }}>Sur devis — nous vous répondons sous 48h.</p>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 10 }}>
                 {OPTION_ITEMS.map(opt => (
