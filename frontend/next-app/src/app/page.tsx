@@ -240,12 +240,16 @@ export default function LandingPage() {
             <motion.div initial="hidden" animate="visible" variants={stagger(0.1)}>
               {/* cube en vidéo sur mobile (léger), WebGL sur desktop — comme resend.com */}
               {isMobile && (
-                <motion.div variants={fadeUp} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+                <motion.div variants={fadeUp} style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}>
                   <video
                     autoPlay loop muted playsInline aria-hidden="true"
                     poster="/cube-poster.jpg" src="/cube.mp4"
-                    width={200} height={200}
-                    style={{ width: 200, height: 200, objectFit: "cover", display: "block" }}
+                    width={210} height={210}
+                    style={{
+                      width: 210, height: 210, objectFit: "cover", display: "block",
+                      WebkitMaskImage: "radial-gradient(closest-side, #000 72%, transparent 100%)",
+                      maskImage: "radial-gradient(closest-side, #000 72%, transparent 100%)",
+                    }}
                   />
                 </motion.div>
               )}
