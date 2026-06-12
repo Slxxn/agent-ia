@@ -211,6 +211,38 @@ C'est ce qui sépare un site "correct" d'un site "wahou" :
 
 ---
 
+## Finitions — la checklist des détails qui font la différence
+
+Analyse du site de référence (sandrinemass) : la différence entre "correct" et
+"agence" tient à une accumulation de micro-détails. **Tous obligatoires** :
+
+1. **En-tête de section complet** : label → titre → **ornement** (trait
+   dégradé + losange accent, ou trait courbé doré en secteur chaleureux) →
+   sous-titre d'une phrase. Jamais un titre nu. Composant réutilisable
+   `SectionHeader` à créer dans chaque projet.
+2. **Marque** : monogramme SVG (initiales sur carré arrondi accent) dans la
+   navbar + `public/favicon.svg` assorti. Jamais le favicon Vite par défaut.
+3. **Chips/pills partout où il y a une métadonnée** : durée d'une prestation,
+   catégorie en coin de card, "X avis vérifiés · fiche Google" sous les étoiles,
+   statut "Ouvert aujourd'hui · horaires" dans le hero.
+4. **Texture de fond** sur 1-2 sections (pois :
+   `radial-gradient(circle, var(--border-default) 1px, transparent 1px)` size 26px).
+5. **Alternance de fonds réelle** : pas seulement blanc/gris — utiliser
+   `--color-tint` et une section sombre (bandeau CTA secondaire, footer).
+6. **Hover vivants** sur les cards : `-translate-y-1` + bordure accent +
+   ombre teintée accent — jamais de cards inertes.
+7. **Guillemet décoratif géant** (couleur tint) en coin des témoignages.
+8. **Table d'horaires complète** (Lun-Ven / Sam / Dim avec "Fermé" grisé,
+   heures en accent-2) — dans la carte contact ET le footer. Un commerce
+   sans horaires détaillés n'est pas crédible.
+9. **Footer riche sombre** : monogramme + baseline + icônes contact rondes
+   (tel/WhatsApp/mail) + 3-4 colonnes (nav, horaires+adresse, légal) +
+   double baseline bas (copyright | micro-réassurance).
+10. **Prix avec colonne durée** dans les listes de tarifs (chip grise),
+    comme une vraie carte de soins/menu.
+
+---
+
 ## Copywriting — règles dures
 
 - **Localisation partout** : la ville du brief apparaît dans le hero, le footer, les témoignages, le title SEO. "Massage & bien-être à Montpellier" >> "Massage & bien-être"
