@@ -288,7 +288,7 @@ export default function LandingPage() {
               <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4, duration: 0.8, ease: EASE }}
                 style={{ display: "flex", justifyContent: "center" }}>
                 <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center" }}>
-                  <div style={{ position: "absolute", inset: -60, background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.13) 0%, transparent 70%)", pointerEvents: "none" }} />
+                  <div style={{ position: "absolute", inset: -60, background: "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.2) 0%, transparent 70%)", pointerEvents: "none" }} />
                   <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1, duration: 0.4 }}
                     style={{ position: "absolute", top: 6, right: -8, zIndex: 10, display: "flex", alignItems: "center", gap: 6, padding: "5px 11px", borderRadius: 99, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.22)", fontSize: 11, fontWeight: 600, color: "#22C55E" }}>
                     ✓ Livré sous 5 jours

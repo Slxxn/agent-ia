@@ -20,7 +20,10 @@ const hash = (i: number) => {
 
 // Textures bump 512px, une par face (repeat 1) : chaque face lit comme une
 // plaque sertie (cadre sombre en pourtour) — le détail signature de Resend.
-function makeBumpTexture(kind: 0 | 1 | 2): CanvasTexture {
+// 7 variantes : 2 grains, 2 brossés, 2 perforations, 1 moletage diamant.
+const TEXTURE_COUNT = 7;
+
+function makeBumpTexture(variant: number): CanvasTexture {
   const size = 512;
   const c = document.createElement("canvas");
   c.width = c.height = size;
@@ -28,41 +31,57 @@ function makeBumpTexture(kind: 0 | 1 | 2): CanvasTexture {
   ctx.fillStyle = "#7f7f7f";
   ctx.fillRect(0, 0, size, size);
 
-  if (kind === 0) {
-    // lisse : grain très fin + flecks qui scintillent sous la lumière
+  const grain = (spread: number, flecks: number) => {
     const img = ctx.getImageData(0, 0, size, size);
     for (let i = 0; i < img.data.length; i += 4) {
-      const v = 122 + Math.random() * 12;
+      const v = 122 + Math.random() * spread;
       img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
     }
     ctx.putImageData(img, 0, 0);
     ctx.fillStyle = "#ececec";
-    for (let n = 0; n < 700; n++) {
+    for (let n = 0; n < flecks; n++) {
       ctx.fillRect(Math.random() * size, Math.random() * size, 2, 2);
     }
-  } else if (kind === 1) {
-    // métal brossé
-    for (let y = 0; y < size; y++) {
-      const v = 116 + Math.random() * 24;
+  };
+  const brushed = (jitter: number, lineH: number) => {
+    for (let y = 0; y < size; y += lineH) {
+      const v = 116 + Math.random() * jitter;
       ctx.fillStyle = `rgb(${v},${v},${v})`;
-      ctx.fillRect(0, y, size, 1);
+      ctx.fillRect(0, y, size, lineH);
     }
-  } else {
-    // perforations en quinconce (grille type haut-parleur)
+  };
+  const perforated = (step: number, r: number) => {
     ctx.fillStyle = "#969696";
     ctx.fillRect(0, 0, size, size);
     ctx.fillStyle = "#262626";
-    const step = 21;
     let row = 0;
     for (let y = step; y < size - step / 2; y += step, row++) {
       const offset = row % 2 ? step / 2 : 0;
-      for (let x = step; x < size - step / 2 + (offset ? step / 2 : 0); x += step) {
+      for (let x = step; x < size - step / 2; x += step) {
         ctx.beginPath();
-        ctx.arc(x + offset, y, 4.4, 0, Math.PI * 2);
+        ctx.arc(x + offset, y, r, 0, Math.PI * 2);
         ctx.fill();
       }
     }
-  }
+  };
+  const knurl = (step: number) => {
+    ctx.fillStyle = "#8e8e8e";
+    ctx.fillRect(0, 0, size, size);
+    ctx.strokeStyle = "#3a3a3a";
+    ctx.lineWidth = 3;
+    for (let i = -size; i < size * 2; i += step) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + size, size); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(i + size, 0); ctx.lineTo(i, size); ctx.stroke();
+    }
+  };
+
+  if (variant === 0) grain(12, 500);
+  else if (variant === 1) grain(26, 1100);
+  else if (variant === 2) brushed(20, 1);
+  else if (variant === 3) brushed(34, 3);
+  else if (variant === 4) perforated(17, 3.6);
+  else if (variant === 5) perforated(26, 5.6);
+  else knurl(14);
 
   // cadre incrusté en pourtour de face
   ctx.strokeStyle = "#5c5c5c";
@@ -75,8 +94,27 @@ function makeBumpTexture(kind: 0 | 1 | 2): CanvasTexture {
   return tex;
 }
 
-const easeInOutQuart = (t: number) =>
-  t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+// famille de matériau par variante de texture
+function materialProps(variant: number, h: number, tex: CanvasTexture) {
+  if (variant <= 1) {
+    // lisse brillant
+    return { color: "#07070d", metalness: 0.05, roughness: 0.26 + h * 0.1, clearcoat: 1, clearcoatRoughness: 0.12, envMapIntensity: 1.2, bumpMap: tex, bumpScale: 0.3 };
+  }
+  if (variant <= 3) {
+    // métal brossé
+    return { color: "#08080f", metalness: 0.45, roughness: 0.5, clearcoat: 0.4, clearcoatRoughness: 0.3, envMapIntensity: 0.95, bumpMap: tex, bumpScale: 0.45, roughnessMap: tex };
+  }
+  if (variant <= 5) {
+    // perforé
+    return { color: "#07070d", metalness: 0.3, roughness: 0.62, clearcoat: 0.25, clearcoatRoughness: 0.3, envMapIntensity: 0.9, bumpMap: tex, bumpScale: 1.1, roughnessMap: tex };
+  }
+  // moletage diamant
+  return { color: "#07070d", metalness: 0.35, roughness: 0.55, clearcoat: 0.3, clearcoatRoughness: 0.3, envMapIntensity: 0.9, bumpMap: tex, bumpScale: 0.85, roughnessMap: tex };
+}
+
+// accélération/décélération douce et bien lisible
+const easeInOutCubic = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 type SliceMove = {
   axis: Vector3;
@@ -93,32 +131,45 @@ function Cubies() {
   const cubies = useRef<(Group | null)[]>([]);
   // plusieurs tranches parallèles peuvent tourner en même temps (jamais d'axes croisés : clipping)
   const moves = useRef<SliceMove[]>([]);
+  const lastMove = useRef<{ axisIdx: number; layer: number } | null>(null);
   const wait = useRef(1.6);
 
   useFrame((state, delta) => {
     // le cube entier tourne sur lui-même sur plusieurs axes (tumbling)
     if (cube.current) {
       const t = state.clock.elapsedTime;
-      cube.current.rotation.y += delta * 0.16;
-      cube.current.rotation.x += delta * 0.07;
-      cube.current.rotation.z = 0.1 + Math.sin(t * 0.2) * 0.15;
+      cube.current.rotation.y += delta * 0.24;
+      cube.current.rotation.x += delta * 0.11;
+      cube.current.rotation.z = 0.1 + Math.sin(t * 0.25) * 0.15;
     }
 
     if (moves.current.length === 0) {
       wait.current -= delta;
       if (wait.current <= 0) {
-        const axisIdx = Math.floor(Math.random() * 3);
+        let axisIdx = Math.floor(Math.random() * 3);
+        let layers: number[];
+        if (Math.random() < 0.4) {
+          // les deux couches externes tournent ensemble (sens indépendants)
+          layers = [-1, 1];
+        } else {
+          // couche seule : externe ou parfois centrale, sans répéter la précédente
+          const pool = Math.random() < 0.22 ? [-1, 0, 1] : [-1, 1];
+          let layer = pool[Math.floor(Math.random() * pool.length)];
+          if (lastMove.current && lastMove.current.axisIdx === axisIdx && lastMove.current.layer === layer) {
+            axisIdx = (axisIdx + 1 + Math.floor(Math.random() * 2)) % 3;
+          }
+          layers = [layer];
+        }
+        lastMove.current = { axisIdx, layer: layers[0] };
         const axis = new Vector3();
         axis.setComponent(axisIdx, 1);
-        // 45% du temps : les deux couches externes tournent ensemble (sens indépendants)
-        const layers = Math.random() < 0.45 ? [-1, 1] : [Math.random() < 0.5 ? -1 : 1];
         moves.current = layers.map((layer, k) => ({
           axis,
           axisIdx,
           layer,
           dir: Math.random() < 0.5 ? 1 : -1,
           t: 0,
-          dur: 0.85 + Math.random() * 0.3 + k * 0.12,
+          dur: 1.5 + Math.random() * 0.4 + k * 0.15,
           prevEased: 0,
         }));
       }
@@ -128,7 +179,7 @@ function Cubies() {
     for (const m of moves.current) {
       if (m.t >= 1) continue;
       m.t = Math.min(m.t + delta / m.dur, 1);
-      const eased = easeInOutQuart(m.t);
+      const eased = easeInOutCubic(m.t);
       const dAngle = (eased - m.prevEased) * (Math.PI / 2) * m.dir;
       m.prevEased = eased;
       const q = new Quaternion().setFromAxisAngle(m.axis, dAngle);
@@ -153,7 +204,7 @@ function Cubies() {
   });
 
   const textures = useMemo(
-    () => [makeBumpTexture(0), makeBumpTexture(1), makeBumpTexture(2)],
+    () => Array.from({ length: TEXTURE_COUNT }, (_, v) => makeBumpTexture(v)),
     []
   );
 
@@ -161,38 +212,11 @@ function Cubies() {
     <group ref={cube} rotation={[0, 0, 0.1]}>
       {POSITIONS.map((p, i) => {
         const h = hash(i);
-        // perforé dominant comme Resend, puis lisse brillant, puis brossé
-        const kind = h < 0.4 ? 0 : h < 0.6 ? 1 : 2;
+        const variant = Math.floor(h * TEXTURE_COUNT) % TEXTURE_COUNT;
         return (
           <group key={i} ref={el => { cubies.current[i] = el; }} position={p}>
             <RoundedBox args={[0.985, 0.985, 0.985]} radius={0.05} smoothness={4}>
-              {kind === 0 ? (
-                <meshPhysicalMaterial
-                  color="#060608" metalness={0.05}
-                  roughness={0.26 + h * 0.1}
-                  clearcoat={1} clearcoatRoughness={0.12}
-                  envMapIntensity={1.2}
-                  bumpMap={textures[0]} bumpScale={0.3}
-                />
-              ) : kind === 1 ? (
-                <meshPhysicalMaterial
-                  color="#08080a" metalness={0.45}
-                  roughness={0.5}
-                  clearcoat={0.4} clearcoatRoughness={0.3}
-                  envMapIntensity={0.95}
-                  bumpMap={textures[1]} bumpScale={0.45}
-                  roughnessMap={textures[1]}
-                />
-              ) : (
-                <meshPhysicalMaterial
-                  color="#060608" metalness={0.3}
-                  roughness={0.62}
-                  clearcoat={0.25} clearcoatRoughness={0.3}
-                  envMapIntensity={0.9}
-                  bumpMap={textures[2]} bumpScale={1.1}
-                  roughnessMap={textures[2]}
-                />
-              )}
+              <meshPhysicalMaterial {...materialProps(variant, h, textures[variant])} />
             </RoundedBox>
           </group>
         );
@@ -205,6 +229,9 @@ function Scene() {
   return (
     <>
       <ambientLight intensity={0.06} />
+      {/* rim light indigo : liseré bleu sur les arêtes arrière */}
+      <directionalLight position={[-4, -2, -6]} intensity={0.7} color="#6366f1" />
+      <directionalLight position={[-6, 3, -3]} intensity={0.4} color="#818cf8" />
       <PresentationControls
         global
         cursor
@@ -221,7 +248,7 @@ function Scene() {
       <Environment resolution={256}>
         <Lightformer form="rect" intensity={3.5} position={[0, 6, 1]} rotation-x={-Math.PI / 2} scale={[9, 9, 1]} />
         <Lightformer form="rect" intensity={1.4} position={[7, 1, -2]} rotation-y={-Math.PI / 2} scale={[7, 2.5, 1]} color="#eef" />
-        <Lightformer form="rect" intensity={0.6} position={[-7, -1, 2]} rotation-y={Math.PI / 2} scale={[5, 1.8, 1]} color="#6366f1" />
+        <Lightformer form="rect" intensity={1.5} position={[-7, -1, 2]} rotation-y={Math.PI / 2} scale={[6, 2.5, 1]} color="#5b5ef0" />
         <Lightformer form="rect" intensity={0.5} position={[0, 0, 7]} scale={[5, 5, 1]} />
       </Environment>
       {/* AO dans les rainures + lueur subtile des hautes lumières */}
