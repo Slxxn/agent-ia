@@ -114,6 +114,34 @@ Jamais de blanc pur `#ffffff` ni de noir pur `#000000` en fond — toujours tein
 
 ---
 
+## Variation structurelle — ANTI-RESSEMBLANCE
+
+La palette ne suffit pas : si deux sites générés partagent le même squelette,
+c'est un échec. Le squelette "maison" (badge pill → H1 avec un mot coloré →
+2 CTA → stats en ligne ; micro-label uppercase au-dessus de chaque titre ;
+FAQ accordéon à cercles + ; CTA final centré) est celui de builderz.shop —
+**interdit de le répliquer sur un site client**.
+
+À chaque site, choisir consciemment UN archétype par bloc (et varier d'un site à l'autre) :
+
+**Hero (4 archétypes)**
+1. *Split* : texte gauche / image droite avec badge flottant — SaaS, services pro
+2. *Full-bleed* : photo pleine largeur + overlay + texte posé dessus — commerces, restos, artisans
+3. *Éditorial centré* : typographie XXL, pas d'image, ornement discret — luxe, mode, créatifs
+4. *Produit d'abord* : image/objet dominant, texte secondaire — boutiques, portfolio
+
+**Labels de section (varier le système, un seul par site)**
+- Overline uppercase letterspaced (le plus courant — ne pas en abuser)
+- Numéroté : `01 — Services` en font display
+- Barre latérale accent + titre sans label
+- Mot en fonte accent script italique (secteurs chaleureux)
+
+**FAQ** : accordéon souligné (chevron), liste 2 colonnes statique, ou cartes — jamais deux fois le même que le site précédent
+**CTA final** : split contact (texte + carte infos/horaires), bandeau photo pleine largeur, ou carte centrée — pas toujours centré
+**Stats** : bande bordée pleine largeur, colonne latérale, ou intégrées au hero — varier
+
+---
+
 ## Règle des 3 fontes
 
 1. **Display** (titres) — serif ou grotesque de caractère selon secteur
