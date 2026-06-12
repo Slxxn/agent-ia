@@ -244,8 +244,8 @@ export default function LandingPage() {
                   <video
                     autoPlay loop muted playsInline aria-hidden="true"
                     poster="/cube-poster.jpg" src="/cube.mp4"
-                    width={240} height={240}
-                    style={{ width: 240, height: 240, objectFit: "cover", display: "block" }}
+                    width={200} height={200}
+                    style={{ width: 200, height: 200, objectFit: "cover", display: "block" }}
                   />
                 </motion.div>
               )}
