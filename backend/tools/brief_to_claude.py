@@ -195,6 +195,42 @@ SECTOR_FONTS = {
 STYLES_WITHOUT_SCRIPT = {"Minimaliste", "Professionnel", "Moderne & Audacieux"}
 
 
+# Le formulaire conversationnel stocke ses réponses en snake_case dans projects.brief ;
+# le CRM/Firestore utilise du camelCase. On accepte les deux.
+SNAKE_TO_CAMEL = {
+    "business_name": "businessName",
+    "goal": "siteGoal",
+    "site_type": "siteType",
+    "style_vibe": "visualStyle",
+    "color_theme": "colorTheme",
+    "unique_value": "uniqueValue",
+    "target_audience": "targetAudience",
+    "has_logo": "hasLogo",
+    "booking_detail": "bookingSystem",
+    "logo_url": "logoUrl",
+    "client_email": "clientEmail",
+    "client_phone": "clientPhone",
+}
+
+
+def normalize_brief(brief: dict) -> dict:
+    out = dict(brief)
+    for snake, camel in SNAKE_TO_CAMEL.items():
+        if snake in out and not out.get(camel):
+            out[camel] = out[snake]
+    contact = out.get("contact_info") or {}
+    if isinstance(contact, str):
+        try:
+            contact = json.loads(contact)
+        except Exception:
+            contact = {}
+    if contact:
+        out.setdefault("clientEmail", contact.get("email", ""))
+        out.setdefault("clientPhone", contact.get("phone", ""))
+        out.setdefault("displayPhone", contact.get("phone", ""))
+    return out
+
+
 def slugify(text: str) -> str:
     text = text.lower()
     for src, dst in [("àáâãäå","a"),("èéêë","e"),("ìíîï","i"),("òóôõö","o"),("ùúûü","u"),("ç","c")]:
@@ -406,6 +442,7 @@ cd ../.. && python backend/tools/register_project.py \\
 
 
 async def prepare_workspace(brief: dict) -> str:
+    brief = normalize_brief(brief)
     business_name = brief.get("businessName", "projet")
     site_type = brief.get("siteType", "standard")
     slug = slugify(business_name)

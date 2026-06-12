@@ -334,61 +334,81 @@ async def generate_claude_prompt(project_id: int):
         except Exception:
             pass
 
-    business_name = brief.get("businessName", project.get("name", ""))
-    sector = brief.get("sector", "")
-    site_type = brief.get("siteType", "standard")
-    goal = brief.get("siteGoal", "showcase")
+    # Le brief du formulaire est en snake_case, celui du CRM en camelCase — accepter les deux
+    def bget(*keys, default=""):
+        for k in keys:
+            v = brief.get(k)
+            if v:
+                return v
+        return default
+
+    contact = brief.get("contact_info") or {}
+    if isinstance(contact, str):
+        try:
+            contact = _json.loads(contact)
+        except Exception:
+            contact = {}
+
+    business_name = bget("businessName", "business_name", default=project.get("name", ""))
+    sector = bget("sector")
+    site_type = bget("siteType", "site_type", default="standard")
+    goal = bget("siteGoal", "goal", default="showcase")
+    city = bget("city")
+    services = bget("services")
+    phone = bget("displayPhone", "clientPhone") or contact.get("phone", "")
     slug = project.get("slug", "") or business_name.lower().replace(" ", "-")
 
-    prompt = f"""# Génération site — {business_name}
+    prompt = f"""# Génération site client — {business_name}
 
-## Contexte
-Tu vas générer un site web professionnel pour un client builderz.shop.
-Lis d'abord le brief complet avant d'écrire la moindre ligne de code.
+Tu vas générer un site vitrine de **qualité agence** pour un client builderz.shop.
+Niveau attendu : indistinguable d'un site d'agence à 3000€ (référence :
+https://sandrinemass-gpwkxpty.manus.space). Le protocole complet est dans
+`.claude/skills/site-generator.md` — lis-le AVANT toute ligne de code.
 
 ## Brief client
 - **Nom** : {business_name}
+- **Ville / zone** : {city or 'Non renseigné — déduire de la description ou demander'}
 - **Secteur** : {sector}
 - **Type de site** : {site_type}
 - **Objectif** : {goal}
-- **Description** : {brief.get('description', 'Non renseigné')}
-- **Cible client** : {brief.get('targetAudience', 'Non renseigné')}
-- **Valeur unique** : {brief.get('uniqueValue', 'Non renseigné')}
-- **Style visuel** : {brief.get('visualStyle', 'Professionnel')}
-- **Thème** : {brief.get('colorTheme', 'Sombre (noir)')}
-- **Couleurs** : {', '.join(brief.get('colors', [])) or 'Palette par défaut'}
-- **Pages** : {', '.join(brief.get('pages', ['accueil']))}
-- **Fonctionnalités** : {', '.join(brief.get('features', [])) or 'Standard'}
-- **Références** : {brief.get('references', 'Aucune')}
+- **Description** : {bget('description', default='Non renseigné')}
+- **Prestations / prix** : {services or 'Non renseigné — déduire 4-6 prestations plausibles, à valider'}
+- **Téléphone à afficher** : {phone or 'Non fourni'}
+- **Valeur unique** : {bget('uniqueValue', 'unique_value', default='Non renseigné — déduire de la description')}
+- **Style visuel** : {bget('visualStyle', 'style_vibe', default='Professionnel')}
+- **Thème** : {bget('colorTheme', 'color_theme', default='clair')}
+- **Couleurs client** : {', '.join(brief.get('colors', [])) or 'Palette sectorielle par défaut'}
+- **Site de référence aimé** : {bget('references', default='Aucun')}
 
-## Instructions
+## Étapes obligatoires (dans cet ordre)
 
-1. Lance d'abord :
+1. **Prépare le workspace** (starter + tokens sectoriels + brief.md) :
 ```bash
 python backend/tools/brief_to_claude.py --project-id {project_id}
 ```
-Cela va préparer le workspace `workspace/{slug}/`
-avec le bon starter et les tokens CSS générés.
+Le script affiche le chemin exact du workspace (slug horodaté si déjà existant) — utilise celui-là.
 
-2. Ouvre le workspace dans VS Code :
+2. **Lis** `workspace/{{slug}}/brief.md` et `.claude/skills/site-generator.md`,
+   puis **annonce ta direction artistique en 5 lignes** (palette, 3 fontes, séparateurs, signatures, ton).
+
+3. **Télécharge les vraies photos métier** dans `public/images/` et vérifie-les (`file`) AVANT de coder.
+
+4. **Génère le site** : ≥ 5 composants signature (stats bar, citation, badge flottant,
+   séparateur organique, pricing vedette, témoignages réalistes…), ville présente partout,
+   copywriting du brief, zéro lorem ipsum, zéro emoji, variables CSS uniquement.
+
+5. **Vérification visuelle OBLIGATOIRE** : build, screenshots desktop + mobile (puppeteer),
+   lis chaque capture et corrige jusqu'à propre. Jamais de livraison sans avoir VU le site.
+
+6. **Enregistre** :
 ```bash
-code workspace/{slug}/
+python backend/tools/register_project.py --slug "{{slug}}" --update --status "ready"
 ```
 
-3. Génère le site en suivant `.claude/skills/site-generator.md`
-
-4. Après génération, enregistre dans le dashboard :
-```bash
-python backend/tools/register_project.py \\
-  --slug "{slug}" \\
-  --update \\
-  --status "ready"
-```
-
-## Rappel skills à charger
-- `.claude/skills/site-generator.md` — instructions génération
-- `.claude/skills/delivery-protocol.md` — protocole livraison
-- `.claude/skills/frontend-design.md` — règles qualité visuelle
+## Critères de réussite
+- Le site pourrait être présenté tel quel au client sans retouche
+- Direction artistique sectorielle assumée (pas de générique IA)
+- Mobile irréprochable (vérifié sur screenshots)
 """
 
     db = await get_db()
