@@ -11,7 +11,7 @@ interface Choice { value: string; label: string; icon?: string }
 interface StepDef {
   id: string; question: string; subtitle?: string;
   type: 'text' | 'textarea' | 'choice' | 'contact' | 'info' | 'summary';
-  icon: string; choices?: Choice[]; placeholder?: string;
+  icon: string; choices?: Choice[]; placeholder?: string; optional?: boolean;
 }
 interface PricingData {
   suggested: number; base: number; options_total: number;
@@ -41,6 +41,10 @@ const BASE_STEPS: StepDef[] = [
   { id: 'sector',        icon: '🏪', type: 'choice',  question: 'Quelle est votre activité ?',               subtitle: 'Choisissez ce qui correspond le mieux.',           choices: [{ value: 'beaute', label: 'Beauté & Bien-être', icon: '💆' }, { value: 'restaurant', label: 'Restaurant & Café', icon: '🍽️' }, { value: 'artisan', label: 'Artisan & BTP', icon: '🔨' }, { value: 'coach', label: 'Coach & Formation', icon: '💪' }, { value: 'photo', label: 'Photo & Vidéo', icon: '📷' }, { value: 'medical', label: 'Médical & Paramédical', icon: '🏥' }, { value: 'immobilier', label: 'Immobilier', icon: '🏠' }, { value: 'mode', label: 'Mode & Boutique', icon: '👗' }, { value: 'sport', label: 'Sport & Fitness', icon: '⚽' }, { value: 'tech', label: 'Tech & Digital', icon: '💻' }, { value: 'association', label: 'Association', icon: '🤝' }, { value: 'autre', label: 'Autre activité', icon: '✨' }] },
   { id: 'goal',          icon: '🎯', type: 'choice',  question: 'Quel est votre objectif principal ?',       subtitle: 'Ce que vous voulez que vos visiteurs fassent.',   choices: [] },
   { id: 'description',   icon: '✍️', type: 'textarea', question: 'Décrivez votre activité en 2-3 phrases',   subtitle: 'Ce texte sera utilisé pour le contenu de votre site.', placeholder: 'Ex: Salon de coiffure spécialisé en colorations naturelles, ouvert depuis 5 ans à Montpellier…' },
+  { id: 'city',          icon: '📍', type: 'text',    question: 'Dans quelle ville êtes-vous ?',             subtitle: 'Essentiel pour que vos clients locaux vous trouvent sur Google.', placeholder: 'Ex: Montpellier, Lyon 3e, Bordeaux centre…' },
+  { id: 'services',      icon: '💼', type: 'textarea', question: 'Listez vos prestations principales',       subtitle: 'Avec les prix si possible — une par ligne. Elles apparaîtront sur le site.', placeholder: 'Ex:\nMassage californien 60 min — 75€\nSoin visage Kobido — 85€\nForfait découverte 3 séances — 195€' },
+  { id: 'unique_value',  icon: '⭐', type: 'text',    question: "Qu'est-ce qui vous différencie ?",          subtitle: 'En une phrase — ce sera votre accroche principale.', placeholder: 'Ex: Seul salon de la région certifié en coloration 100% végétale', optional: true },
+  { id: 'references',    icon: '🔗', type: 'text',    question: 'Un site que vous aimez ?',                  subtitle: "Collez l'adresse d'un site dont le style vous plaît (optionnel mais très utile).", placeholder: 'Ex: https://exemple.com', optional: true },
   { id: 'style_vibe',    icon: '🎨', type: 'choice',  question: 'Quelle ambiance pour votre site ?',         subtitle: "Choisissez ce qui correspond à l'image de votre entreprise.", choices: [{ value: 'luxe', label: 'Luxe & Élégant', icon: '✨' }, { value: 'minimaliste', label: 'Simple & Épuré', icon: '⬜' }, { value: 'moderne', label: 'Moderne & Audacieux', icon: '⚡' }, { value: 'naturel', label: 'Naturel & Chaleureux', icon: '🌿' }, { value: 'colore', label: 'Coloré & Vibrant', icon: '🌈' }, { value: 'pro', label: 'Professionnel & Sobre', icon: '💼' }] },
   { id: 'color_theme',   icon: '🌓', type: 'choice',  question: 'Fond clair ou sombre ?',                    subtitle: 'Vous pourrez toujours affiner les couleurs ensuite.', choices: [{ value: 'dark', label: 'Sombre', icon: '🌑' }, { value: 'light', label: 'Clair', icon: '☀️' }, { value: 'neutral', label: 'Neutre', icon: '⚪' }] },
   { id: 'contact_info',  icon: '📬', type: 'contact', question: 'Vos coordonnées',                           subtitle: 'Pour vous envoyer votre devis et vous contacter si besoin.' },
@@ -62,7 +66,7 @@ function buildIds(ans: Answers): string[] {
   if (ans.goal === 'ecommerce') ids.push('ecommerce_detail', 'payment_needed');
   else if (ans.goal === 'bookings') ids.push('booking_detail');
   else if (ans.goal === 'portfolio') ids.push('portfolio_detail');
-  ids.push('description', 'style_vibe', 'color_theme', 'contact_info', 'summary');
+  ids.push('description', 'city', 'services', 'unique_value', 'references', 'style_vibe', 'color_theme', 'contact_info', 'summary');
   return ids;
 }
 
@@ -85,17 +89,26 @@ function Btn({ disabled, label, onClick }: { disabled?: boolean; label?: string;
   );
 }
 
+function SkipLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'rgba(226,226,234,0.3)', fontFamily: 'inherit', padding: '4px 0', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+      Passer cette question
+    </button>
+  );
+}
+
 function TextInput({ step, value, onChange, onNext }: { step: StepDef; value: string; onChange: (v: string) => void; onNext: () => void }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <input autoFocus type="text" value={value || ''} placeholder={step.placeholder}
         onChange={e => onChange(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && value?.trim() && onNext()}
+        onKeyDown={e => e.key === 'Enter' && (value?.trim() || step.optional) && onNext()}
         style={ISX}
         onFocus={e => (e.currentTarget.style.borderColor = 'rgba(99,102,241,0.6)')}
         onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
       />
       <Btn disabled={!value?.trim()} onClick={onNext} />
+      {step.optional && !value?.trim() && <SkipLink onClick={onNext} />}
     </div>
   );
 }
@@ -110,6 +123,7 @@ function TextareaInput({ step, value, onChange, onNext }: { step: StepDef; value
         onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
       />
       <Btn disabled={!value?.trim()} onClick={onNext} />
+      {step.optional && !value?.trim() && <SkipLink onClick={onNext} />}
     </div>
   );
 }
@@ -177,7 +191,7 @@ function SummaryStep({ answers, pricing, onSubmit, submitting }: { answers: Answ
 
       <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '16px 18px' }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(226,226,234,0.25)', letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginBottom: 12 }}>Récapitulatif</div>
-        {([['Entreprise', answers.business_name], ['Email', contact.email], ['Téléphone', contact.phone], ['Secteur', answers.sector], ['Objectif', answers.goal], ['Ambiance', answers.style_vibe], ['Thème', answers.color_theme]] as [string, unknown][]).filter(([, v]) => v).map(([label, val]) => (
+        {([['Entreprise', answers.business_name], ['Ville', answers.city], ['Email', contact.email], ['Téléphone', contact.phone], ['Secteur', answers.sector], ['Objectif', answers.goal], ['Ambiance', answers.style_vibe], ['Thème', answers.color_theme]] as [string, unknown][]).filter(([, v]) => v).map(([label, val]) => (
           <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'rgba(226,226,234,0.55)', paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.04)', marginBottom: 8 }}>
             <span style={{ color: 'rgba(226,226,234,0.3)' }}>{label}</span>
             <span style={{ textAlign: 'right', maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(val)}</span>
@@ -283,14 +297,18 @@ export default function FormPage() {
           siteGoal:       answers.goal || '',
           siteType:       data.site_type || 'standard',
           description:    answers.description || '',
+          city:           answers.city || '',
+          services:       answers.services || '',
           targetAudience: answers.target_audience || '',
           uniqueValue:    answers.unique_value || '',
           references:     answers.references || '',
-          visualStyle:    answers.style || '',
+          visualStyle:    answers.style_vibe || '',
           colorTheme:     answers.color_theme || 'dark',
           colors:         answers.colors || [],
           pages:          answers.pages || [],
           features:       answers.features || [],
+          hasLogo:        answers.has_logo || '',
+          bookingSystem:  answers.booking_detail || '',
           budget:         String((data.pricing as unknown as PricingData)?.suggested || ''),
           notes:          answers.notes || '',
           logoUrl:        '',
@@ -299,6 +317,7 @@ export default function FormPage() {
           suggestedPrice: (data.pricing as unknown as PricingData)?.suggested || 0,
           clientEmail:    contact.email || '',
           clientPhone:    contact.phone || '',
+          displayPhone:   contact.phone || '',
           createdAt:      Timestamp.now(),
         });
       } catch { /* Firestore write failure doesn't block the user */ }
