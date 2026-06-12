@@ -254,43 +254,43 @@ const container = { hidden: {}, visible: { transition: { staggerChildren: 0.1 } 
 
 ---
 
-## Vérification visuelle — OBLIGATOIRE avant livraison
+## Vérification visuelle — OBLIGATOIRE, à CHAQUE modification
 
-Un site jamais regardé est un site non livré. Après `npm run build` :
+Un site jamais regardé est un site non livré. Et une modification vérifiée
+en desktop seul N'EST PAS vérifiée : **toujours les 3 breakpoints**, mobile d'abord.
 
 ```bash
-cd workspace/{slug} && npm run preview -- --port 4699 &   # vite preview
-sleep 2
-node -e "
-const puppeteer = require('/Users/sloandesloriez/.npm/_npx/7d92d9a2d2ccc630/node_modules/puppeteer');
-(async () => {
-  const b = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', args: ['--no-sandbox'] });
-  const p = await b.newPage();
-  for (const [name, w, h, mobile] of [['desktop', 1440, 900, false], ['mobile', 390, 844, true]]) {
-    await p.setViewport({ width: w, height: h, deviceScaleFactor: 2, isMobile: mobile });
-    await p.goto('http://localhost:4699/', { waitUntil: 'networkidle0' });
-    const H = await p.evaluate(() => document.body.scrollHeight);
-    for (let y = 0; y < H; y += 600) { await p.evaluate(yy => scrollTo(0, yy), y); await new Promise(r => setTimeout(r, 250)); }
-    for (let i = 0; i * 800 < H; i++) {
-      await p.evaluate(yy => scrollTo(0, yy), i * 800);
-      await new Promise(r => setTimeout(r, 500));
-      await p.screenshot({ path: '/tmp/{slug}-' + name + '-' + i + '.png' });
-    }
-  }
-  await b.close();
-})();"
+cd workspace/{slug} && npm run build && npx vite preview --port 4699 &
+sleep 3
+node scripts/visual-check.mjs http://localhost:4699   # depuis la racine agent-ia
 kill %1
 ```
 
-Puis **lire chaque screenshot avec l'outil Read** et vérifier :
-- [ ] Toutes les images chargent (aucun carré cassé/alt)
-- [ ] Contraste suffisant partout (texte lisible sur photos)
-- [ ] Aucun débordement horizontal mobile
+Le script teste 390 / 768 / 1440, **échoue si débordement horizontal**, et
+écrit toutes les captures dans `/tmp/visual-check/`. Ensuite **lire les
+captures avec l'outil Read** (mobile-390 en premier) et vérifier :
+- [ ] Toutes les images chargent, contraste suffisant (texte lisible sur photos)
+- [ ] Aucun contenu qui déborde de sa carte/conteneur (le script ne voit que le viewport)
+- [ ] Navbar intacte à 768 (logo sur une ligne, CTA non cassé)
 - [ ] Hiérarchie typographique claire, espacements réguliers
 - [ ] Le site ressemble à la direction artistique annoncée à l'étape 0
 - [ ] Pas de section vide ou de placeholder visible
 
-**Si un point échoue → corriger → re-screenshoter.** Itérer jusqu'à propre.
+**Règles dures :**
+- Cette vérification se relance après CHAQUE modification visuelle, même
+  d'un seul composant — pas seulement à la génération initiale.
+- Échec du script ou capture douteuse → corriger → re-vérifier. Jamais de
+  déploiement entre-temps.
+
+### Pièges responsive connus (à ne jamais reproduire)
+- `whitespace-nowrap` UNIQUEMENT sur du contenu court et fixe (prix, chiffres,
+  numéro de téléphone) — jamais sur un libellé de longueur variable
+- `divide-x` sur une grille multi-rangées casse les bordures en mobile
+  2 colonnes → calculer les bordures par index (`border-l` si i%2===1, etc.)
+- Hero full-bleed : renforcer l'overlay et réduire la hauteur sur mobile
+  (`min-h-[74dvh] md:min-h-[88dvh]`), l'image recadrée peut devenir criarde
+- Navbar : les liens du menu passent en burger sous `lg` si logo + 4-5 liens
+  + CTA téléphone (768 est trop étroit pour tout)
 
 ---
 
